@@ -8,7 +8,6 @@ import (
 	"io"
 	"net/http"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 	"time"
@@ -83,7 +82,7 @@ func NewApp(
 		log:                      log,
 		config:                   config,
 		state:                    state,
-		borg:                     borg.NewBorg(config.BorgPath, log, sshPrivateKeys, nil),
+		borg:                     borg.NewBorg(config.BorgExePath, config.BorgMountExePath, log, sshPrivateKeys, nil),
 		backupScheduleChangedCh:  make(chan struct{}),
 		pruningScheduleChangedCh: make(chan struct{}),
 		eventEmitter:             eventEmitter,
@@ -676,47 +675,160 @@ func (a *App) ensureBorgBinary() error {
 			}
 		}
 	}
+
+	// On macOS, ensure mount binary is installed (separate from main binary)
+	// This is called independently because the main binary might already be installed
+	// but the mount binary might not exist yet (e.g., after a code update that adds mount support)
+	if platform.IsMacOS() {
+		if err := a.ensureBorgMountBinary(); err != nil {
+			a.log.Warnf("Failed to install borg mount binary: %v", err)
+			// Don't fail startup - mount just won't work
+		}
+	}
+
 	return nil
 }
 
 func (a *App) isTargetVersionInstalled(targetVersion string) bool {
 	// Check if the binary is installed
-	if _, err := os.Stat(a.config.BorgPath); err == nil {
-		version, err := a.version()
+	if _, err := os.Stat(a.config.BorgExePath); err == nil {
+		installedVersion, status := a.borg.Version(a.ctx)
 		// Check if the version is correct
-		return err == nil && version == targetVersion
+		return !status.HasError() && installedVersion.String() == targetVersion
 	}
 	return false
 }
 
-func (a *App) version() (string, error) {
-	cmd := exec.Command(a.config.BorgPath, "--version")
-	out, err := cmd.CombinedOutput()
-	if err != nil {
-		return "", err
-	}
-	// Output is in the format "xxx 1.2.8\n"
-	// We want to return "1.2.8"
-	fields := strings.Fields(string(out))
-	if len(fields) < 2 {
-		return "", fmt.Errorf("unexpected output: %s", string(out))
-	}
-	return fields[1], nil
-}
-
 func (a *App) installBorgBinary() error {
-	// Delete old binary if it exists
-	if _, err := os.Stat(a.config.BorgPath); err == nil {
-		if err := os.Remove(a.config.BorgPath); err != nil {
-			return err
-		}
-	}
-
 	binary, err := platform.GetLatestBorgBinary(a.config.BorgBinaries)
 	if err != nil {
 		return err
 	}
 
-	// Download the binary
-	return util.DownloadFile(a.config.BorgPath, binary.Url)
+	// Delete old binary/directory only if it won't affect mount binary
+	if _, err := os.Stat(a.config.BorgPath); err == nil {
+		// Safe to delete if mount binary is at a different path (won't be affected)
+		if a.config.BorgPath != a.config.BorgMountPath {
+			if err := os.RemoveAll(a.config.BorgPath); err != nil {
+				return fmt.Errorf("failed to remove old borg installation: %w", err)
+			}
+		}
+	}
+
+	if binary.IsDirectory {
+		// Download and extract directory distribution (.tgz)
+		if err := a.downloadAndExtractBorgDirectory(binary, a.config.BorgPath); err != nil {
+			return err
+		}
+	} else {
+		// Download single binary
+		if err := util.DownloadFile(a.config.BorgPath, binary.Url); err != nil {
+			return err
+		}
+	}
+
+	// Clean up old borg directories that are no longer needed
+	a.cleanupOldBorgBinaries()
+
+	return nil
+}
+
+func (a *App) downloadAndExtractBorgDirectory(binary platform.BorgBinary, targetPath string) error {
+	// Download to temp file
+	tmpFile := filepath.Join(os.TempDir(), "borg.tgz")
+	a.log.Infof("Downloading borg directory distribution from %s", binary.Url)
+	if err := util.DownloadFile(tmpFile, binary.Url); err != nil {
+		return fmt.Errorf("failed to download borg: %w", err)
+	}
+	defer os.Remove(tmpFile)
+
+	// Extract with directory rename: borg-dir/ -> borg-1.4.3-dir/
+	// targetPath is the full path like "~/.config/arco/borg-1.4.3-dir"
+	targetDir := filepath.Base(targetPath) // "borg-1.4.3-dir"
+	destDir := filepath.Dir(targetPath)    // "~/.config/arco"
+
+	a.log.Infof("Extracting borg to %s", targetPath)
+	if err := util.ExtractTarGzWithRename(tmpFile, destDir, targetDir); err != nil {
+		return fmt.Errorf("failed to extract borg: %w", err)
+	}
+
+	return nil
+}
+
+// ensureBorgMountBinary ensures a Borg binary with FUSE support is installed for mount operations.
+// On macOS, the fast 1.4.3 directory distribution doesn't include FUSE support,
+// so we use a separate binary (e.g., 1.4.1) which has it.
+// This function checks if the mount binary is already installed before downloading.
+func (a *App) ensureBorgMountBinary() error {
+	mountBinary := a.config.BorgMountBinary
+	mountBinaryPath := a.config.BorgMountExePath
+	mountPath := a.config.BorgMountPath
+
+	// Skip if mount binary is same as main binary (already installed)
+	if a.config.BorgExePath == mountBinaryPath {
+		return nil
+	}
+
+	// Check if already installed with correct version
+	if _, err := os.Stat(mountBinaryPath); err == nil {
+		installedVersion, status := a.borg.MountVersion(a.ctx)
+		if !status.HasError() && installedVersion.Equal(mountBinary.Version) {
+			a.log.Infof("Borg %s mount binary already installed", mountBinary.Version.String())
+			return nil // Already installed
+		}
+		// Wrong version or corrupted, remove the whole directory/file
+		os.RemoveAll(mountPath)
+	}
+
+	a.log.Infof("Installing borg %s for mount operations (FUSE support)", mountBinary.Version.String())
+
+	if mountBinary.IsDirectory {
+		// Download and extract directory distribution
+		if err := a.downloadAndExtractBorgDirectory(mountBinary, mountPath); err != nil {
+			return fmt.Errorf("failed to install borg mount directory: %w", err)
+		}
+	} else {
+		// Download single binary
+		if err := util.DownloadFile(mountBinaryPath, mountBinary.Url); err != nil {
+			return fmt.Errorf("failed to download borg mount binary: %w", err)
+		}
+	}
+
+	return nil
+}
+
+// cleanupOldBorgBinaries removes old Borg installations that are no longer needed.
+// Preserves: current main binary (BorgPath) and mount binary (BorgMountPath)
+func (a *App) cleanupOldBorgBinaries() {
+	entries, err := os.ReadDir(a.config.Dir)
+	if err != nil {
+		a.log.Warnf("Failed to read config dir for cleanup: %v", err)
+		return
+	}
+
+	// Patterns to match old borg binaries/directories:
+	// - borg_X.X.X (single binaries)
+	// - borg-X.X.X-dir (versioned directory distributions)
+	// - borg-mount-X.X.X-dir (mount directory distributions)
+
+	for _, entry := range entries {
+		name := entry.Name()
+		path := filepath.Join(a.config.Dir, name)
+
+		// Skip if this is the current main or mount binary
+		if path == a.config.BorgPath || path == a.config.BorgMountPath {
+			continue
+		}
+
+		// Check if this looks like an old borg binary/directory
+		isOldBorg := strings.HasPrefix(name, "borg_") ||
+			(strings.HasPrefix(name, "borg-") && strings.HasSuffix(name, "-dir"))
+
+		if isOldBorg {
+			a.log.Infof("Cleaning up old borg installation: %s", name)
+			if err := os.RemoveAll(path); err != nil {
+				a.log.Warnf("Failed to clean up %s: %v", name, err)
+			}
+		}
+	}
 }

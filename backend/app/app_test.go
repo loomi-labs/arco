@@ -12,6 +12,7 @@ import (
 	typesmocks "github.com/loomi-labs/arco/backend/app/types/mocks"
 	borgmocks "github.com/loomi-labs/arco/backend/borg/mocks"
 	"github.com/loomi-labs/arco/backend/internal/keyring"
+	"github.com/loomi-labs/arco/backend/platform"
 	_ "github.com/mattn/go-sqlite3"
 	"go.uber.org/mock/gomock"
 	"go.uber.org/zap"
@@ -30,15 +31,20 @@ func NewTestApp(t *testing.T) (*App, *borgmocks.MockBorg, *typesmocks.MockEventE
 
 	tempDir := t.TempDir()
 	config := &types.Config{
-		Dir:             tempDir,
-		SSHDir:          filepath.Join(tempDir, "ssh"),
-		BorgBinaries:    nil,
-		BorgPath:        "",
-		BorgVersion:     "",
-		Icons:           nil,
-		Migrations:      migrationsDir,
-		GithubAssetName: "",
-		Version:         semver.MustParse("0.0.0"),
+		Dir:              tempDir,
+		SSHDir:           filepath.Join(tempDir, "ssh"),
+		BorgBinaries:     nil,
+		BorgPath:         "",
+		BorgExePath:      "",
+		BorgMountPath:    "",
+		BorgMountExePath: "",
+		BorgMountBinary:  platform.BorgBinary{},
+		BorgMountVersion: "",
+		BorgVersion:      "",
+		Icons:            nil,
+		Migrations:       migrationsDir,
+		GithubAssetName:  "",
+		Version:          semver.MustParse("0.0.0"),
 	}
 
 	mockEventEmitter := typesmocks.NewMockEventEmitter(gomock.NewController(t))

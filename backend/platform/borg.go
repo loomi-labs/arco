@@ -14,89 +14,119 @@ import (
 var Binaries = []BorgBinary{
 	// Borg 1.4.3 - Linux x86_64 variants
 	{
-		Name:         "borg_1.4.3",
-		Version:      version.Must(version.NewVersion("1.4.3")),
-		Os:           Linux,
-		GlibcVersion: version.Must(version.NewVersion("2.31")),
-		Arch:         "amd64",
-		Url:          "https://github.com/borgbackup/borg/releases/download/1.4.3/borg-linux-glibc231-x86_64",
+		Name:          "borg_1.4.3",
+		Version:       version.Must(version.NewVersion("1.4.3")),
+		Os:            Linux,
+		GlibcVersion:  version.Must(version.NewVersion("2.31")),
+		Arch:          "amd64",
+		Url:           "https://github.com/borgbackup/borg/releases/download/1.4.3/borg-linux-glibc231-x86_64",
+		SupportsMount: true,
 	},
 	{
-		Name:         "borg_1.4.3",
-		Version:      version.Must(version.NewVersion("1.4.3")),
-		Os:           Linux,
-		GlibcVersion: version.Must(version.NewVersion("2.35")),
-		Arch:         "amd64",
-		Url:          "https://github.com/borgbackup/borg/releases/download/1.4.3/borg-linux-glibc235-x86_64-gh",
+		Name:          "borg_1.4.3",
+		Version:       version.Must(version.NewVersion("1.4.3")),
+		Os:            Linux,
+		GlibcVersion:  version.Must(version.NewVersion("2.35")),
+		Arch:          "amd64",
+		Url:           "https://github.com/borgbackup/borg/releases/download/1.4.3/borg-linux-glibc235-x86_64-gh",
+		SupportsMount: true,
 	},
 	// Borg 1.4.3 - Linux ARM64
 	{
-		Name:         "borg_1.4.3",
-		Version:      version.Must(version.NewVersion("1.4.3")),
-		Os:           Linux,
-		GlibcVersion: version.Must(version.NewVersion("2.35")),
-		Arch:         "arm64",
-		Url:          "https://github.com/borgbackup/borg/releases/download/1.4.3/borg-linux-glibc235-arm64-gh",
+		Name:          "borg_1.4.3",
+		Version:       version.Must(version.NewVersion("1.4.3")),
+		Os:            Linux,
+		GlibcVersion:  version.Must(version.NewVersion("2.35")),
+		Arch:          "arm64",
+		Url:           "https://github.com/borgbackup/borg/releases/download/1.4.3/borg-linux-glibc235-arm64-gh",
+		SupportsMount: true,
+	},
+	// Borg 1.4.3 - macOS Intel (directory distribution for faster startup, no FUSE support)
+	{
+		Name:          "borg_1.4.3",
+		Version:       version.Must(version.NewVersion("1.4.3")),
+		Os:            Darwin,
+		Arch:          "amd64",
+		Url:           "https://github.com/borgbackup/borg/releases/download/1.4.3/borg-macos-13-x86_64-gh.tgz",
+		IsDirectory:   true,
+		SupportsMount: false, // -gh builds don't include llfuse
+	},
+	// Borg 1.4.3 - macOS Apple Silicon (directory distribution for faster startup, no FUSE support)
+	{
+		Name:          "borg_1.4.3",
+		Version:       version.Must(version.NewVersion("1.4.3")),
+		Os:            Darwin,
+		Arch:          "arm64",
+		Url:           "https://github.com/borgbackup/borg/releases/download/1.4.3/borg-macos-14-arm64-gh.tgz",
+		IsDirectory:   true,
+		SupportsMount: false, // -gh builds don't include llfuse
 	},
 	// Borg 1.4.1 - Linux variants
 	{
-		Name:         "borg_1.4.1",
-		Version:      version.Must(version.NewVersion("1.4.1")),
-		Os:           Linux,
-		GlibcVersion: version.Must(version.NewVersion("2.28")),
-		Url:          "https://github.com/borgbackup/borg/releases/download/1.4.1/borg-linux-glibc228",
+		Name:          "borg_1.4.1",
+		Version:       version.Must(version.NewVersion("1.4.1")),
+		Os:            Linux,
+		GlibcVersion:  version.Must(version.NewVersion("2.28")),
+		Url:           "https://github.com/borgbackup/borg/releases/download/1.4.1/borg-linux-glibc228",
+		SupportsMount: true,
 	},
 	{
-		Name:         "borg_1.4.1",
-		Version:      version.Must(version.NewVersion("1.4.1")),
-		Os:           Linux,
-		GlibcVersion: version.Must(version.NewVersion("2.31")),
-		Url:          "https://github.com/borgbackup/borg/releases/download/1.4.1/borg-linux-glibc231",
+		Name:          "borg_1.4.1",
+		Version:       version.Must(version.NewVersion("1.4.1")),
+		Os:            Linux,
+		GlibcVersion:  version.Must(version.NewVersion("2.31")),
+		Url:           "https://github.com/borgbackup/borg/releases/download/1.4.1/borg-linux-glibc231",
+		SupportsMount: true,
 	},
 	{
-		Name:         "borg_1.4.1",
-		Version:      version.Must(version.NewVersion("1.4.1")),
-		Os:           Linux,
-		GlibcVersion: version.Must(version.NewVersion("2.36")),
-		Url:          "https://github.com/borgbackup/borg/releases/download/1.4.1/borg-linux-glibc236",
+		Name:          "borg_1.4.1",
+		Version:       version.Must(version.NewVersion("1.4.1")),
+		Os:            Linux,
+		GlibcVersion:  version.Must(version.NewVersion("2.36")),
+		Url:           "https://github.com/borgbackup/borg/releases/download/1.4.1/borg-linux-glibc236",
+		SupportsMount: true,
 	},
-	// Borg 1.4.1 - macOS
+	// Borg 1.4.1 - macOS (directory distribution with FUSE support)
 	{
-		Name:         "borg_1.4.1",
-		Version:      version.Must(version.NewVersion("1.4.1")),
-		Os:           Darwin,
-		GlibcVersion: nil,
-		Url:          "https://github.com/borgbackup/borg/releases/download/1.4.1/borg-macos1012",
+		Name:          "borg_1.4.1",
+		Version:       version.Must(version.NewVersion("1.4.1")),
+		Os:            Darwin,
+		Url:           "https://github.com/borgbackup/borg/releases/download/1.4.1/borg-macos1012.tgz",
+		IsDirectory:   true,
+		SupportsMount: true, // Non-gh builds include llfuse
 	},
 	// Borg 1.4.0 - Linux variants
 	{
-		Name:         "borg_1.4.0",
-		Version:      version.Must(version.NewVersion("1.4.0")),
-		Os:           Linux,
-		GlibcVersion: version.Must(version.NewVersion("2.28")),
-		Url:          "https://github.com/borgbackup/borg/releases/download/1.4.0/borg-linux-glibc228",
+		Name:          "borg_1.4.0",
+		Version:       version.Must(version.NewVersion("1.4.0")),
+		Os:            Linux,
+		GlibcVersion:  version.Must(version.NewVersion("2.28")),
+		Url:           "https://github.com/borgbackup/borg/releases/download/1.4.0/borg-linux-glibc228",
+		SupportsMount: true,
 	},
 	{
-		Name:         "borg_1.4.0",
-		Version:      version.Must(version.NewVersion("1.4.0")),
-		Os:           Linux,
-		GlibcVersion: version.Must(version.NewVersion("2.31")),
-		Url:          "https://github.com/borgbackup/borg/releases/download/1.4.0/borg-linux-glibc231",
+		Name:          "borg_1.4.0",
+		Version:       version.Must(version.NewVersion("1.4.0")),
+		Os:            Linux,
+		GlibcVersion:  version.Must(version.NewVersion("2.31")),
+		Url:           "https://github.com/borgbackup/borg/releases/download/1.4.0/borg-linux-glibc231",
+		SupportsMount: true,
 	},
 	{
-		Name:         "borg_1.4.0",
-		Version:      version.Must(version.NewVersion("1.4.0")),
-		Os:           Linux,
-		GlibcVersion: version.Must(version.NewVersion("2.36")),
-		Url:          "https://github.com/borgbackup/borg/releases/download/1.4.0/borg-linux-glibc236",
+		Name:          "borg_1.4.0",
+		Version:       version.Must(version.NewVersion("1.4.0")),
+		Os:            Linux,
+		GlibcVersion:  version.Must(version.NewVersion("2.36")),
+		Url:           "https://github.com/borgbackup/borg/releases/download/1.4.0/borg-linux-glibc236",
+		SupportsMount: true,
 	},
-	// Borg 1.4.0 - macOS
+	// Borg 1.4.0 - macOS (single binary with FUSE support)
 	{
-		Name:         "borg_1.4.0",
-		Version:      version.Must(version.NewVersion("1.4.0")),
-		Os:           Darwin,
-		GlibcVersion: nil,
-		Url:          "https://github.com/borgbackup/borg/releases/download/1.4.0/borg-macos1012",
+		Name:          "borg_1.4.0",
+		Version:       version.Must(version.NewVersion("1.4.0")),
+		Os:            Darwin,
+		Url:           "https://github.com/borgbackup/borg/releases/download/1.4.0/borg-macos1012",
+		SupportsMount: true, // Single binary includes llfuse
 	},
 }
 
@@ -232,6 +262,123 @@ func selectLowestGlibcBinary(binaries []BorgBinary, arch string) BorgBinary {
 	for _, binary := range binaries {
 		// Check architecture compatibility (empty means any)
 		if binary.Arch != "" && binary.Arch != arch {
+			continue
+		}
+
+		if binary.GlibcVersion == nil {
+			continue
+		}
+
+		if !foundCompatible || binary.GlibcVersion.LessThan(lowest.GlibcVersion) {
+			lowest = binary
+			foundCompatible = true
+		}
+	}
+
+	return lowest
+}
+
+// GetMountBorgBinary selects the latest Borg binary that supports mount operations for the current system.
+// On Linux, this will typically return the same as GetLatestBorgBinary since all Linux binaries support mount.
+// On macOS, this will return the latest single binary (not -gh directory builds) which includes FUSE support.
+func GetMountBorgBinary(binaries []BorgBinary) (BorgBinary, error) {
+	currentOS := OS(runtime.GOOS)
+	currentArch := runtime.GOARCH
+	if !IsLinux() && !IsMacOS() {
+		return BorgBinary{}, fmt.Errorf("unsupported operating system: %s", runtime.GOOS)
+	}
+
+	// Find latest binary for current OS and architecture that supports mount
+	var latestBinary BorgBinary
+	var latestVersion *version.Version
+
+	for _, binary := range binaries {
+		// Check OS compatibility
+		if binary.Os != currentOS {
+			continue
+		}
+
+		// Check architecture compatibility (empty means any)
+		if binary.Arch != "" && binary.Arch != currentArch {
+			continue
+		}
+
+		// Must support mount
+		if !binary.SupportsMount {
+			continue
+		}
+
+		// Track the latest version
+		if latestVersion == nil || binary.Version.GreaterThan(latestVersion) {
+			latestBinary = binary
+			latestVersion = binary.Version
+		}
+	}
+
+	if latestVersion == nil {
+		return BorgBinary{}, fmt.Errorf("no mount-capable binary found for operating system %s and architecture %s", runtime.GOOS, currentArch)
+	}
+
+	// If on Darwin, return the architecture-matched binary
+	if IsMacOS() {
+		return latestBinary, nil
+	}
+
+	// Otherwise we are on Linux -> get glibc version and select appropriate binary
+	systemGlibc, err := getGlibcVersion()
+	if err != nil {
+		// If GLIBC detection fails, fallback to lowest GLIBC requirement with mount support
+		return selectLowestGlibcMountBinary(binaries, currentArch), nil
+	}
+
+	// Compare GLIBC versions -> select highest version that is <= system GLIBC version
+	var bestBinary BorgBinary
+	var bestGlibcVersion *version.Version
+
+	for _, binary := range binaries {
+		// Only consider binaries for current OS, latest Borg version, and mount support
+		if binary.Os != currentOS || !binary.Version.Equal(latestVersion) || !binary.SupportsMount {
+			continue
+		}
+
+		// Check architecture compatibility (empty means any)
+		if binary.Arch != "" && binary.Arch != currentArch {
+			continue
+		}
+
+		if binary.GlibcVersion != nil && binary.GlibcVersion.LessThanOrEqual(systemGlibc) {
+			if bestGlibcVersion == nil || binary.GlibcVersion.GreaterThan(bestGlibcVersion) {
+				bestBinary = binary
+				bestGlibcVersion = binary.GlibcVersion
+			}
+		}
+	}
+
+	if bestGlibcVersion == nil {
+		// No compatible GLIBC version found, return lowest available with mount support
+		return selectLowestGlibcMountBinary(binaries, currentArch), nil
+	}
+
+	return bestBinary, nil
+}
+
+// selectLowestGlibcMountBinary returns the binary with the lowest GLIBC requirement that supports mount
+func selectLowestGlibcMountBinary(binaries []BorgBinary, arch string) BorgBinary {
+	if len(binaries) == 0 {
+		return BorgBinary{}
+	}
+
+	var lowest BorgBinary
+	foundCompatible := false
+
+	for _, binary := range binaries {
+		// Check architecture compatibility (empty means any)
+		if binary.Arch != "" && binary.Arch != arch {
+			continue
+		}
+
+		// Must support mount
+		if !binary.SupportsMount {
 			continue
 		}
 

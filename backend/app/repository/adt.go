@@ -8,6 +8,162 @@ import (
 	"github.com/negrel/assert"
 )
 
+// ArchiveDeleteStateType is the discriminator enum for ArchiveDeleteState
+type ArchiveDeleteStateType string
+
+const (
+	ArchiveDeleteStateTypeDeleteActive ArchiveDeleteStateType = "DeleteActive"
+	ArchiveDeleteStateTypeDeleteNone   ArchiveDeleteStateType = "DeleteNone"
+	ArchiveDeleteStateTypeDeleteQueued ArchiveDeleteStateType = "DeleteQueued"
+)
+
+// ArchiveDeleteState variant wrappers
+type DeleteActiveVariant adtenum.OneVariantValue[DeleteActive]
+type DeleteNoneVariant adtenum.OneVariantValue[DeleteNone]
+type DeleteQueuedVariant adtenum.OneVariantValue[DeleteQueued]
+
+// ArchiveDeleteState constructors
+var NewArchiveDeleteStateDeleteActive = adtenum.CreateOneVariantValueConstructor[DeleteActiveVariant]()
+var NewArchiveDeleteStateDeleteNone = adtenum.CreateOneVariantValueConstructor[DeleteNoneVariant]()
+var NewArchiveDeleteStateDeleteQueued = adtenum.CreateOneVariantValueConstructor[DeleteQueuedVariant]()
+
+// EnumType methods for ArchiveDeleteState variants
+func (v DeleteActiveVariant) EnumType() ArchiveDeleteState { return v }
+func (v DeleteNoneVariant) EnumType() ArchiveDeleteState   { return v }
+func (v DeleteQueuedVariant) EnumType() ArchiveDeleteState { return v }
+
+// GetArchiveDeleteStateType returns the discriminator type for exhaustive switch checking
+func GetArchiveDeleteStateType(enum ArchiveDeleteState) ArchiveDeleteStateType {
+	switch enum.(type) {
+	case DeleteNoneVariant:
+		return ArchiveDeleteStateTypeDeleteNone
+	case DeleteQueuedVariant:
+		return ArchiveDeleteStateTypeDeleteQueued
+	case DeleteActiveVariant:
+		return ArchiveDeleteStateTypeDeleteActive
+	default:
+		assert.Fail("Unhandled ArchiveDeleteState variant in GetArchiveDeleteStateType")
+		return ArchiveDeleteStateTypeDeleteActive
+	}
+}
+
+// ArchiveDeleteStateUnion is a concrete struct that Wails3 can serialize to TypeScript discriminated unions
+type ArchiveDeleteStateUnion struct {
+	Type ArchiveDeleteStateType `json:"type"` // Discriminator field
+
+	// Variant fields - only one will be non-nil
+	DeleteNone   *DeleteNone   `json:"deleteNone,omitempty"`
+	DeleteQueued *DeleteQueued `json:"deleteQueued,omitempty"`
+	DeleteActive *DeleteActive `json:"deleteActive,omitempty"`
+}
+
+// ToArchiveDeleteStateUnion converts an ADT ArchiveDeleteState to an ArchiveDeleteStateUnion
+func ToArchiveDeleteStateUnion(r ArchiveDeleteState) ArchiveDeleteStateUnion {
+	switch i := r.(type) {
+	case DeleteNoneVariant:
+		data := i()
+		return ArchiveDeleteStateUnion{
+			Type:       ArchiveDeleteStateTypeDeleteNone,
+			DeleteNone: &data,
+		}
+	case DeleteQueuedVariant:
+		data := i()
+		return ArchiveDeleteStateUnion{
+			Type:         ArchiveDeleteStateTypeDeleteQueued,
+			DeleteQueued: &data,
+		}
+	case DeleteActiveVariant:
+		data := i()
+		return ArchiveDeleteStateUnion{
+			Type:         ArchiveDeleteStateTypeDeleteActive,
+			DeleteActive: &data,
+		}
+	default:
+		return ArchiveDeleteStateUnion{
+			Type:         ArchiveDeleteStateTypeDeleteActive,
+			DeleteActive: &DeleteActive{},
+		}
+	}
+}
+
+// ArchiveEditStateType is the discriminator enum for ArchiveEditState
+type ArchiveEditStateType string
+
+const (
+	ArchiveEditStateTypeEditActive ArchiveEditStateType = "EditActive"
+	ArchiveEditStateTypeEditNone   ArchiveEditStateType = "EditNone"
+	ArchiveEditStateTypeEditQueued ArchiveEditStateType = "EditQueued"
+)
+
+// ArchiveEditState variant wrappers
+type EditActiveVariant adtenum.OneVariantValue[EditActive]
+type EditNoneVariant adtenum.OneVariantValue[EditNone]
+type EditQueuedVariant adtenum.OneVariantValue[EditQueued]
+
+// ArchiveEditState constructors
+var NewArchiveEditStateEditActive = adtenum.CreateOneVariantValueConstructor[EditActiveVariant]()
+var NewArchiveEditStateEditNone = adtenum.CreateOneVariantValueConstructor[EditNoneVariant]()
+var NewArchiveEditStateEditQueued = adtenum.CreateOneVariantValueConstructor[EditQueuedVariant]()
+
+// EnumType methods for ArchiveEditState variants
+func (v EditActiveVariant) EnumType() ArchiveEditState { return v }
+func (v EditNoneVariant) EnumType() ArchiveEditState   { return v }
+func (v EditQueuedVariant) EnumType() ArchiveEditState { return v }
+
+// GetArchiveEditStateType returns the discriminator type for exhaustive switch checking
+func GetArchiveEditStateType(enum ArchiveEditState) ArchiveEditStateType {
+	switch enum.(type) {
+	case EditNoneVariant:
+		return ArchiveEditStateTypeEditNone
+	case EditQueuedVariant:
+		return ArchiveEditStateTypeEditQueued
+	case EditActiveVariant:
+		return ArchiveEditStateTypeEditActive
+	default:
+		assert.Fail("Unhandled ArchiveEditState variant in GetArchiveEditStateType")
+		return ArchiveEditStateTypeEditActive
+	}
+}
+
+// ArchiveEditStateUnion is a concrete struct that Wails3 can serialize to TypeScript discriminated unions
+type ArchiveEditStateUnion struct {
+	Type ArchiveEditStateType `json:"type"` // Discriminator field
+
+	// Variant fields - only one will be non-nil
+	EditNone   *EditNone   `json:"editNone,omitempty"`
+	EditQueued *EditQueued `json:"editQueued,omitempty"`
+	EditActive *EditActive `json:"editActive,omitempty"`
+}
+
+// ToArchiveEditStateUnion converts an ADT ArchiveEditState to an ArchiveEditStateUnion
+func ToArchiveEditStateUnion(r ArchiveEditState) ArchiveEditStateUnion {
+	switch i := r.(type) {
+	case EditNoneVariant:
+		data := i()
+		return ArchiveEditStateUnion{
+			Type:     ArchiveEditStateTypeEditNone,
+			EditNone: &data,
+		}
+	case EditQueuedVariant:
+		data := i()
+		return ArchiveEditStateUnion{
+			Type:       ArchiveEditStateTypeEditQueued,
+			EditQueued: &data,
+		}
+	case EditActiveVariant:
+		data := i()
+		return ArchiveEditStateUnion{
+			Type:       ArchiveEditStateTypeEditActive,
+			EditActive: &data,
+		}
+	default:
+		return ArchiveEditStateUnion{
+			Type:       ArchiveEditStateTypeEditActive,
+			EditActive: &EditActive{},
+		}
+	}
+}
+
 // LocationType is the discriminator enum for Location
 type LocationType string
 
@@ -186,162 +342,6 @@ func ToOperationStatusUnion(r OperationStatus) OperationStatusUnion {
 		return OperationStatusUnion{
 			Type:      OperationStatusTypeCompleted,
 			Completed: &Completed{},
-		}
-	}
-}
-
-// ArchiveEditStateType is the discriminator enum for ArchiveEditState
-type ArchiveEditStateType string
-
-const (
-	ArchiveEditStateTypeEditActive ArchiveEditStateType = "EditActive"
-	ArchiveEditStateTypeEditNone   ArchiveEditStateType = "EditNone"
-	ArchiveEditStateTypeEditQueued ArchiveEditStateType = "EditQueued"
-)
-
-// ArchiveEditState variant wrappers
-type EditActiveVariant adtenum.OneVariantValue[EditActive]
-type EditNoneVariant adtenum.OneVariantValue[EditNone]
-type EditQueuedVariant adtenum.OneVariantValue[EditQueued]
-
-// ArchiveEditState constructors
-var NewArchiveEditStateEditActive = adtenum.CreateOneVariantValueConstructor[EditActiveVariant]()
-var NewArchiveEditStateEditNone = adtenum.CreateOneVariantValueConstructor[EditNoneVariant]()
-var NewArchiveEditStateEditQueued = adtenum.CreateOneVariantValueConstructor[EditQueuedVariant]()
-
-// EnumType methods for ArchiveEditState variants
-func (v EditActiveVariant) EnumType() ArchiveEditState { return v }
-func (v EditNoneVariant) EnumType() ArchiveEditState   { return v }
-func (v EditQueuedVariant) EnumType() ArchiveEditState { return v }
-
-// GetArchiveEditStateType returns the discriminator type for exhaustive switch checking
-func GetArchiveEditStateType(enum ArchiveEditState) ArchiveEditStateType {
-	switch enum.(type) {
-	case EditNoneVariant:
-		return ArchiveEditStateTypeEditNone
-	case EditQueuedVariant:
-		return ArchiveEditStateTypeEditQueued
-	case EditActiveVariant:
-		return ArchiveEditStateTypeEditActive
-	default:
-		assert.Fail("Unhandled ArchiveEditState variant in GetArchiveEditStateType")
-		return ArchiveEditStateTypeEditActive
-	}
-}
-
-// ArchiveEditStateUnion is a concrete struct that Wails3 can serialize to TypeScript discriminated unions
-type ArchiveEditStateUnion struct {
-	Type ArchiveEditStateType `json:"type"` // Discriminator field
-
-	// Variant fields - only one will be non-nil
-	EditNone   *EditNone   `json:"editNone,omitempty"`
-	EditQueued *EditQueued `json:"editQueued,omitempty"`
-	EditActive *EditActive `json:"editActive,omitempty"`
-}
-
-// ToArchiveEditStateUnion converts an ADT ArchiveEditState to an ArchiveEditStateUnion
-func ToArchiveEditStateUnion(r ArchiveEditState) ArchiveEditStateUnion {
-	switch i := r.(type) {
-	case EditNoneVariant:
-		data := i()
-		return ArchiveEditStateUnion{
-			Type:     ArchiveEditStateTypeEditNone,
-			EditNone: &data,
-		}
-	case EditQueuedVariant:
-		data := i()
-		return ArchiveEditStateUnion{
-			Type:       ArchiveEditStateTypeEditQueued,
-			EditQueued: &data,
-		}
-	case EditActiveVariant:
-		data := i()
-		return ArchiveEditStateUnion{
-			Type:       ArchiveEditStateTypeEditActive,
-			EditActive: &data,
-		}
-	default:
-		return ArchiveEditStateUnion{
-			Type:       ArchiveEditStateTypeEditActive,
-			EditActive: &EditActive{},
-		}
-	}
-}
-
-// ArchiveDeleteStateType is the discriminator enum for ArchiveDeleteState
-type ArchiveDeleteStateType string
-
-const (
-	ArchiveDeleteStateTypeDeleteActive ArchiveDeleteStateType = "DeleteActive"
-	ArchiveDeleteStateTypeDeleteNone   ArchiveDeleteStateType = "DeleteNone"
-	ArchiveDeleteStateTypeDeleteQueued ArchiveDeleteStateType = "DeleteQueued"
-)
-
-// ArchiveDeleteState variant wrappers
-type DeleteActiveVariant adtenum.OneVariantValue[DeleteActive]
-type DeleteNoneVariant adtenum.OneVariantValue[DeleteNone]
-type DeleteQueuedVariant adtenum.OneVariantValue[DeleteQueued]
-
-// ArchiveDeleteState constructors
-var NewArchiveDeleteStateDeleteActive = adtenum.CreateOneVariantValueConstructor[DeleteActiveVariant]()
-var NewArchiveDeleteStateDeleteNone = adtenum.CreateOneVariantValueConstructor[DeleteNoneVariant]()
-var NewArchiveDeleteStateDeleteQueued = adtenum.CreateOneVariantValueConstructor[DeleteQueuedVariant]()
-
-// EnumType methods for ArchiveDeleteState variants
-func (v DeleteActiveVariant) EnumType() ArchiveDeleteState { return v }
-func (v DeleteNoneVariant) EnumType() ArchiveDeleteState   { return v }
-func (v DeleteQueuedVariant) EnumType() ArchiveDeleteState { return v }
-
-// GetArchiveDeleteStateType returns the discriminator type for exhaustive switch checking
-func GetArchiveDeleteStateType(enum ArchiveDeleteState) ArchiveDeleteStateType {
-	switch enum.(type) {
-	case DeleteNoneVariant:
-		return ArchiveDeleteStateTypeDeleteNone
-	case DeleteQueuedVariant:
-		return ArchiveDeleteStateTypeDeleteQueued
-	case DeleteActiveVariant:
-		return ArchiveDeleteStateTypeDeleteActive
-	default:
-		assert.Fail("Unhandled ArchiveDeleteState variant in GetArchiveDeleteStateType")
-		return ArchiveDeleteStateTypeDeleteActive
-	}
-}
-
-// ArchiveDeleteStateUnion is a concrete struct that Wails3 can serialize to TypeScript discriminated unions
-type ArchiveDeleteStateUnion struct {
-	Type ArchiveDeleteStateType `json:"type"` // Discriminator field
-
-	// Variant fields - only one will be non-nil
-	DeleteNone   *DeleteNone   `json:"deleteNone,omitempty"`
-	DeleteQueued *DeleteQueued `json:"deleteQueued,omitempty"`
-	DeleteActive *DeleteActive `json:"deleteActive,omitempty"`
-}
-
-// ToArchiveDeleteStateUnion converts an ADT ArchiveDeleteState to an ArchiveDeleteStateUnion
-func ToArchiveDeleteStateUnion(r ArchiveDeleteState) ArchiveDeleteStateUnion {
-	switch i := r.(type) {
-	case DeleteNoneVariant:
-		data := i()
-		return ArchiveDeleteStateUnion{
-			Type:       ArchiveDeleteStateTypeDeleteNone,
-			DeleteNone: &data,
-		}
-	case DeleteQueuedVariant:
-		data := i()
-		return ArchiveDeleteStateUnion{
-			Type:         ArchiveDeleteStateTypeDeleteQueued,
-			DeleteQueued: &data,
-		}
-	case DeleteActiveVariant:
-		data := i()
-		return ArchiveDeleteStateUnion{
-			Type:         ArchiveDeleteStateTypeDeleteActive,
-			DeleteActive: &data,
-		}
-	default:
-		return ArchiveDeleteStateUnion{
-			Type:         ArchiveDeleteStateTypeDeleteActive,
-			DeleteActive: &DeleteActive{},
 		}
 	}
 }

@@ -117,18 +117,23 @@ type Icons struct {
 }
 
 type Config struct {
-	Dir             string
-	SSHDir          string
-	KeyringDir      string
-	BorgBinaries    []platform.BorgBinary
-	BorgPath        string
-	BorgVersion     string
-	Icons           *Icons
-	Migrations      fs.FS
-	GithubAssetName string
-	Version         *semver.Version
-	CheckForUpdates bool
-	CloudRPCURL     string
+	Dir              string
+	SSHDir           string
+	KeyringDir       string
+	BorgBinaries     []platform.BorgBinary
+	BorgPath         string // Base path for borg (directory for .tgz distributions, file for single binaries)
+	BorgExePath      string // Actual executable path (same as BorgPath for single binaries, BorgPath/borg.exe for directories)
+	BorgMountPath    string // Base path for mount binary (for cleanup tracking)
+	BorgMountExePath string // Borg for mount operations (FUSE support) - may differ from BorgExePath on macOS
+	BorgMountBinary  platform.BorgBinary // The mount binary info (for version checking and URL)
+	BorgMountVersion string              // Version of the mount binary
+	BorgVersion      string
+	Icons            *Icons
+	Migrations       fs.FS
+	GithubAssetName  string
+	Version          *semver.Version
+	CheckForUpdates  bool
+	CloudRPCURL      string
 }
 
 var AllIcons = []backupprofile.Icon{

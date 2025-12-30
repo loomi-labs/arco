@@ -172,19 +172,64 @@ func initConfig(configDir string, icons *types.Icons, migrations fs.FS, autoUpda
 		}
 	}
 
+	binary, err := platform.GetLatestBorgBinary(platform.Binaries)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get borg binary for current platform: %w", err)
+	}
+
+	// Determine borg paths based on distribution type
+	var borgPath, borgExePath string
+	if binary.IsDirectory {
+		// Directory distribution (.tgz): extracts to versioned directory (e.g., borg-1.4.3-dir/)
+		borgPath = filepath.Join(configDir, fmt.Sprintf("borg-%s-dir", binary.Version.String()))
+		borgExePath = filepath.Join(borgPath, "borg.exe")
+	} else {
+		// Single binary: path and executable are the same
+		borgPath = filepath.Join(configDir, binary.Name)
+		borgExePath = borgPath
+	}
+
+	// Get mount binary (may be same as main binary on Linux, different on macOS)
+	mountBinary, err := platform.GetMountBorgBinary(platform.Binaries)
+	if err != nil {
+		// Fallback to main binary if no mount binary found
+		mountBinary = binary
+	}
+
+	// Determine mount binary path
+	var borgMountPath, borgMountExePath string
+	if mountBinary.Url == binary.Url {
+		// Same binary for both - use same path
+		borgMountPath = borgPath
+		borgMountExePath = borgExePath
+	} else if mountBinary.IsDirectory {
+		// Different directory distribution for mount - use versioned directory
+		borgMountPath = filepath.Join(configDir, fmt.Sprintf("borg-mount-%s-dir", mountBinary.Version.String()))
+		borgMountExePath = filepath.Join(borgMountPath, "borg.exe")
+	} else {
+		// Different single binary for mount
+		borgMountPath = filepath.Join(configDir, mountBinary.Name)
+		borgMountExePath = borgMountPath
+	}
+
 	return &types.Config{
-		Dir:             configDir,
-		SSHDir:          filepath.Join(configDir, "ssh"),
-		KeyringDir:      filepath.Join(configDir, "keyring"),
-		BorgBinaries:    platform.Binaries,
-		BorgPath:        filepath.Join(configDir, platform.Binaries[0].Name),
-		BorgVersion:     platform.Binaries[0].Version.String(),
-		Icons:           icons,
-		Migrations:      migrations,
-		GithubAssetName: platform.GithubAssetName(),
-		Version:         version,
-		CheckForUpdates: autoUpdate,
-		CloudRPCURL:     cloudRPCURL,
+		Dir:              configDir,
+		SSHDir:           filepath.Join(configDir, "ssh"),
+		KeyringDir:       filepath.Join(configDir, "keyring"),
+		BorgBinaries:     platform.Binaries,
+		BorgPath:         borgPath,
+		BorgExePath:      borgExePath,
+		BorgMountPath:    borgMountPath,
+		BorgMountExePath: borgMountExePath,
+		BorgMountBinary:  mountBinary,
+		BorgMountVersion: mountBinary.Version.String(),
+		BorgVersion:      binary.Version.String(),
+		Icons:            icons,
+		Migrations:       migrations,
+		GithubAssetName:  platform.GithubAssetName(),
+		Version:          version,
+		CheckForUpdates:  autoUpdate,
+		CloudRPCURL:      cloudRPCURL,
 	}, nil
 }
 

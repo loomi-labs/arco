@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	gocmd "github.com/go-cmd/cmd"
+	"github.com/hashicorp/go-version"
 	"github.com/loomi-labs/arco/backend/borg/types"
 	"github.com/loomi-labs/arco/backend/ent/backupprofile"
 	"github.com/negrel/assert"
@@ -18,6 +19,8 @@ import (
 //go:generate mockgen -destination=mocks/borg.go -package=mocks . Borg,CommandRunner
 
 type Borg interface {
+	Version(ctx context.Context) (*version.Version, *types.Status)
+	MountVersion(ctx context.Context) (*version.Version, *types.Status)
 	Info(ctx context.Context, repository, password string, allowRelocated bool) (*types.InfoResponse, *types.Status)
 	Init(ctx context.Context, repository, password string, noPassword bool) *types.Status
 	List(ctx context.Context, repository string, password string, glob string) (*types.ListResponse, *types.Status)
@@ -38,7 +41,8 @@ type Borg interface {
 }
 
 type borg struct {
-	path           string
+	path           string // Main borg path (fast operations)
+	mountPath      string // Path for mount operations (FUSE support on macOS)
 	log            *CmdLogger
 	sshPrivateKeys []string
 	commandRunner  CommandRunner
@@ -51,12 +55,16 @@ type CommandRunner interface {
 type commandRunner struct {
 }
 
-func NewBorg(path string, log *zap.SugaredLogger, sshPrivateKeys []string, cr CommandRunner) Borg {
+func NewBorg(path string, mountPath string, log *zap.SugaredLogger, sshPrivateKeys []string, cr CommandRunner) Borg {
 	if cr == nil {
 		cr = &commandRunner{}
 	}
+	if mountPath == "" {
+		mountPath = path // Fallback to main path if not specified
+	}
 	return &borg{
 		path:           path,
+		mountPath:      mountPath,
 		log:            NewCmdLogger(log),
 		sshPrivateKeys: sshPrivateKeys,
 		commandRunner:  cr,

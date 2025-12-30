@@ -388,7 +388,15 @@ func findAdtEnumsByMarkerMethods(packagePath string) []EnumInfo {
 	}
 
 	// Second pass: extract variant names using generic algorithm and create EnumInfo
-	for enumName, stateStructs := range enumToStructsMap {
+	// Sort enum names for deterministic output
+	enumNames := make([]string, 0, len(enumToStructsMap))
+	for enumName := range enumToStructsMap {
+		enumNames = append(enumNames, enumName)
+	}
+	sort.Strings(enumNames)
+
+	for _, enumName := range enumNames {
+		stateStructs := enumToStructsMap[enumName]
 		if len(stateStructs) > 0 {
 			// Get all struct names for this ADT
 			var structNames []string
