@@ -141,7 +141,10 @@ func (s *Service) DismissErrors(ctx context.Context, ids []int) error {
 	}
 
 	_, err := s.db.Notification.Update().
-		Where(notification.IDIn(ids...)).
+		Where(
+			notification.IDIn(ids...),
+			notification.TypeIn(errorTypes...),
+		).
 		SetSeen(true).
 		Save(ctx)
 	if err != nil {
