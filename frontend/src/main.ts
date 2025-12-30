@@ -9,7 +9,10 @@ import "flag-icons/css/flag-icons.min.css";
 import { createI18n } from "vue-i18n";
 import en from "./i18n/en.json";
 import Vue3Lottie from 'vue3-lottie'
+import { applyDatepickerThemeOverrides } from './common/datepickerTheme';
 
+// Apply datepicker theme overrides to ensure purple colors in production
+applyDatepickerThemeOverrides();
 
 // Connect to the devtools in development mode
 if (import.meta.env.MODE === "development") {
