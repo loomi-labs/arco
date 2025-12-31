@@ -833,10 +833,10 @@ onMounted(async () => {
                     </span>
                     <!-- Overage Price -->
                     <span class='text-sm text-base-content/70'>Overage Price</span>
-                    <span class='text-sm text-right'>${{ ((subscription?.plan?.overage_cents_per_gb ?? 0) / 100).toFixed(2) }}/GB</span>
+                    <span class='text-sm text-right'>${{ ((subscription?.plan?.overage_cents_per_gb ?? 0) / 100).toFixed(2) }} per GB over {{ subscription?.plan?.storage_gb ?? 0 }}GB</span>
                     <span class='text-center' :class='isSwitchUpgrade ? "text-success" : "text-warning"'>→</span>
                     <span :class='["text-sm font-medium", isSwitchUpgrade ? "text-success" : "text-warning"]'>
-                      ${{ ((selectedSwitchPlanDetails.overage_cents_per_gb ?? 0) / 100).toFixed(2) }}/GB
+                      ${{ ((selectedSwitchPlanDetails.overage_cents_per_gb ?? 0) / 100).toFixed(2) }} per GB over {{ selectedSwitchPlanDetails.storage_gb ?? 0 }}GB
                     </span>
                     <!-- Repositories -->
                     <span class='text-sm text-base-content/70'>Repositories</span>
