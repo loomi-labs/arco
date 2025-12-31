@@ -196,7 +196,12 @@
         --input-color: var(--color-primary);
         outline-color: var(--color-primary);
     }
+}
 
+/* Fix select text clipping - reduce line-height for Nunito font */
+.select {
+    overflow: visible;
+    line-height: 1;
 }
 
 @source '../node_modules/vue-tailwind-datepicker/**/*.js';

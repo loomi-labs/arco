@@ -28,6 +28,8 @@ INSERT INTO `new_backup_profiles` (`id`, `created_at`, `updated_at`, `name`, `pr
 DROP TABLE `backup_profiles`;
 -- Rename temporary table "new_backup_profiles" to "backup_profiles"
 ALTER TABLE `new_backup_profiles` RENAME TO `backup_profiles`;
+-- atlas:nolint MF101
+-- Safe: fresh table with copied data; no duplicates possible
 -- Create index "backup_profiles_prefix_key" to table: "backup_profiles"
 CREATE UNIQUE INDEX `backup_profiles_prefix_key` ON `backup_profiles` (`prefix`);
 -- Restore all related data

@@ -175,7 +175,7 @@ watch(schedule, (newSchedule) => {
 
         <!-- Daily -->
         <div v-if='isDaily' class='flex items-center gap-3'>
-          <span class='w-12 text-base-content/70'>at</span>
+          <span class='w-14 text-base-content/70'>at</span>
           <input type='time' class='input input-bordered input-sm w-32'
                  :disabled='!isScheduleEnabled'
                  v-model='selectedTime'>
@@ -184,7 +184,7 @@ watch(schedule, (newSchedule) => {
         <!-- Weekly -->
         <div v-if='isWeekly' class='flex flex-col gap-3'>
           <div class='flex items-center gap-3'>
-            <span class='w-12 text-base-content/70'>on</span>
+            <span class='w-14 text-base-content/70'>on</span>
             <select class='select select-bordered select-sm w-40'
                     :disabled='!isScheduleEnabled'
                     v-model='selectedWeekday'>
@@ -194,7 +194,7 @@ watch(schedule, (newSchedule) => {
             </select>
           </div>
           <div class='flex items-center gap-3'>
-            <span class='w-12 text-base-content/70'>at</span>
+            <span class='w-14 text-base-content/70'>at</span>
             <input type='time' class='input input-bordered input-sm w-32'
                    :disabled='!isScheduleEnabled'
                    v-model='selectedTime'>
@@ -204,7 +204,7 @@ watch(schedule, (newSchedule) => {
         <!-- Monthly -->
         <div v-if='isMonthly' class='flex flex-col gap-3'>
           <div class='flex items-center gap-3'>
-            <span class='w-12 text-base-content/70'>on day</span>
+            <span class='w-14 text-base-content/70'>on day</span>
             <select class='select select-bordered select-sm w-20'
                     :disabled='!isScheduleEnabled'
                     v-model='selectedMonthday'>
@@ -214,7 +214,7 @@ watch(schedule, (newSchedule) => {
             </select>
           </div>
           <div class='flex items-center gap-3'>
-            <span class='w-12 text-base-content/70'>at</span>
+            <span class='w-14 text-base-content/70'>at</span>
             <input type='time' class='input input-bordered input-sm w-32'
                    :disabled='!isScheduleEnabled'
                    v-model='selectedTime'>

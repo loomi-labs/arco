@@ -50,3 +50,9 @@ jobs:
       - name: Lint
         if: steps.changes.outputs.src == 'true'
         run: task dev:lint
+
+      - name: Lint migrations
+        if: steps.changes.outputs.src == 'true'
+        run: |
+          task db:install:atlas
+          task db:ent:lint

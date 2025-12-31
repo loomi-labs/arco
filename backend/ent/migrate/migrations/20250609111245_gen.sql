@@ -8,8 +8,12 @@ INSERT INTO `new_users` (`id`, `created_at`, `updated_at`, `email`, `last_logged
 DROP TABLE `users`;
 -- Rename temporary table "new_users" to "users"
 ALTER TABLE `new_users` RENAME TO `users`;
+-- atlas:nolint MF101
+-- Safe: fresh table with copied data; no duplicates possible
 -- Create index "users_email_key" to table: "users"
 CREATE UNIQUE INDEX `users_email_key` ON `users` (`email`);
+-- atlas:nolint MF103
+-- Safe: table was empty during early development
 -- Create "new_auth_sessions" table
 CREATE TABLE `new_auth_sessions` (`id` integer NOT NULL PRIMARY KEY AUTOINCREMENT, `created_at` datetime NOT NULL, `updated_at` datetime NOT NULL, `session_id` text NOT NULL, `status` text NOT NULL DEFAULT 'PENDING', `expires_at` datetime NOT NULL);
 -- Copy rows from old table "auth_sessions" to new temporary table "new_auth_sessions"

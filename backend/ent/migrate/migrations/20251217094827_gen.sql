@@ -14,9 +14,6 @@ ALTER TABLE `new_users` RENAME TO `users`;
 -- atlas:nolint MF101
 -- Create index "users_email_key" to table: "users"
 CREATE UNIQUE INDEX `users_email_key` ON `users` (`email`);
--- atlas:nolint DS103 MF101
--- Password is migrated to system keyring before this migration runs (see migrate_credentials.go)
--- Unique indexes already existed, recreating them is safe
 -- Backup tables with FK references to repositories before table recreation
 CREATE TEMPORARY TABLE `temp_backup_profile_repositories` AS
 SELECT * FROM `backup_profile_repositories`;
@@ -24,6 +21,8 @@ CREATE TEMPORARY TABLE `temp_archives` AS
 SELECT * FROM `archives`;
 CREATE TEMPORARY TABLE `temp_notifications` AS
 SELECT * FROM `notifications`;
+-- atlas:nolint DS103
+-- Password is migrated to system keyring before this migration runs (see migrate_credentials.go)
 -- Create "new_repositories" table (without password column)
 CREATE TABLE `new_repositories` (`id` integer NOT NULL PRIMARY KEY AUTOINCREMENT, `created_at` datetime NOT NULL, `updated_at` datetime NOT NULL, `name` text NOT NULL, `url` text NOT NULL, `has_password` bool NOT NULL DEFAULT false, `last_quick_check_at` datetime NULL, `quick_check_error` json NULL, `last_full_check_at` datetime NULL, `full_check_error` json NULL, `stats_total_chunks` integer NOT NULL DEFAULT 0, `stats_total_size` integer NOT NULL DEFAULT 0, `stats_total_csize` integer NOT NULL DEFAULT 0, `stats_total_unique_chunks` integer NOT NULL DEFAULT 0, `stats_unique_size` integer NOT NULL DEFAULT 0, `stats_unique_csize` integer NOT NULL DEFAULT 0, `cloud_repository_repository` integer NULL, CONSTRAINT `repositories_cloud_repositories_repository` FOREIGN KEY (`cloud_repository_repository`) REFERENCES `cloud_repositories` (`id`) ON UPDATE NO ACTION ON DELETE SET NULL);
 -- Copy rows from old table "repositories" to new temporary table "new_repositories"
