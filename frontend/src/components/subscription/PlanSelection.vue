@@ -164,9 +164,9 @@ function subscribeToTrialPlan(planName: string) {
           <div class='flex items-center gap-3'>
             <CurrencyDollarIcon class='size-5 text-base-content/50' />
             <div>
-              <p class='font-semibold' v-if='getOveragePrice(plan)'>${{ getOveragePrice(plan) }}/GB</p>
+              <p class='font-semibold' v-if='getOveragePrice(plan)'>${{ getOveragePrice(plan) }} per GB</p>
               <p class='font-semibold text-base-content/40' v-else>—</p>
-              <p class='text-xs text-base-content/60'>Overage pricing</p>
+              <p class='text-xs text-base-content/60'>over {{ plan.storage_gb ?? 0 }}GB</p>
             </div>
           </div>
         </div>
@@ -207,7 +207,7 @@ function subscribeToTrialPlan(planName: string) {
     <!-- Learn more link -->
     <div class='text-center'>
       <a class='link link-info link-hover'
-         @click="Browser.OpenURL('https://arco-backup.com')">
+         @click="Browser.OpenURL('https://arco-backup.com/#arco-cloud')">
         Learn more about Arco Cloud
       </a>
     </div>

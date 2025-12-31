@@ -30,6 +30,7 @@ export {
     Local,
     LocationType,
     LocationUnion,
+    MountResult,
     OperationStatusType,
     OperationStatusUnion,
     PaginatedArchivesRequest,

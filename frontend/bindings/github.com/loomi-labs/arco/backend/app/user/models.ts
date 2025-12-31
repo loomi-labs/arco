@@ -67,6 +67,35 @@ export class Env {
     }
 }
 
+export class MacFUSEStatus {
+    "isMacOS": boolean;
+    "isInstalled": boolean;
+    "warningDismissed": boolean;
+
+    /** Creates a new MacFUSEStatus instance. */
+    constructor($$source: Partial<MacFUSEStatus> = {}) {
+        if (!("isMacOS" in $$source)) {
+            this["isMacOS"] = false;
+        }
+        if (!("isInstalled" in $$source)) {
+            this["isInstalled"] = false;
+        }
+        if (!("warningDismissed" in $$source)) {
+            this["warningDismissed"] = false;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new MacFUSEStatus instance from a string or object.
+     */
+    static createFrom($$source: any = {}): MacFUSEStatus {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new MacFUSEStatus($$parsedSource as Partial<MacFUSEStatus>);
+    }
+}
+
 export class User {
     "email": string;
 

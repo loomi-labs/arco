@@ -299,6 +299,10 @@ func init() {
 	settingsDescDisableShadows := settingsFields[3].Descriptor()
 	// settings.DefaultDisableShadows holds the default value on creation for the disable_shadows field.
 	settings.DefaultDisableShadows = settingsDescDisableShadows.Default.(bool)
+	// settingsDescMacfuseWarningDismissed is the schema descriptor for macfuse_warning_dismissed field.
+	settingsDescMacfuseWarningDismissed := settingsFields[4].Descriptor()
+	// settings.DefaultMacfuseWarningDismissed holds the default value on creation for the macfuse_warning_dismissed field.
+	settings.DefaultMacfuseWarningDismissed = settingsDescMacfuseWarningDismissed.Default.(bool)
 	userMixin := schema.User{}.Mixin()
 	userMixinFields0 := userMixin[0].Fields()
 	_ = userMixinFields0

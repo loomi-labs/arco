@@ -28,7 +28,7 @@ const emit = defineEmits<Emits>();
 const { startRegister, startLogin, isAuthenticated } = useAuth();
 
 // Auth form state
-const activeTab = ref<"login" | "register">("login");
+const activeTab = ref<"login" | "register">("register");
 const email = ref("");
 const emailError = ref<string | undefined>(undefined);
 const currentEmail = ref("");
