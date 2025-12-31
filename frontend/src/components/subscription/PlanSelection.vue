@@ -207,7 +207,7 @@ function subscribeToTrialPlan(planName: string) {
     <!-- Learn more link -->
     <div class='text-center'>
       <a class='link link-info link-hover'
-         @click="Browser.OpenURL('https://arco-backup.com')">
+         @click="Browser.OpenURL('https://arco-backup.com/#arco-cloud')">
         Learn more about Arco Cloud
       </a>
     </div>
