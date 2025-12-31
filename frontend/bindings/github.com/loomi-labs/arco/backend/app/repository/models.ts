@@ -692,6 +692,34 @@ export class LocationUnion {
 }
 
 /**
+ * MountResult is returned by Mount and MountArchive operations
+ */
+export class MountResult {
+    "operationId": string;
+    "macFUSENotInstalled": boolean;
+
+    /** Creates a new MountResult instance. */
+    constructor($$source: Partial<MountResult> = {}) {
+        if (!("operationId" in $$source)) {
+            this["operationId"] = "";
+        }
+        if (!("macFUSENotInstalled" in $$source)) {
+            this["macFUSENotInstalled"] = false;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new MountResult instance from a string or object.
+     */
+    static createFrom($$source: any = {}): MountResult {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new MountResult($$parsedSource as Partial<MountResult>);
+    }
+}
+
+/**
  * OperationStatusType is the discriminator enum for OperationStatus
  */
 export enum OperationStatusType {

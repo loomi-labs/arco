@@ -91,6 +91,20 @@ func (_u *SettingsUpdate) SetNillableDisableShadows(v *bool) *SettingsUpdate {
 	return _u
 }
 
+// SetMacfuseWarningDismissed sets the "macfuse_warning_dismissed" field.
+func (_u *SettingsUpdate) SetMacfuseWarningDismissed(v bool) *SettingsUpdate {
+	_u.mutation.SetMacfuseWarningDismissed(v)
+	return _u
+}
+
+// SetNillableMacfuseWarningDismissed sets the "macfuse_warning_dismissed" field if the given value is not nil.
+func (_u *SettingsUpdate) SetNillableMacfuseWarningDismissed(v *bool) *SettingsUpdate {
+	if v != nil {
+		_u.SetMacfuseWarningDismissed(*v)
+	}
+	return _u
+}
+
 // Mutation returns the SettingsMutation object of the builder.
 func (_u *SettingsUpdate) Mutation() *SettingsMutation {
 	return _u.mutation
@@ -175,6 +189,9 @@ func (_u *SettingsUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if value, ok := _u.mutation.DisableShadows(); ok {
 		_spec.SetField(settings.FieldDisableShadows, field.TypeBool, value)
 	}
+	if value, ok := _u.mutation.MacfuseWarningDismissed(); ok {
+		_spec.SetField(settings.FieldMacfuseWarningDismissed, field.TypeBool, value)
+	}
 	_spec.AddModifiers(_u.modifiers...)
 	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
@@ -255,6 +272,20 @@ func (_u *SettingsUpdateOne) SetDisableShadows(v bool) *SettingsUpdateOne {
 func (_u *SettingsUpdateOne) SetNillableDisableShadows(v *bool) *SettingsUpdateOne {
 	if v != nil {
 		_u.SetDisableShadows(*v)
+	}
+	return _u
+}
+
+// SetMacfuseWarningDismissed sets the "macfuse_warning_dismissed" field.
+func (_u *SettingsUpdateOne) SetMacfuseWarningDismissed(v bool) *SettingsUpdateOne {
+	_u.mutation.SetMacfuseWarningDismissed(v)
+	return _u
+}
+
+// SetNillableMacfuseWarningDismissed sets the "macfuse_warning_dismissed" field if the given value is not nil.
+func (_u *SettingsUpdateOne) SetNillableMacfuseWarningDismissed(v *bool) *SettingsUpdateOne {
+	if v != nil {
+		_u.SetMacfuseWarningDismissed(*v)
 	}
 	return _u
 }
@@ -372,6 +403,9 @@ func (_u *SettingsUpdateOne) sqlSave(ctx context.Context) (_node *Settings, err 
 	}
 	if value, ok := _u.mutation.DisableShadows(); ok {
 		_spec.SetField(settings.FieldDisableShadows, field.TypeBool, value)
+	}
+	if value, ok := _u.mutation.MacfuseWarningDismissed(); ok {
+		_spec.SetField(settings.FieldMacfuseWarningDismissed, field.TypeBool, value)
 	}
 	_spec.AddModifiers(_u.modifiers...)
 	_node = &Settings{config: _u.config}

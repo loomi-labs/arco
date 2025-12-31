@@ -32,6 +32,9 @@ func (Settings) Fields() []ent.Field {
 		field.Bool("disable_shadows").
 			StructTag(`json:"disableShadows"`).
 			Default(false),
+		field.Bool("macfuse_warning_dismissed").
+			StructTag(`json:"macfuseWarningDismissed"`).
+			Default(false),
 	}
 }
 

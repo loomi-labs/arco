@@ -1510,6 +1510,11 @@ export class Settings {
      */
     "disableShadows": boolean;
 
+    /**
+     * MacfuseWarningDismissed holds the value of the "macfuse_warning_dismissed" field.
+     */
+    "macfuseWarningDismissed": boolean;
+
     /** Creates a new Settings instance. */
     constructor($$source: Partial<Settings> = {}) {
         if (!("createdAt" in $$source)) {
@@ -1526,6 +1531,9 @@ export class Settings {
         }
         if (!("disableShadows" in $$source)) {
             this["disableShadows"] = false;
+        }
+        if (!("macfuseWarningDismissed" in $$source)) {
+            this["macfuseWarningDismissed"] = false;
         }
 
         Object.assign(this, $$source);

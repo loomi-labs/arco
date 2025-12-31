@@ -21,6 +21,7 @@ import { isInPast, toDurationString, toLongDateString, toRelativeTimeString } fr
 import { toCreationTimeBadge, toCreationTimeTooltip } from "../common/badge";
 import ConfirmModal from "./common/ConfirmModal.vue";
 import EditArchiveModal from "./EditArchiveModal.vue";
+import MacFUSEModal from "./MacFUSEModal.vue";
 import VueTailwindDatepicker from "vue-tailwind-datepicker";
 import { addDay, addYear, dayEnd, dayStart, yearEnd, yearStart } from "@formkit/tempo";
 import { archivesChanged, repoStateChangedEvent } from "../common/events";
@@ -98,6 +99,10 @@ const confirmUnmountBulkDeleteModal = useTemplateRef<InstanceType<typeof Confirm
 const editArchiveModalKey = useId();
 const editArchiveModal = useTemplateRef<InstanceType<typeof EditArchiveModal>>(
   editArchiveModalKey
+);
+const macFUSEModalKey = useId();
+const macFUSEModal = useTemplateRef<InstanceType<typeof MacFUSEModal>>(
+  macFUSEModalKey
 );
 const pendingComment = ref<string>("");
 const backupProfileFilterOptions = ref<BackupProfileFilter[]>([]);
@@ -475,7 +480,10 @@ async function getOperations() {
 async function mountArchive(archiveId: number) {
   try {
     progressSpinnerText.value = "Browsing archive";
-    await repoService.MountArchive(archiveId);
+    const result = await repoService.MountArchive(archiveId);
+    if (result?.macFUSENotInstalled) {
+      macFUSEModal.value?.showModal();
+    }
   } catch (error: unknown) {
     await showAndLogError("Failed to mount archive", error);
   } finally {
@@ -497,7 +505,10 @@ async function unmountArchive(archiveId: number) {
 async function mountRepository() {
   try {
     progressSpinnerText.value = "Mounting repository";
-    await repoService.Mount(props.repoId);
+    const result = await repoService.Mount(props.repoId);
+    if (result?.macFUSENotInstalled) {
+      macFUSEModal.value?.showModal();
+    }
   } catch (error: unknown) {
     await showAndLogError("Failed to mount repository", error);
   } finally {
@@ -1355,6 +1366,8 @@ onUnmounted(() => {
   <EditArchiveModal :ref='editArchiveModalKey'
                       @confirm='handleRenameConfirm'
                       @close='() => {}' />
+
+  <MacFUSEModal :ref='macFUSEModalKey' />
 </template>
 
 <style scoped></style>

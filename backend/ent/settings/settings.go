@@ -26,6 +26,8 @@ const (
 	FieldDisableTransitions = "disable_transitions"
 	// FieldDisableShadows holds the string denoting the disable_shadows field in the database.
 	FieldDisableShadows = "disable_shadows"
+	// FieldMacfuseWarningDismissed holds the string denoting the macfuse_warning_dismissed field in the database.
+	FieldMacfuseWarningDismissed = "macfuse_warning_dismissed"
 	// Table holds the table name of the settings in the database.
 	Table = "settings"
 )
@@ -39,6 +41,7 @@ var Columns = []string{
 	FieldTheme,
 	FieldDisableTransitions,
 	FieldDisableShadows,
+	FieldMacfuseWarningDismissed,
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -64,6 +67,8 @@ var (
 	DefaultDisableTransitions bool
 	// DefaultDisableShadows holds the default value on creation for the "disable_shadows" field.
 	DefaultDisableShadows bool
+	// DefaultMacfuseWarningDismissed holds the default value on creation for the "macfuse_warning_dismissed" field.
+	DefaultMacfuseWarningDismissed bool
 )
 
 // Theme defines the type for the "theme" enum field.
@@ -129,4 +134,9 @@ func ByDisableTransitions(opts ...sql.OrderTermOption) OrderOption {
 // ByDisableShadows orders the results by the disable_shadows field.
 func ByDisableShadows(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldDisableShadows, opts...).ToFunc()
+}
+
+// ByMacfuseWarningDismissed orders the results by the macfuse_warning_dismissed field.
+func ByMacfuseWarningDismissed(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldMacfuseWarningDismissed, opts...).ToFunc()
 }

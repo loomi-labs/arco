@@ -104,6 +104,20 @@ func (_c *SettingsCreate) SetNillableDisableShadows(v *bool) *SettingsCreate {
 	return _c
 }
 
+// SetMacfuseWarningDismissed sets the "macfuse_warning_dismissed" field.
+func (_c *SettingsCreate) SetMacfuseWarningDismissed(v bool) *SettingsCreate {
+	_c.mutation.SetMacfuseWarningDismissed(v)
+	return _c
+}
+
+// SetNillableMacfuseWarningDismissed sets the "macfuse_warning_dismissed" field if the given value is not nil.
+func (_c *SettingsCreate) SetNillableMacfuseWarningDismissed(v *bool) *SettingsCreate {
+	if v != nil {
+		_c.SetMacfuseWarningDismissed(*v)
+	}
+	return _c
+}
+
 // Mutation returns the SettingsMutation object of the builder.
 func (_c *SettingsCreate) Mutation() *SettingsMutation {
 	return _c.mutation
@@ -163,6 +177,10 @@ func (_c *SettingsCreate) defaults() {
 		v := settings.DefaultDisableShadows
 		_c.mutation.SetDisableShadows(v)
 	}
+	if _, ok := _c.mutation.MacfuseWarningDismissed(); !ok {
+		v := settings.DefaultMacfuseWarningDismissed
+		_c.mutation.SetMacfuseWarningDismissed(v)
+	}
 }
 
 // check runs all checks and user-defined validators on the builder.
@@ -189,6 +207,9 @@ func (_c *SettingsCreate) check() error {
 	}
 	if _, ok := _c.mutation.DisableShadows(); !ok {
 		return &ValidationError{Name: "disable_shadows", err: errors.New(`ent: missing required field "Settings.disable_shadows"`)}
+	}
+	if _, ok := _c.mutation.MacfuseWarningDismissed(); !ok {
+		return &ValidationError{Name: "macfuse_warning_dismissed", err: errors.New(`ent: missing required field "Settings.macfuse_warning_dismissed"`)}
 	}
 	return nil
 }
@@ -239,6 +260,10 @@ func (_c *SettingsCreate) createSpec() (*Settings, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.DisableShadows(); ok {
 		_spec.SetField(settings.FieldDisableShadows, field.TypeBool, value)
 		_node.DisableShadows = value
+	}
+	if value, ok := _c.mutation.MacfuseWarningDismissed(); ok {
+		_spec.SetField(settings.FieldMacfuseWarningDismissed, field.TypeBool, value)
+		_node.MacfuseWarningDismissed = value
 	}
 	return _node, _spec
 }

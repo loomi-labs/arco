@@ -1135,7 +1135,12 @@ func (s *Service) AbortBackups(ctx context.Context, backupIds []types.BackupId) 
 }
 
 // Mount mounts a repository
-func (s *Service) Mount(ctx context.Context, repoId int) (string, error) {
+func (s *Service) Mount(ctx context.Context, repoId int) (*MountResult, error) {
+	// Check if macFUSE is installed on macOS
+	if !platform.IsMacFUSEInstalled() {
+		return &MountResult{MacFUSENotInstalled: true}, nil
+	}
+
 	// Check if repository is already mounted
 	repoState := s.queueManager.GetRepositoryState(repoId)
 	repoStateUnion := statemachine.ToRepositoryStateUnion(repoState)
@@ -1147,23 +1152,23 @@ func (s *Service) Mount(ctx context.Context, repoId int) (string, error) {
 				if mount.MountType == statemachine.MountTypeRepository {
 					// Found repository mount, open file manager
 					go openFileManager(mount.MountPath, s.log)
-					return "", nil
+					return &MountResult{}, nil
 				}
 			}
 		}
-		return "", fmt.Errorf("repository is mounted but no repository mount found")
+		return nil, fmt.Errorf("repository is mounted but no repository mount found")
 	}
 
 	// Get repository from database to calculate mount path
 	repoEntity, err := s.db.Repository.Get(ctx, repoId)
 	if err != nil {
-		return "", fmt.Errorf("failed to get repository: %w", err)
+		return nil, fmt.Errorf("failed to get repository: %w", err)
 	}
 
 	// Calculate mount path
 	mountPath, err := getRepoMountPath(repoEntity)
 	if err != nil {
-		return "", fmt.Errorf("failed to get mount path: %w", err)
+		return nil, fmt.Errorf("failed to get mount path: %w", err)
 	}
 
 	// Create mount operation with mount path
@@ -1183,18 +1188,27 @@ func (s *Service) Mount(ctx context.Context, repoId int) (string, error) {
 	)
 
 	// Add to queue
-	return s.queueManager.AddOperation(repoId, queuedOp)
+	opId, err := s.queueManager.AddOperation(repoId, queuedOp)
+	if err != nil {
+		return nil, err
+	}
+	return &MountResult{OperationId: opId}, nil
 }
 
 // MountArchive mounts a specific archive
-func (s *Service) MountArchive(ctx context.Context, archiveId int) (string, error) {
+func (s *Service) MountArchive(ctx context.Context, archiveId int) (*MountResult, error) {
+	// Check if macFUSE is installed on macOS
+	if !platform.IsMacFUSEInstalled() {
+		return &MountResult{MacFUSENotInstalled: true}, nil
+	}
+
 	// Get archive to determine repository ID and calculate mount path
 	archiveEntity, err := s.db.Archive.Query().
 		Where(archive.ID(archiveId)).
 		WithRepository().
 		Only(ctx)
 	if err != nil {
-		return "", fmt.Errorf("archive %d not found: %w", archiveId, err)
+		return nil, fmt.Errorf("archive %d not found: %w", archiveId, err)
 	}
 
 	// Get repository ID
@@ -1211,7 +1225,7 @@ func (s *Service) MountArchive(ctx context.Context, archiveId int) (string, erro
 				if mount.MountType == statemachine.MountTypeArchive && mount.ArchiveID != nil && *mount.ArchiveID == archiveId {
 					// Found archive mount, open file manager
 					go openFileManager(mount.MountPath, s.log)
-					return "", nil
+					return &MountResult{}, nil
 				}
 			}
 
@@ -1221,17 +1235,17 @@ func (s *Service) MountArchive(ctx context.Context, archiveId int) (string, erro
 					// Archive accessible via repository mount, open archive path within repository
 					archivePath := filepath.Join(mount.MountPath, archiveEntity.Name)
 					go openFileManager(archivePath, s.log)
-					return "", nil
+					return &MountResult{}, nil
 				}
 			}
 		}
-		return "", fmt.Errorf("repository is mounted but no mounts found")
+		return nil, fmt.Errorf("repository is mounted but no mounts found")
 	}
 
 	// Calculate mount path for the archive
 	mountPath, err := getArchiveMountPath(archiveEntity)
 	if err != nil {
-		return "", fmt.Errorf("failed to get archive mount path: %w", err)
+		return nil, fmt.Errorf("failed to get archive mount path: %w", err)
 	}
 
 	// Create mount archive operation with mount path
@@ -1251,7 +1265,11 @@ func (s *Service) MountArchive(ctx context.Context, archiveId int) (string, erro
 	)
 
 	// Add to queue (will start immediately or fail)
-	return s.queueManager.AddOperation(repoId, queuedOp)
+	opId, err := s.queueManager.AddOperation(repoId, queuedOp)
+	if err != nil {
+		return nil, err
+	}
+	return &MountResult{OperationId: opId}, nil
 }
 
 // Unmount unmounts a repository

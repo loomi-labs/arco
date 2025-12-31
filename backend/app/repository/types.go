@@ -301,6 +301,12 @@ type ChangePassphraseResult struct {
 	ErrorMessage string `json:"errorMessage,omitempty"`
 }
 
+// MountResult is returned by Mount and MountArchive operations
+type MountResult struct {
+	OperationId         string `json:"operationId"`
+	MacFUSENotInstalled bool   `json:"macFUSENotInstalled"`
+}
+
 type BackupButtonStatus string
 
 const (

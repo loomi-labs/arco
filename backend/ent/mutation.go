@@ -8387,19 +8387,20 @@ func (m *RepositoryMutation) ResetEdge(name string) error {
 // SettingsMutation represents an operation that mutates the Settings nodes in the graph.
 type SettingsMutation struct {
 	config
-	op                  Op
-	typ                 string
-	id                  *int
-	created_at          *time.Time
-	updated_at          *time.Time
-	expert_mode         *bool
-	theme               *settings.Theme
-	disable_transitions *bool
-	disable_shadows     *bool
-	clearedFields       map[string]struct{}
-	done                bool
-	oldValue            func(context.Context) (*Settings, error)
-	predicates          []predicate.Settings
+	op                        Op
+	typ                       string
+	id                        *int
+	created_at                *time.Time
+	updated_at                *time.Time
+	expert_mode               *bool
+	theme                     *settings.Theme
+	disable_transitions       *bool
+	disable_shadows           *bool
+	macfuse_warning_dismissed *bool
+	clearedFields             map[string]struct{}
+	done                      bool
+	oldValue                  func(context.Context) (*Settings, error)
+	predicates                []predicate.Settings
 }
 
 var _ ent.Mutation = (*SettingsMutation)(nil)
@@ -8716,6 +8717,42 @@ func (m *SettingsMutation) ResetDisableShadows() {
 	m.disable_shadows = nil
 }
 
+// SetMacfuseWarningDismissed sets the "macfuse_warning_dismissed" field.
+func (m *SettingsMutation) SetMacfuseWarningDismissed(b bool) {
+	m.macfuse_warning_dismissed = &b
+}
+
+// MacfuseWarningDismissed returns the value of the "macfuse_warning_dismissed" field in the mutation.
+func (m *SettingsMutation) MacfuseWarningDismissed() (r bool, exists bool) {
+	v := m.macfuse_warning_dismissed
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldMacfuseWarningDismissed returns the old "macfuse_warning_dismissed" field's value of the Settings entity.
+// If the Settings object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SettingsMutation) OldMacfuseWarningDismissed(ctx context.Context) (v bool, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldMacfuseWarningDismissed is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldMacfuseWarningDismissed requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldMacfuseWarningDismissed: %w", err)
+	}
+	return oldValue.MacfuseWarningDismissed, nil
+}
+
+// ResetMacfuseWarningDismissed resets all changes to the "macfuse_warning_dismissed" field.
+func (m *SettingsMutation) ResetMacfuseWarningDismissed() {
+	m.macfuse_warning_dismissed = nil
+}
+
 // Where appends a list predicates to the SettingsMutation builder.
 func (m *SettingsMutation) Where(ps ...predicate.Settings) {
 	m.predicates = append(m.predicates, ps...)
@@ -8750,7 +8787,7 @@ func (m *SettingsMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *SettingsMutation) Fields() []string {
-	fields := make([]string, 0, 6)
+	fields := make([]string, 0, 7)
 	if m.created_at != nil {
 		fields = append(fields, settings.FieldCreatedAt)
 	}
@@ -8768,6 +8805,9 @@ func (m *SettingsMutation) Fields() []string {
 	}
 	if m.disable_shadows != nil {
 		fields = append(fields, settings.FieldDisableShadows)
+	}
+	if m.macfuse_warning_dismissed != nil {
+		fields = append(fields, settings.FieldMacfuseWarningDismissed)
 	}
 	return fields
 }
@@ -8789,6 +8829,8 @@ func (m *SettingsMutation) Field(name string) (ent.Value, bool) {
 		return m.DisableTransitions()
 	case settings.FieldDisableShadows:
 		return m.DisableShadows()
+	case settings.FieldMacfuseWarningDismissed:
+		return m.MacfuseWarningDismissed()
 	}
 	return nil, false
 }
@@ -8810,6 +8852,8 @@ func (m *SettingsMutation) OldField(ctx context.Context, name string) (ent.Value
 		return m.OldDisableTransitions(ctx)
 	case settings.FieldDisableShadows:
 		return m.OldDisableShadows(ctx)
+	case settings.FieldMacfuseWarningDismissed:
+		return m.OldMacfuseWarningDismissed(ctx)
 	}
 	return nil, fmt.Errorf("unknown Settings field %s", name)
 }
@@ -8860,6 +8904,13 @@ func (m *SettingsMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetDisableShadows(v)
+		return nil
+	case settings.FieldMacfuseWarningDismissed:
+		v, ok := value.(bool)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetMacfuseWarningDismissed(v)
 		return nil
 	}
 	return fmt.Errorf("unknown Settings field %s", name)
@@ -8927,6 +8978,9 @@ func (m *SettingsMutation) ResetField(name string) error {
 		return nil
 	case settings.FieldDisableShadows:
 		m.ResetDisableShadows()
+		return nil
+	case settings.FieldMacfuseWarningDismissed:
+		m.ResetMacfuseWarningDismissed()
 		return nil
 	}
 	return fmt.Errorf("unknown Settings field %s", name)

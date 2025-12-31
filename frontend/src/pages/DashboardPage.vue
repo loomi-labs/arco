@@ -10,6 +10,7 @@ import RepoCardSimple from "../components/RepoCardSimple.vue";
 import BackupConceptsInfoModal from "../components/BackupConceptsInfoModal.vue";
 import EmptyStateCard from "../components/EmptyStateCard.vue";
 import ErrorSection from "../components/ErrorSection.vue";
+import MacFUSEWarning from "../components/MacFUSEWarning.vue";
 import { Vue3Lottie } from "vue3-lottie";
 import RocketLightJson from "../assets/animations/rocket-light.json";
 import RocketDarkJson from "../assets/animations/rocket-dark.json";
@@ -102,6 +103,9 @@ onUnmounted(() => {
   <div class='text-left py-10 px-8'>
     <!-- Error Section -->
     <ErrorSection />
+
+    <!-- macFUSE Warning (macOS only) -->
+    <MacFUSEWarning />
 
     <!-- Welcome Banner: shown when both backup profiles and repos are empty -->
     <div v-if='isEmpty' class='ac-card p-8 mb-8'>

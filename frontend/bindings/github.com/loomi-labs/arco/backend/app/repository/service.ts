@@ -254,15 +254,19 @@ export function IsBorgRepository(path: string): $CancellablePromise<boolean> {
 /**
  * Mount mounts a repository
  */
-export function Mount(repoId: number): $CancellablePromise<string> {
-    return $Call.ByID(967190463, repoId);
+export function Mount(repoId: number): $CancellablePromise<$models.MountResult | null> {
+    return $Call.ByID(967190463, repoId).then(($result: any) => {
+        return $$createType27($result);
+    });
 }
 
 /**
  * MountArchive mounts a specific archive
  */
-export function MountArchive(archiveId: number): $CancellablePromise<string> {
-    return $Call.ByID(1226599023, archiveId);
+export function MountArchive(archiveId: number): $CancellablePromise<$models.MountResult | null> {
+    return $Call.ByID(1226599023, archiveId).then(($result: any) => {
+        return $$createType27($result);
+    });
 }
 
 /**
@@ -347,7 +351,7 @@ export function Remove(id: number): $CancellablePromise<void> {
  */
 export function TestPathConnection(repoId: number, newPath: string, password: string): $CancellablePromise<$models.ValidatePathChangeResult | null> {
     return $Call.ByID(971940321, repoId, newPath, password).then(($result: any) => {
-        return $$createType27($result);
+        return $$createType29($result);
     });
 }
 
@@ -356,7 +360,7 @@ export function TestPathConnection(repoId: number, newPath: string, password: st
  */
 export function TestRepoConnection(path: string, password: string): $CancellablePromise<$models.TestRepoConnectionResult> {
     return $Call.ByID(1151269054, path, password).then(($result: any) => {
-        return $$createType28($result);
+        return $$createType30($result);
     });
 }
 
@@ -372,7 +376,7 @@ export function Unmount(repoId: number): $CancellablePromise<string> {
  */
 export function UnmountAllForRepos(repoIds: number[]): $CancellablePromise<any[]> {
     return $Call.ByID(1105783937, repoIds).then(($result: any) => {
-        return $$createType29($result);
+        return $$createType31($result);
     });
 }
 
@@ -407,7 +411,7 @@ export function ValidateArchiveName(archiveId: number, name: string): $Cancellab
  */
 export function ValidatePathChange(repoId: number, newPath: string): $CancellablePromise<$models.ValidatePathChangeResult | null> {
     return $Call.ByID(2418041363, repoId, newPath).then(($result: any) => {
-        return $$createType27($result);
+        return $$createType29($result);
     });
 }
 
@@ -452,7 +456,9 @@ const $$createType22 = $models.PruningDates.createFrom;
 const $$createType23 = $Create.Array($$createType8);
 const $$createType24 = $models.RepositoryWithQueue.createFrom;
 const $$createType25 = $Create.Nullable($$createType24);
-const $$createType26 = $models.ValidatePathChangeResult.createFrom;
+const $$createType26 = $models.MountResult.createFrom;
 const $$createType27 = $Create.Nullable($$createType26);
-const $$createType28 = $models.TestRepoConnectionResult.createFrom;
-const $$createType29 = $Create.Array($Create.Any);
+const $$createType28 = $models.ValidatePathChangeResult.createFrom;
+const $$createType29 = $Create.Nullable($$createType28);
+const $$createType30 = $models.TestRepoConnectionResult.createFrom;
+const $$createType31 = $Create.Array($Create.Any);

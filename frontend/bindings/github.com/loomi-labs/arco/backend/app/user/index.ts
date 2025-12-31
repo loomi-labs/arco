@@ -9,5 +9,6 @@ export {
 export {
     AppInfo,
     Env,
+    MacFUSEStatus,
     User
 } from "./models.js";

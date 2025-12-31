@@ -7,6 +7,7 @@ import (
 	"github.com/loomi-labs/arco/backend/app/state"
 	"github.com/loomi-labs/arco/backend/app/types"
 	"github.com/loomi-labs/arco/backend/ent"
+	"github.com/loomi-labs/arco/backend/platform"
 	"github.com/wailsapp/wails/v3/pkg/application"
 	"go.uber.org/zap"
 )
@@ -145,4 +146,32 @@ func (s *Service) GetUser(ctx context.Context) (*User, error) {
 
 func (s *Service) LogDebug(ctx context.Context, message string) {
 	s.log.Debug(message)
+}
+
+type MacFUSEStatus struct {
+	IsMacOS          bool `json:"isMacOS"`
+	IsInstalled      bool `json:"isInstalled"`
+	WarningDismissed bool `json:"warningDismissed"`
+}
+
+func (s *Service) GetMacFUSEStatus(ctx context.Context) (*MacFUSEStatus, error) {
+	s.mustHaveDB()
+	settings, err := s.db.Settings.Query().First(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get settings: %w", err)
+	}
+
+	return &MacFUSEStatus{
+		IsMacOS:          platform.IsMacOS(),
+		IsInstalled:      platform.IsMacFUSEInstalled(),
+		WarningDismissed: settings.MacfuseWarningDismissed,
+	}, nil
+}
+
+func (s *Service) DismissMacFUSEWarning(ctx context.Context) error {
+	s.mustHaveDB()
+	return s.db.Settings.
+		Update().
+		SetMacfuseWarningDismissed(true).
+		Exec(ctx)
 }

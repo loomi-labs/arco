@@ -79,6 +79,11 @@ func DisableShadows(v bool) predicate.Settings {
 	return predicate.Settings(sql.FieldEQ(FieldDisableShadows, v))
 }
 
+// MacfuseWarningDismissed applies equality check predicate on the "macfuse_warning_dismissed" field. It's identical to MacfuseWarningDismissedEQ.
+func MacfuseWarningDismissed(v bool) predicate.Settings {
+	return predicate.Settings(sql.FieldEQ(FieldMacfuseWarningDismissed, v))
+}
+
 // CreatedAtEQ applies the EQ predicate on the "created_at" field.
 func CreatedAtEQ(v time.Time) predicate.Settings {
 	return predicate.Settings(sql.FieldEQ(FieldCreatedAt, v))
@@ -207,6 +212,16 @@ func DisableShadowsEQ(v bool) predicate.Settings {
 // DisableShadowsNEQ applies the NEQ predicate on the "disable_shadows" field.
 func DisableShadowsNEQ(v bool) predicate.Settings {
 	return predicate.Settings(sql.FieldNEQ(FieldDisableShadows, v))
+}
+
+// MacfuseWarningDismissedEQ applies the EQ predicate on the "macfuse_warning_dismissed" field.
+func MacfuseWarningDismissedEQ(v bool) predicate.Settings {
+	return predicate.Settings(sql.FieldEQ(FieldMacfuseWarningDismissed, v))
+}
+
+// MacfuseWarningDismissedNEQ applies the NEQ predicate on the "macfuse_warning_dismissed" field.
+func MacfuseWarningDismissedNEQ(v bool) predicate.Settings {
+	return predicate.Settings(sql.FieldNEQ(FieldMacfuseWarningDismissed, v))
 }
 
 // And groups predicates with the AND operator between them.

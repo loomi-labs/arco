@@ -33,7 +33,6 @@ import (
 	"github.com/loomi-labs/arco/backend/ent"
 	"github.com/loomi-labs/arco/backend/platform"
 	"github.com/loomi-labs/arco/backend/util"
-	"github.com/pkg/browser"
 	"github.com/pressly/goose/v3"
 	"github.com/teamwork/reload"
 	"github.com/wailsapp/wails/v3/pkg/application"
@@ -224,16 +223,6 @@ func (a *App) Startup(ctx context.Context) {
 
 	// Initialize backup profile service with repository service dependency
 	a.backupProfileService.Init(a.ctx, a.db, a.eventEmitter, a.backupScheduleChangedCh, a.pruningScheduleChangedCh, a.repositoryService)
-
-	// Check for macFUSE on macOS
-	if platform.IsMacOS() && !platform.IsMacFUSEInstalled() {
-		a.log.Warn("macFUSE is not installed")
-		a.state.SetStartupStatus(a.ctx, a.state.GetStartupState().Status,
-			fmt.Errorf("macFUSE is required for Arco to function. Please install it from https://macfuse.github.io and restart Arco"))
-		// Open download page
-		_ = browser.OpenURL("https://macfuse.github.io")
-		return // Stop startup but keep app open showing error
-	}
 
 	// Ensure Borg binary is installed
 	if err := a.ensureBorgBinary(); err != nil {

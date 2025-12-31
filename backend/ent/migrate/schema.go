@@ -239,6 +239,7 @@ var (
 		{Name: "theme", Type: field.TypeEnum, Enums: []string{"light", "dark", "system"}, Default: "system"},
 		{Name: "disable_transitions", Type: field.TypeBool, Default: false},
 		{Name: "disable_shadows", Type: field.TypeBool, Default: false},
+		{Name: "macfuse_warning_dismissed", Type: field.TypeBool, Default: false},
 	}
 	// SettingsTable holds the schema information for the "settings" table.
 	SettingsTable = &schema.Table{

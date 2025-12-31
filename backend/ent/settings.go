@@ -29,7 +29,9 @@ type Settings struct {
 	DisableTransitions bool `json:"disableTransitions"`
 	// DisableShadows holds the value of the "disable_shadows" field.
 	DisableShadows bool `json:"disableShadows"`
-	selectValues   sql.SelectValues
+	// MacfuseWarningDismissed holds the value of the "macfuse_warning_dismissed" field.
+	MacfuseWarningDismissed bool `json:"macfuseWarningDismissed"`
+	selectValues            sql.SelectValues
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -37,7 +39,7 @@ func (*Settings) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case settings.FieldExpertMode, settings.FieldDisableTransitions, settings.FieldDisableShadows:
+		case settings.FieldExpertMode, settings.FieldDisableTransitions, settings.FieldDisableShadows, settings.FieldMacfuseWarningDismissed:
 			values[i] = new(sql.NullBool)
 		case settings.FieldID:
 			values[i] = new(sql.NullInt64)
@@ -102,6 +104,12 @@ func (_m *Settings) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.DisableShadows = value.Bool
 			}
+		case settings.FieldMacfuseWarningDismissed:
+			if value, ok := values[i].(*sql.NullBool); !ok {
+				return fmt.Errorf("unexpected type %T for field macfuse_warning_dismissed", values[i])
+			} else if value.Valid {
+				_m.MacfuseWarningDismissed = value.Bool
+			}
 		default:
 			_m.selectValues.Set(columns[i], values[i])
 		}
@@ -155,6 +163,9 @@ func (_m *Settings) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("disable_shadows=")
 	builder.WriteString(fmt.Sprintf("%v", _m.DisableShadows))
+	builder.WriteString(", ")
+	builder.WriteString("macfuse_warning_dismissed=")
+	builder.WriteString(fmt.Sprintf("%v", _m.MacfuseWarningDismissed))
 	builder.WriteByte(')')
 	return builder.String()
 }
