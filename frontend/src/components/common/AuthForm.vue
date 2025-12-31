@@ -102,7 +102,7 @@ defineExpose({
 function reset() {
   email.value = "";
   emailError.value = undefined;
-  activeTab.value = "login";
+  activeTab.value = "register";
   currentEmail.value = "";
   isRegistration.value = false;
   isLoading.value = false;
