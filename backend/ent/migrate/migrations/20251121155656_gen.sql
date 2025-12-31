@@ -9,6 +9,8 @@ SELECT * FROM `archives`;
 
 CREATE TEMPORARY TABLE `temp_notifications` AS
 SELECT * FROM `notifications`;
+-- atlas:nolint DS103
+-- Safe: next_integrity_check replaced with structured check fields (last_quick_check_at, etc.)
 -- Create "new_repositories" table
 CREATE TABLE `new_repositories` (`id` integer NOT NULL PRIMARY KEY AUTOINCREMENT, `created_at` datetime NOT NULL, `updated_at` datetime NOT NULL, `name` text NOT NULL, `url` text NOT NULL, `password` text NOT NULL, `last_quick_check_at` datetime NULL, `quick_check_error` json NULL, `last_full_check_at` datetime NULL, `full_check_error` json NULL, `stats_total_chunks` integer NOT NULL DEFAULT 0, `stats_total_size` integer NOT NULL DEFAULT 0, `stats_total_csize` integer NOT NULL DEFAULT 0, `stats_total_unique_chunks` integer NOT NULL DEFAULT 0, `stats_unique_size` integer NOT NULL DEFAULT 0, `stats_unique_csize` integer NOT NULL DEFAULT 0, `cloud_repository_repository` integer NULL, CONSTRAINT `repositories_cloud_repositories_repository` FOREIGN KEY (`cloud_repository_repository`) REFERENCES `cloud_repositories` (`id`) ON UPDATE NO ACTION ON DELETE SET NULL);
 -- Copy rows from old table "repositories" to new temporary table "new_repositories"
@@ -17,10 +19,14 @@ INSERT INTO `new_repositories` (`id`, `created_at`, `updated_at`, `name`, `url`,
 DROP TABLE `repositories`;
 -- Rename temporary table "new_repositories" to "repositories"
 ALTER TABLE `new_repositories` RENAME TO `repositories`;
+-- Safe: indexes on fresh table with copied data; constraints were valid before migration
+-- atlas:nolint MF101
 -- Create index "repositories_name_key" to table: "repositories"
 CREATE UNIQUE INDEX `repositories_name_key` ON `repositories` (`name`);
+-- atlas:nolint MF101
 -- Create index "repositories_url_key" to table: "repositories"
 CREATE UNIQUE INDEX `repositories_url_key` ON `repositories` (`url`);
+-- atlas:nolint MF101
 -- Create index "repositories_cloud_repository_repository_key" to table: "repositories"
 CREATE UNIQUE INDEX `repositories_cloud_repository_repository_key` ON `repositories` (`cloud_repository_repository`);
 -- Restore join table and related data

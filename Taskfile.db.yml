@@ -39,7 +39,7 @@ tasks:
     deps:
       - task: ensure:atlas
     cmds:
-      - atlas migrate lint --dev-url="sqlite://file?mode=memory" --dir="file://backend/ent/migrate/migrations" --latest=1
+      - atlas migrate lint --dev-url="sqlite://file?mode=memory" --dir="file://backend/ent/migrate/migrations" --latest $(ls backend/ent/migrate/migrations/*.sql | wc -l)
 
   migrate:create:blank:
     desc: Creates a new blank migration file

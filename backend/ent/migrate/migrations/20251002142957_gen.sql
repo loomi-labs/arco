@@ -47,10 +47,15 @@ SELECT * FROM `archives`;
 CREATE TEMPORARY TABLE `notifications_backup` AS
 SELECT * FROM `notifications`;
 
+-- Safe: data backed up to temp tables above; restored after recreation
 -- Drop old tables (order matters due to foreign keys)
+-- atlas:nolint DS102
 DROP TABLE `notifications`;
+-- atlas:nolint DS102
 DROP TABLE `archives`;
+-- atlas:nolint DS102
 DROP TABLE `backup_profile_repositories`;
+-- atlas:nolint DS102
 DROP TABLE `repositories`;
 
 -- Rename new repositories table
@@ -109,9 +114,13 @@ DROP TABLE `backup_profile_repositories_backup`;
 DROP TABLE `archives_backup`;
 DROP TABLE `notifications_backup`;
 
+-- Safe: indexes on fresh table with restored data; constraints were valid before migration
 -- Recreate indexes on repositories
+-- atlas:nolint MF101
 CREATE UNIQUE INDEX `repositories_name_key` ON `repositories` (`name`);
+-- atlas:nolint MF101
 CREATE UNIQUE INDEX `repositories_url_key` ON `repositories` (`url`);
+-- atlas:nolint MF101
 CREATE UNIQUE INDEX `repositories_cloud_repository_repository_key` ON `repositories` (`cloud_repository_repository`);
 
 -- Enable back the enforcement of foreign-keys constraints

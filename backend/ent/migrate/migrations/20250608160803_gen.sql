@@ -1,5 +1,7 @@
 -- Disable the enforcement of foreign-keys constraints
 PRAGMA foreign_keys = off;
+-- atlas:nolint DS103
+-- Safe: user_email column intentionally removed; data migrated to users table
 -- Create "new_auth_sessions" table
 CREATE TABLE `new_auth_sessions` (`id` text NOT NULL, `created_at` datetime NOT NULL, `updated_at` datetime NOT NULL, `status` text NOT NULL DEFAULT 'PENDING', `expires_at` datetime NOT NULL, PRIMARY KEY (`id`));
 -- Copy rows from old table "auth_sessions" to new temporary table "new_auth_sessions"
@@ -8,6 +10,8 @@ INSERT INTO `new_auth_sessions` (`id`, `created_at`, `updated_at`, `status`, `ex
 DROP TABLE `auth_sessions`;
 -- Rename temporary table "new_auth_sessions" to "auth_sessions"
 ALTER TABLE `new_auth_sessions` RENAME TO `auth_sessions`;
+-- atlas:nolint DS102
+-- Safe: tokens moved to users table; refresh_tokens table no longer needed
 -- Drop "refresh_tokens" table
 DROP TABLE `refresh_tokens`;
 -- Add column "refresh_token" to table: "users"
