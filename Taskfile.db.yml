@@ -11,9 +11,9 @@ tasks:
       - sh -c "atlas version > /dev/null || task db:install:atlas"
 
   install:atlas:
-    desc: Install atlas
+    desc: Install atlas community edition
     cmds:
-      - curl -sSf https://atlasgo.sh | sh -s -- -y
+      - curl -sSf https://atlasgo.sh | sh -s -- --community
 
   ent:new:
     desc: Creates a new Ent model
