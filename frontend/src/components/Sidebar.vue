@@ -10,7 +10,6 @@ import ArcoFooter from "./common/ArcoFooter.vue";
 import AuthModal from "./AuthModal.vue";
 import { useBreakpoints } from "@vueuse/core";
 import { useAuth } from "../common/auth";
-import { useFeatureFlags } from "../common/featureFlags";
 import { showAndLogError } from "../common/logger";
 import { getIcon } from "../common/icons";
 import * as backupProfileService from "../../bindings/github.com/loomi-labs/arco/backend/app/backup_profile/service";
@@ -32,7 +31,6 @@ import * as EventHelpers from "../common/events";
 const router = useRouter();
 const route = useRoute();
 const { isAuthenticated, userEmail } = useAuth();
-const { featureFlags } = useFeatureFlags();
 
 const backupProfiles = ref<BackupProfile[]>([]);
 const repos = ref<repoModels.Repository[]>([]);
@@ -261,8 +259,8 @@ onUnmounted(() => {
 
     <!-- Bottom utilities -->
     <div class='p-4 border-t border-base-300 space-y-2'>
-      <!-- Subscription (only show if authenticated and login beta is enabled) -->
-      <template v-if='featureFlags.loginBetaEnabled && isAuthenticated'>
+      <!-- Subscription (only show if authenticated) -->
+      <template v-if='isAuthenticated'>
         <button
           @click='navigateTo(Page.Subscription)'
           :class='[
@@ -277,24 +275,22 @@ onUnmounted(() => {
         </button>
       </template>
 
-      <!-- Settings (only show if login beta is enabled) -->
-      <template v-if='featureFlags.loginBetaEnabled'>
-        <button
-          @click='navigateTo(Page.Settings)'
-          :class='[
-            "w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors",
-            isActiveRoute(Page.Settings)
-              ? "bg-primary/20 border-l-4 border-primary font-semibold"
-              : "hover:bg-base-200"
-          ]'
-        >
-          <Cog6ToothIcon class='size-5' />
-          <span>Settings</span>
-        </button>
-      </template>
+      <!-- Settings -->
+      <button
+        @click='navigateTo(Page.Settings)'
+        :class='[
+          "w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors",
+          isActiveRoute(Page.Settings)
+            ? "bg-primary/20 border-l-4 border-primary font-semibold"
+            : "hover:bg-base-200"
+        ]'
+      >
+        <Cog6ToothIcon class='size-5' />
+        <span>Settings</span>
+      </button>
 
-      <!-- User Email Display (only show if authenticated and login beta is enabled) -->
-      <template v-if='featureFlags.loginBetaEnabled && isAuthenticated'>
+      <!-- User Email Display (only show if authenticated) -->
+      <template v-if='isAuthenticated'>
         <div class='flex items-center gap-3 px-3 py-2 rounded-lg bg-base-200'>
           <div class='relative'>
             <UserCircleIcon class='size-5' />
@@ -304,8 +300,8 @@ onUnmounted(() => {
         </div>
       </template>
 
-      <!-- Login Button (only show if not authenticated and login beta is enabled) -->
-      <template v-if='featureFlags.loginBetaEnabled && !isAuthenticated'>
+      <!-- Login Button (only show if not authenticated) -->
+      <template v-if='!isAuthenticated'>
         <button
           @click='showAuthModal'
           class='w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-base-200 transition-colors'
@@ -322,8 +318,8 @@ onUnmounted(() => {
     </div>
   </aside>
 
-  <!-- Auth Modal (only include if login beta is enabled) -->
-  <AuthModal v-if='featureFlags.loginBetaEnabled' ref='authModal' @authenticated='onAuthenticated' />
+  <!-- Auth Modal -->
+  <AuthModal ref='authModal' @authenticated='onAuthenticated' />
 </template>
 
 <style scoped>

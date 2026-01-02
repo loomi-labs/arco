@@ -1,14 +1,9 @@
 import { ref, readonly } from 'vue'
-import * as userService from '../../bindings/github.com/loomi-labs/arco/backend/app/user/service'
 import { showAndLogError } from "./logger";
 
-interface FeatureFlags {
-  loginBetaEnabled: boolean
-}
+type FeatureFlags = Record<string, never>
 
-const featureFlags = ref<FeatureFlags>({
-  loginBetaEnabled: false
-})
+const featureFlags = ref<FeatureFlags>({})
 
 let isInitialized = false
 
@@ -18,10 +13,8 @@ export async function initializeFeatureFlags(): Promise<void> {
   }
 
   try {
-    const env = await userService.GetEnvVars()
-    featureFlags.value = {
-      loginBetaEnabled: env.loginBetaEnabled
-    }
+    // const env = await userService.GetEnvVars()
+    featureFlags.value = {}
     isInitialized = true
   } catch (error) {
     await showAndLogError('Failed to initialize feature flags:', error)
