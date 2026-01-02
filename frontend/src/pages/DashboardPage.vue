@@ -1,6 +1,11 @@
+<script lang='ts'>
+// Module-level flag - persists across component re-mounts, resets on app restart
+let welcomeModalShown = false;
+</script>
+
 <script setup lang='ts'>
 import { useRouter } from "vue-router";
-import { computed, onUnmounted, ref, useId, useTemplateRef } from "vue";
+import { computed, onMounted, onUnmounted, ref, useId, useTemplateRef } from "vue";
 import { showAndLogError } from "../common/logger";
 import BackupProfileCard from "../components/BackupProfileCard.vue";
 import { PlusCircleIcon } from "@heroicons/vue/24/solid";
@@ -11,10 +16,7 @@ import BackupConceptsInfoModal from "../components/BackupConceptsInfoModal.vue";
 import EmptyStateCard from "../components/EmptyStateCard.vue";
 import ErrorSection from "../components/ErrorSection.vue";
 import MacFUSEWarning from "../components/MacFUSEWarning.vue";
-import { Vue3Lottie } from "vue3-lottie";
-import RocketLightJson from "../assets/animations/rocket-light.json";
-import RocketDarkJson from "../assets/animations/rocket-dark.json";
-import { useDark } from "@vueuse/core";
+import WelcomeModal from "../components/common/WelcomeModal.vue";
 import * as EventHelpers from "../common/events";
 import * as backupProfileService from "../../bindings/github.com/loomi-labs/arco/backend/app/backup_profile/service";
 import type { BackupProfile } from "../../bindings/github.com/loomi-labs/arco/backend/app/backup_profile";
@@ -31,11 +33,12 @@ import { Events } from "@wailsio/runtime";
  ************/
 
 const router = useRouter();
-const isDark = useDark();
 const backupProfiles = ref<BackupProfile[]>([]);
 const repos = ref<repoModels.Repository[]>([]);
 const backupConceptsInfoModalKey = useId();
 const backupConceptsInfoModal = useTemplateRef<InstanceType<typeof BackupConceptsInfoModal>>(backupConceptsInfoModalKey);
+const welcomeModalKey = useId();
+const welcomeModal = useTemplateRef<InstanceType<typeof WelcomeModal>>(welcomeModalKey);
 
 // Empty state computeds
 const isEmpty = computed(() => backupProfiles.value.length === 0 && repos.value.length === 0);
@@ -80,7 +83,14 @@ function showBackupConceptsInfoModal() {
  * Lifecycle
  ************/
 
-getData();
+// Show welcome modal once per session when dashboard is empty (after data loads)
+onMounted(async () => {
+  await getData();
+  if (isEmpty.value && !welcomeModalShown) {
+    welcomeModalShown = true;
+    welcomeModal.value?.showModal();
+  }
+});
 
 // Listen for backup profile CRUD events
 cleanupFunctions.push(Events.On(EventHelpers.backupProfileCreatedEvent(), getData));
@@ -106,21 +116,6 @@ onUnmounted(() => {
 
     <!-- macFUSE Warning (macOS only) -->
     <MacFUSEWarning />
-
-    <!-- Welcome Banner: shown when both backup profiles and repos are empty -->
-    <div v-if='isEmpty' class='ac-card p-8 mb-8'>
-      <div class='flex flex-col items-center text-center gap-4'>
-        <div class='w-24'>
-          <Vue3Lottie v-if='isDark' :animationData='RocketDarkJson' />
-          <Vue3Lottie v-else :animationData='RocketLightJson' />
-        </div>
-        <h1 class='text-2xl font-bold text-base-strong'>Welcome to Arco</h1>
-        <p class='max-w-xl text-base-content/80'>
-          Start by creating a backup profile to define your backup strategy<br><br>
-          Or add an existing repository if you've used Arco or Borg Backup before.
-        </p>
-      </div>
-    </div>
 
     <!-- Backup Profiles Section -->
     <div class='flex items-center gap-2 text-base-strong pb-2'>
@@ -198,6 +193,7 @@ onUnmounted(() => {
     </div>
 
     <BackupConceptsInfoModal :ref='backupConceptsInfoModalKey' />
+    <WelcomeModal :ref='welcomeModalKey' />
   </div>
 </template>
 
