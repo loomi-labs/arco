@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.17.0](https://github.com/loomi-labs/arco/compare/v0.16.0...v0.17.0) (2026-01-02)
+
+
+### Features
+
+* remove login beta feature flag and enable login for all users ([e83ef72](https://github.com/loomi-labs/arco/commit/e83ef721d9824ab45a73be675516aeee369c2cc1))
+* remove login beta feature flag and enable login for all users ([f71f276](https://github.com/loomi-labs/arco/commit/f71f276ed68a2a4cd792ca452d1ed2959b4b1e99))
+
+
+### Bug Fixes
+
+* version ([bde3e25](https://github.com/loomi-labs/arco/commit/bde3e25c44aaffcec5a42aad0336815b901f7a57))
+* wrap System.IsMac() in try-catch for production ([7cdd30f](https://github.com/loomi-labs/arco/commit/7cdd30f28cc6e46153d5345e0026385a306aff0f))
+* wrap System.IsMac() in try-catch for production ([482bbd6](https://github.com/loomi-labs/arco/commit/482bbd62400b3b4981608eb4dd18faf6a45e9fe1))
+
 ## [0.16.0](https://github.com/loomi-labs/arco/compare/v0.15.3...v0.16.0) (2026-01-02)
 
 
