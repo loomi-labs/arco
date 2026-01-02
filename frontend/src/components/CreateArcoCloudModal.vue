@@ -125,7 +125,9 @@ const modalTitle = computed(() => {
       return "Loading Arco Cloud";
     case ComponentState.LOGIN_EMAIL:
     case ComponentState.LOGIN_WAITING:
-      return "Login to Arco Cloud";
+      return authForm.value?.currentAuthState.activeTab === "register"
+        ? "Register to Arco Cloud"
+        : "Login to Arco Cloud";
     case ComponentState.SUBSCRIPTION_SELECTION:
     case ComponentState.SUBSCRIPTION_SELECTION_AUTH:
       return "Choose Your Plan";
