@@ -152,7 +152,7 @@ func (e Env) AsList() []string {
 		"-oConnectTimeout=10",
 	}
 	for _, key := range e.sshPrivateKeys {
-		sshOptions = append(sshOptions, fmt.Sprintf("-i%s", key))
+		sshOptions = append(sshOptions, fmt.Sprintf("-i \"%s\"", key))
 	}
 
 	env := append(

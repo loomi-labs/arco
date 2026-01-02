@@ -380,7 +380,7 @@ func (s *Service) CreateCloudRepository(ctx context.Context, name, password stri
 		}
 	}
 
-	// If repository doesn't exist, create it
+	// If repository doesn't exist in cloud, create it
 	if repo == nil {
 		repo, err = s.cloudRepoClient.AddCloudRepository(ctx, name, location)
 		if err != nil {
@@ -389,12 +389,25 @@ func (s *Service) CreateCloudRepository(ctx context.Context, name, password stri
 
 		// We need to wait a bit otherwise it can create errors when initializing the repository
 		time.Sleep(500 * time.Millisecond)
+	}
 
+	// Check if repository is initialized (could exist in cloud but not be initialized)
+	result, err := s.testRepoConnection(ctx, repo.RepoUrl, password)
+	if err != nil {
+		return nil, fmt.Errorf("failed to test repository connection: %w", err)
+	}
+
+	// Initialize if not a valid Borg repo yet
+	if !result.IsBorgRepo {
+		s.log.Infof("Repository '%s' exists in cloud but is not initialized, initializing now", name)
 		status := s.borgClient.Init(ctx, repo.RepoUrl, password, false)
 		if status != nil && status.HasError() {
-			s.log.Errorf("Failed to initialize repository during initialization: %s", status.GetError())
+			s.log.Errorf("Failed to initialize repository: %s", status.GetError())
 			return nil, fmt.Errorf("failed to initialize repository: %s", status.GetError())
 		}
+	} else if !result.Success {
+		// Repo exists and is initialized, but we can't connect (likely password issue)
+		return nil, fmt.Errorf("repository exists but could not connect - check password")
 	}
 
 	entRepo, err := database.WithTxData(ctx, s.db, func(tx *ent.Tx) (*ent.Repository, error) {
