@@ -51,10 +51,12 @@ async function copyPassword(password: string) {
     <div class='w-16 h-16 rounded-full bg-warning/20 flex items-center justify-center mb-4'>
       <ExclamationTriangleIcon class='h-8 w-8 text-warning' />
     </div>
-    <h3 class='font-bold text-xl mb-2'>Save Your Password</h3>
+    <h3 class='font-bold text-xl mb-2'>Save Your Password!</h3>
     <p class='text-base-content/70 mb-6'>
-      Your repository has been created successfully. Please make sure to store your password safely
-      in a password manager or write it down. It cannot be recovered if lost.
+      Your repository has been created successfully.<br><br>
+      <span class='font-bold text-warning'>Warning:</span> If you lose this password,
+      <span class='font-bold'>you will permanently lose access to all your backups.</span>
+      There is no way to recover it. Please store it safely in a password manager or write it down.
     </p>
 
     <!-- Password Display -->
