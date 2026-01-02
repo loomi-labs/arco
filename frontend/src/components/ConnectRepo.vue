@@ -7,7 +7,6 @@ import CreateArcoCloudModal from "./CreateArcoCloudModal.vue";
 import ConnectRepoCard from "./ConnectRepoCard.vue";
 import ArcoLogo from "./common/ArcoLogo.vue";
 import { useAuth } from "../common/auth";
-import { useFeatureFlags } from "../common/featureFlags";
 import type { Repository } from "../../bindings/github.com/loomi-labs/arco/backend/app/repository";
 import { LocationType } from "../../bindings/github.com/loomi-labs/arco/backend/app/repository";
 
@@ -54,7 +53,6 @@ const emitUpdateRepoAdded = "update:repo-added";
 const emitClickRepo = "click:repo";
 
 const { isAuthenticated: _isAuthenticated } = useAuth();
-const { featureFlags } = useFeatureFlags();
 
 const existingRepos = ref<Repository[]>(props.existingRepos ?? []);
 
@@ -166,7 +164,7 @@ watch(() => props.existingRepos, (newRepos) => {
                        @click='selectLocalRepo' />
       <ConnectRepoCard :locationType='LocationType.LocationTypeRemote' :isSelected='selectedRepoType === SelectedRepoType.Remote'
                        @click='selectRemoteRepo' />
-      <ConnectRepoCard v-if='featureFlags.loginBetaEnabled' :locationType='LocationType.LocationTypeArcoCloud'
+      <ConnectRepoCard :locationType='LocationType.LocationTypeArcoCloud'
                        :isSelected='selectedRepoType === SelectedRepoType.ArcoCloud' @click='selectArcoCloud' />
     </div>
 
@@ -178,7 +176,7 @@ watch(() => props.existingRepos, (newRepos) => {
                                  @close='selectedRepoType = SelectedRepoType.None'
                                  @update:repo-created='(repo) => addRepo(repo)' />
 
-    <CreateArcoCloudModal v-if='featureFlags.loginBetaEnabled' :ref='arcoCloudModalKey'
+    <CreateArcoCloudModal :ref='arcoCloudModalKey'
                     @close='onArcoCloudModalClose'
                     @repo-created='(repo) => addRepo(repo)' />
   </div>

@@ -41,7 +41,6 @@ export class AppInfo {
 export class Env {
     "debug": boolean;
     "startPage": string;
-    "loginBetaEnabled": boolean;
 
     /** Creates a new Env instance. */
     constructor($$source: Partial<Env> = {}) {
@@ -50,9 +49,6 @@ export class Env {
         }
         if (!("startPage" in $$source)) {
             this["startPage"] = "";
-        }
-        if (!("loginBetaEnabled" in $$source)) {
-            this["loginBetaEnabled"] = false;
         }
 
         Object.assign(this, $$source);

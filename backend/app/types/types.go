@@ -46,11 +46,10 @@ var (
 type EnvVar string
 
 const (
-	EnvVarDebug           EnvVar = "ARCO_DEBUG"
-	EnvVarDevelopment     EnvVar = "ARCO_DEVELOPMENT"
-	EnvVarStartPage       EnvVar = "ARCO_START_PAGE"
-	EnvVarCloudRPCURL     EnvVar = "ARCO_CLOUD_RPC_URL"
-	EnvVarEnableLoginBeta EnvVar = "ARCO_ENABLE_LOGIN_BETA"
+	EnvVarDebug       EnvVar = "ARCO_DEBUG"
+	EnvVarDevelopment EnvVar = "ARCO_DEVELOPMENT"
+	EnvVarStartPage   EnvVar = "ARCO_START_PAGE"
+	EnvVarCloudRPCURL EnvVar = "ARCO_CLOUD_RPC_URL"
 )
 
 func (e EnvVar) Name() string {

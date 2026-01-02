@@ -72,16 +72,14 @@ func (s *Service) GetNotifications(ctx context.Context) []types.Notification {
 }
 
 type Env struct {
-	Debug            bool   `json:"debug"`
-	StartPage        string `json:"startPage"`
-	LoginBetaEnabled bool   `json:"loginBetaEnabled"`
+	Debug     bool   `json:"debug"`
+	StartPage string `json:"startPage"`
 }
 
 func (s *Service) GetEnvVars(ctx context.Context) Env {
 	return Env{
-		Debug:            types.EnvVarDebug.Bool(),
-		StartPage:        types.EnvVarStartPage.String(),
-		LoginBetaEnabled: types.EnvVarEnableLoginBeta.Bool(),
+		Debug:     types.EnvVarDebug.Bool(),
+		StartPage: types.EnvVarStartPage.String(),
 	}
 }
 
