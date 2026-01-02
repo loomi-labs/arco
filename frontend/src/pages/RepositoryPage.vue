@@ -4,6 +4,7 @@ import { EllipsisVerticalIcon, PencilIcon } from "@heroicons/vue/24/solid";
 import {
   ArrowTrendingUpIcon,
   ChartPieIcon,
+  CheckCircleIcon,
   CircleStackIcon,
   ComputerDesktopIcon,
   GlobeEuropeAfricaIcon,
@@ -538,7 +539,7 @@ onUnmounted(() => {
               <div class='flex-1'>
                 <span class='text-sm opacity-70'>Healthcheck</span>
                 <div class='flex gap-6 text-xs mt-1'>
-                  <span class='w-36'>
+                  <span class='w-44 flex items-center'>
                     <span class='opacity-50'>Quick:</span>
                     <span v-if='repo.lastQuickCheckAt'
                           :class='toCreationTimeTooltip(repo.lastQuickCheckAt)'
@@ -546,6 +547,8 @@ onUnmounted(() => {
                       <span class='font-medium ml-1'>{{ toRelativeTimeString(repo.lastQuickCheckAt, true) }}</span>
                     </span>
                     <span v-else class='opacity-50 ml-1'>Never</span>
+                    <CheckCircleIcon v-if='repo.lastQuickCheckAt && (!repo.quickCheckError || repo.quickCheckError.length === 0)'
+                                     class='size-4 text-success ml-1 shrink-0' />
                   </span>
                   <span>
                     <span class='opacity-50'>Full:</span>
