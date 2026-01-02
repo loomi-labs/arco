@@ -63,16 +63,28 @@ func (s *Service) Init() error {
 	// Linux: query D-Bus to find the default Secret Service collection name
 	libSecretCollection := getDefaultSecretServiceCollection(s.log)
 
-	ring, err := keyring.Open(keyring.Config{
-		ServiceName: ServiceName,
-
+	// Determine which backends to use
+	// Set ARCO_USE_FILE_KEYRING=true to force file backend (useful for development to avoid keychain prompts)
+	var allowedBackends []keyring.BackendType
+	if os.Getenv("ARCO_USE_FILE_KEYRING") == "true" {
+		s.log.Info("Using file-based keyring (ARCO_USE_FILE_KEYRING=true)")
+		allowedBackends = []keyring.BackendType{
+			keyring.FileBackend,
+		}
+	} else {
 		// Platform-specific backends will be tried first
 		// File backend serves as fallback
-		AllowedBackends: []keyring.BackendType{
+		allowedBackends = []keyring.BackendType{
 			keyring.SecretServiceBackend, // Linux (GNOME Keyring, KWallet via Secret Service)
 			keyring.KeychainBackend,      // macOS
 			keyring.FileBackend,          // Fallback: encrypted file
-		},
+		}
+	}
+
+	ring, err := keyring.Open(keyring.Config{
+		ServiceName: ServiceName,
+
+		AllowedBackends: allowedBackends,
 
 		// File backend configuration
 		FileDir: s.config.KeyringDir,
