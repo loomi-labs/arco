@@ -4,6 +4,19 @@ import { useMagicKeys } from "@vueuse/core";
 import { System } from "@wailsio/runtime";
 
 /**
+ * Detect if running on macOS platform
+ * Uses Wails System.IsMac() with fallback to navigator check
+ */
+function isMacPlatform(): boolean {
+  try {
+    return System.IsMac();
+  } catch {
+    // Fallback to navigator check if Wails System is unavailable
+    return navigator.userAgent.toLowerCase().includes('mac');
+  }
+}
+
+/**
  * Composable for browser-style navigation shortcuts
  * - Keyboard: Alt+Left/Right (Win/Linux) or Cmd+Left/Right (Mac) for back/forward
  * - Mouse: XButton1/XButton2 (thumb buttons) for back/forward
@@ -16,7 +29,7 @@ export function useNavigationShortcuts() {
    */
   function setupNavigationShortcuts(): () => void {
     const cleanupFunctions: (() => void)[] = [];
-    const isMac = System.IsMac();
+    const isMac = isMacPlatform();
 
     // Keyboard shortcuts using @vueuse/core
     const keys = useMagicKeys({
