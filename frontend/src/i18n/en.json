@@ -44,7 +44,7 @@
   "remove_lock_warning": "Make sure that no other process (borg, arco, etc.) is running on this repository before removing the lock!",
   "remove_lock_confirmation": "Are you sure you want to remove the lock?",
   "remove_lock": "Remove Lock",
-  "run_backup": "Run Backup",
+  "run_backup": "Backup Now",
   "abort": "Abort",
   "stop_browsing": "Stop Browsing",
   "busy": "Busy",
