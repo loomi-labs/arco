@@ -1,5 +1,55 @@
 # Changelog
 
+## [0.16.0](https://github.com/loomi-labs/arco/compare/v0.15.3...v0.16.0) (2026-01-02)
+
+
+### Features
+
+* add archive comment ([#212](https://github.com/loomi-labs/arco/issues/212)) ([8d86ed7](https://github.com/loomi-labs/arco/commit/8d86ed7d6c687a201159bfcaaec0741a0e574c4b))
+* add change password command ([#211](https://github.com/loomi-labs/arco/issues/211)) ([6b6be81](https://github.com/loomi-labs/arco/commit/6b6be81213cc3f15f08de02f5e69bffcb483f6eb))
+* add compression ([#205](https://github.com/loomi-labs/arco/issues/205)) ([c9a0733](https://github.com/loomi-labs/arco/commit/c9a0733f52727f263a8293dba688befeb39ee1f5))
+* add exclude caches option ([#213](https://github.com/loomi-labs/arco/issues/213)) ([2ab3e1a](https://github.com/loomi-labs/arco/commit/2ab3e1ad947caf6c6faf5ba2e918c76a2b0c5d6b))
+* add macos code signing ([#209](https://github.com/loomi-labs/arco/issues/209)) ([5563b4a](https://github.com/loomi-labs/arco/commit/5563b4a5c8260919e83ad6809054945d0a3b2cb2))
+* add overrage usage calculation ([#201](https://github.com/loomi-labs/arco/issues/201)) ([0395768](https://github.com/loomi-labs/arco/commit/0395768a47e1172088951b8d60b4b863c9906ff9))
+* add repository verification ([#206](https://github.com/loomi-labs/arco/issues/206)) ([929d856](https://github.com/loomi-labs/arco/commit/929d856540471d20d1cfe442006ce8946be4ef41))
+* add terms of service and privacy policy acceptance ([#228](https://github.com/loomi-labs/arco/issues/228)) ([f5df6bd](https://github.com/loomi-labs/arco/commit/f5df6bd7add06a7e9d214c706bf057a5c314d5aa))
+* add trial and customer portal ([#217](https://github.com/loomi-labs/arco/issues/217)) ([8a9688e](https://github.com/loomi-labs/arco/commit/8a9688e897af0b926bf0392904189bc4f98df4df))
+* allow changing repository path ([#219](https://github.com/loomi-labs/arco/issues/219)) ([c9d5f53](https://github.com/loomi-labs/arco/commit/c9d5f53ad952fb27872d7bbae65958a41bc5c44c))
+* calculate storage space ([#198](https://github.com/loomi-labs/arco/issues/198)) ([2879b66](https://github.com/loomi-labs/arco/commit/2879b666f87854674dfe1a7a8e1190ff6ba56f9f))
+* **ci:** add migration linting to CI pipeline ([#236](https://github.com/loomi-labs/arco/issues/236)) ([a13f2f8](https://github.com/loomi-labs/arco/commit/a13f2f809634625be4d46d69eae1996208eca636))
+* improve error and warning handling ([#221](https://github.com/loomi-labs/arco/issues/221)) ([9a380c3](https://github.com/loomi-labs/arco/commit/9a380c3ae77ecf4e6b12cb2d1215ffe863de54be))
+* improve MacOS borg binary support ([#232](https://github.com/loomi-labs/arco/issues/232)) ([67718c1](https://github.com/loomi-labs/arco/commit/67718c16ec71483273ed84b449f8fa71637ff7b9))
+* improve macos installation ([#220](https://github.com/loomi-labs/arco/issues/220)) ([3061dec](https://github.com/loomi-labs/arco/commit/3061decbe72e26fcfe04b9c27807b12ae391cb47))
+* **keyring:** add env var to force file backend for development ([42f12bb](https://github.com/loomi-labs/arco/commit/42f12bbc1caec3477f92bab34f9a1a8380f91608))
+* redesign layout ([#204](https://github.com/loomi-labs/arco/issues/204)) ([1cd8bf9](https://github.com/loomi-labs/arco/commit/1cd8bf9357fa60a4104f452e8e041164214632d9))
+* redesign whole app ([#216](https://github.com/loomi-labs/arco/issues/216)) ([bca6cc1](https://github.com/loomi-labs/arco/commit/bca6cc10d29e237251a07ca91e602bc05fc75b14))
+* relax repository name restrictions ([#227](https://github.com/loomi-labs/arco/issues/227)) ([6c45e09](https://github.com/loomi-labs/arco/commit/6c45e09020bf1b74fc95b8d57c0339bc494bd3fc))
+* small UI adjustments ([#235](https://github.com/loomi-labs/arco/issues/235)) ([2f0709c](https://github.com/loomi-labs/arco/commit/2f0709c7436929e3820ca639042fa2a1f516e4a7))
+* store sensitive data in keyring ([#223](https://github.com/loomi-labs/arco/issues/223)) ([fb01e75](https://github.com/loomi-labs/arco/commit/fb01e75eac36e6775cb3814d6566e57b0e267e53))
+* UI improvements ([#222](https://github.com/loomi-labs/arco/issues/222)) ([9c3d242](https://github.com/loomi-labs/arco/commit/9c3d2421d32cfdef3029a7cbacf7369ef561c36b))
+* **ui:** add healthcheck success checkmark ([2329449](https://github.com/loomi-labs/arco/commit/23294494b22538891ccf1720bc5ba923b706f129))
+* **ui:** convert welcome banner to modal ([897799c](https://github.com/loomi-labs/arco/commit/897799c3e7ccdd7fa9dfcec82a3d0b9fe51146df))
+* **ui:** make password reminder more urgent ([9b3db33](https://github.com/loomi-labs/arco/commit/9b3db33d5654d22a8d0b651a5713f9c029b4366b))
+* **ui:** various UI improvements ([eaadd0d](https://github.com/loomi-labs/arco/commit/eaadd0d97ae6c14e1ec4012b143baa7be51e30e1))
+* update borg to 1.4.3 ([#225](https://github.com/loomi-labs/arco/issues/225)) ([eb61526](https://github.com/loomi-labs/arco/commit/eb615260fa3ef4c63bb7208e54977b9f90a3973a))
+
+
+### Bug Fixes
+
+* arco cloud init ([e7c6c39](https://github.com/loomi-labs/arco/commit/e7c6c39b17b0a8d6f94adbc2af2f3ef19ec2a4d3))
+* auto-clear compression level for modes that don't support it ([#214](https://github.com/loomi-labs/arco/issues/214)) ([8909e00](https://github.com/loomi-labs/arco/commit/8909e005c4f51564726e5717546827462a7e79a2))
+* **db:** consolidate archive-backup_profile foreign key columns ([#207](https://github.com/loomi-labs/arco/issues/207)) ([bc4dd6c](https://github.com/loomi-labs/arco/commit/bc4dd6cc45da2ce8741755966d9712f3b5942182))
+* **frontend:** show duration column in archives table ([#208](https://github.com/loomi-labs/arco/issues/208)) ([fffd202](https://github.com/loomi-labs/arco/commit/fffd2026457ee858c475b26129180572200bc3a4))
+* improve repository creation UX and suppress state events during deletion ([#226](https://github.com/loomi-labs/arco/issues/226)) ([0cb42e2](https://github.com/loomi-labs/arco/commit/0cb42e2536247ebbc20a3cff1432acafc683eb64))
+* **keyring:** don't close shared dbus session connection ([#230](https://github.com/loomi-labs/arco/issues/230)) ([cc7e0bd](https://github.com/loomi-labs/arco/commit/cc7e0bd8f8d3dc4dbf1b8c537019070c94395dce))
+* quote SSH key path to handle spaces in Application Support ([3cf1c32](https://github.com/loomi-labs/arco/commit/3cf1c3289621393b528fd4730c0d7a1281934e2c))
+* reset encryption toggle when switching to new repository path ([#224](https://github.com/loomi-labs/arco/issues/224)) ([f8c5ae8](https://github.com/loomi-labs/arco/commit/f8c5ae817afdc008b13cf7b0df7e336a9e84a392))
+* revert GitHub repository to production loomi-labs/arco ([#229](https://github.com/loomi-labs/arco/issues/229)) ([e7fec8a](https://github.com/loomi-labs/arco/commit/e7fec8ae7bb0b44122e00827d3ccdc18baf0e996))
+* UI bugs (dismiss filtered errors, dashboard grid) ([#233](https://github.com/loomi-labs/arco/issues/233)) ([bc05ebd](https://github.com/loomi-labs/arco/commit/bc05ebd2dd93ed67ad9eaf6df103c03209d0b89a))
+* **ui:** improve text labels ([36526e8](https://github.com/loomi-labs/arco/commit/36526e8ce37d03a4403bf53289d2bc908e38dc5f))
+* **ui:** show correct title for register form ([5f34e62](https://github.com/loomi-labs/arco/commit/5f34e62ffbf3efee5b92f7469c09773ff6e65131))
+* update macFUSE URL from osxfuse to macfuse ([#210](https://github.com/loomi-labs/arco/issues/210)) ([f75a1f0](https://github.com/loomi-labs/arco/commit/f75a1f0d1faaeea1da7eb2393c3c704d689f9faa))
+
 ## [0.15.3](https://github.com/loomi-labs/arco/compare/v0.15.2...v0.15.3) (2025-10-12)
 
 
