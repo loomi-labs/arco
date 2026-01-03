@@ -553,28 +553,30 @@ watch(isAuthenticated, async (authenticated) => {
               :class="['relative transform overflow-hidden rounded-lg bg-base-100 text-left shadow-xl transition-all sm:my-8 sm:w-full', modalMaxWidth]">
               <div class='p-10'>
 
-                <div class='flex items-start justify-between gap-4 pb-2'>
-                  <div class='flex-1'>
-                    <DialogTitle as='h3' class='font-bold text-xl'>{{ modalTitle }}</DialogTitle>
-                    <p v-if='modalDescription' class='pt-2 text-base-content/70'>{{ modalDescription }}</p>
-                  </div>
-                  <!-- Loading subscription status -->
-                  <div v-if='currentState === ComponentState.SUBSCRIPTION_AUTHENTICATED'
-                       class='bg-base-200 border border-base-300 rounded-lg px-3 py-2 flex-shrink-0'>
-                    <div class='flex items-center gap-2'>
-                      <div class='loading loading-spinner loading-sm'></div>
-                      <span class='text-sm'>Checking subscription...</span>
+                <template v-if='!isSuccess'>
+                  <div class='flex items-start justify-between gap-4 pb-2'>
+                    <div class='flex-1'>
+                      <DialogTitle as='h3' class='font-bold text-xl'>{{ modalTitle }}</DialogTitle>
+                      <p v-if='modalDescription' class='pt-2 text-base-content/70'>{{ modalDescription }}</p>
+                    </div>
+                    <!-- Loading subscription status -->
+                    <div v-if='currentState === ComponentState.SUBSCRIPTION_AUTHENTICATED'
+                         class='bg-base-200 border border-base-300 rounded-lg px-3 py-2 flex-shrink-0'>
+                      <div class='flex items-center gap-2'>
+                        <div class='loading loading-spinner loading-sm'></div>
+                        <span class='text-sm'>Checking subscription...</span>
+                      </div>
+                    </div>
+
+                    <!-- Active subscription badge for Create Repository state -->
+                    <div v-else-if='currentState === ComponentState.REPOSITORY_CREATION && hasActiveSubscription'
+                         class='badge badge-success gap-1'>
+                      <CloudIcon class='size-3' />
+                      {{ activePlanName }}
                     </div>
                   </div>
-
-                  <!-- Active subscription badge for Create Repository state -->
-                  <div v-else-if='currentState === ComponentState.REPOSITORY_CREATION && hasActiveSubscription'
-                       class='badge badge-success gap-1'>
-                    <CloudIcon class='size-3' />
-                    {{ activePlanName }}
-                  </div>
-                </div>
-                <div class='pb-4'></div>
+                  <div class='pb-4'></div>
+                </template>
 
                 <!-- Loading Initial State -->
                 <div v-if='currentState === ComponentState.LOADING_INITIAL'>

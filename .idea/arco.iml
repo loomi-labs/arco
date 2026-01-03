@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<module version="4">
+  <component name="Go" enabled="true" />
+  <component name="NewModuleRootManager">
+    <content url="file://$MODULE_DIR$">
+      <excludeFolder url="file://$MODULE_DIR$/.vscode" />
+      <excludeFolder url="file://$MODULE_DIR$/build/bin" />
+      <excludeFolder url="file://$MODULE_DIR$/frontend/.idea" />
+      <excludeFolder url="file://$MODULE_DIR$/frontend/wailsjs" />
+      <excludeFolder url="file://$MODULE_DIR$/.task" />
+      <excludeFolder url="file://$MODULE_DIR$/bin" />
+      <excludeFolder url="file://$MODULE_DIR$/build/.task" />
+      <excludeFolder url="file://$MODULE_DIR$/build/linux/appimage/build" />
+      <excludeFolder url="file://$MODULE_DIR$/tickets" />
+      <excludeFolder url="file://$MODULE_DIR$/tickets-architecture" />
+      <excludeFolder url="file://$MODULE_DIR$/worktrees" />
+      <excludeFolder url="file://$MODULE_DIR$/worktrees/borg-integration-tests/.idea" />
+      <excludeFolder url="file://$MODULE_DIR$/worktrees/subscription-ui-cards/.task" />
+      <excludeFolder url="file://$MODULE_DIR$/worktrees/subscription-ui-cards/bin" />
+      <excludeFolder url="file://$MODULE_DIR$/worktrees/subscription-ui-minimal/.task" />
+      <excludeFolder url="file://$MODULE_DIR$/worktrees/subscription-ui-minimal/bin" />
+      <excludeFolder url="file://$MODULE_DIR$/worktrees/subscription-ui-sidebar/.task" />
+      <excludeFolder url="file://$MODULE_DIR$/worktrees/subscription-ui-sidebar/bin" />
+    </content>
+    <orderEntry type="sourceFolder" forTests="false" />
+  </component>
+</module>
