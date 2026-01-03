@@ -180,15 +180,17 @@ function subscribeToTrialPlan(planName: string) {
                              class='size-8 text-secondary' />
           </div>
 
-          <!-- Trial button -->
-          <button
-            v-if='(plan.trial_days ?? 0) > 0 && !hasActiveSubscription'
-            class='btn btn-primary btn-sm w-full'
-            :disabled='disabled'
-            @click.stop='subscribeToTrialPlan(plan.name ?? "")'
-          >
-            Start Free Trial
-          </button>
+          <!-- Trial button area -->
+          <div class='h-8'>
+            <button
+              v-if='(plan.trial_days ?? 0) > 0 && !hasActiveSubscription'
+              class='btn btn-primary btn-sm w-full'
+              :disabled='disabled'
+              @click.stop='subscribeToTrialPlan(plan.name ?? "")'
+            >
+              Start Free Trial
+            </button>
+          </div>
         </div>
       </div>
     </div>
