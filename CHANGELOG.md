@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.17.1](https://github.com/loomi-labs/arco/compare/v0.17.0...v0.17.1) (2026-01-03)
+
+
+### Bug Fixes
+
+* arco cloud repository creation flow ([#243](https://github.com/loomi-labs/arco/issues/243)) ([7a636f4](https://github.com/loomi-labs/arco/commit/7a636f4eb6b08ca2df55f0214992973b491a855b))
+* prevent layout shift in plan cards ([#245](https://github.com/loomi-labs/arco/issues/245)) ([d3c2ecf](https://github.com/loomi-labs/arco/commit/d3c2ecfda0174b02310ebbf914abea83bc561995))
+
 ## [0.17.0](https://github.com/loomi-labs/arco/compare/v0.16.0...v0.17.0) (2026-01-02)
 
 
