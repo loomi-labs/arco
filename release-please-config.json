@@ -1,4 +1,3 @@
 {
-  "include-v-in-tag": true,
-  "release-as": "0.16.1"
+  "include-v-in-tag": true
 }
