@@ -46,12 +46,12 @@ func searchSSHKeysInHomeDir(log *zap.SugaredLogger) []string {
 func SearchSSHKeys(log *zap.SugaredLogger, sshDir string) []string {
 	var allKeys []string
 
-	// Search in home directory
+	// Search in arco ssh directory FIRST (prioritize ArcoCloud key)
+	allKeys = append(allKeys, searchSSHKeysInDir(log, sshDir)...)
+
+	// Then search in home directory
 	homeKeys := searchSSHKeysInHomeDir(log)
 	allKeys = append(allKeys, homeKeys...)
-
-	// Search in arco ssh directory
-	allKeys = append(allKeys, searchSSHKeysInDir(log, sshDir)...)
 
 	// Remove duplicates (in case same key exists in both locations)
 	uniqueKeys := make([]string, 0, len(allKeys))
