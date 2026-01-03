@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.17.2](https://github.com/loomi-labs/arco/compare/v0.17.1...v0.17.2) (2026-01-03)
+
+
+### Bug Fixes
+
+* add IdentitiesOnly to SSH options to prevent auth failures ([#246](https://github.com/loomi-labs/arco/issues/246)) ([bc5520d](https://github.com/loomi-labs/arco/commit/bc5520d9bfbc0cbbc5ea68e2141a5920e9bdd0db))
+
 ## [0.17.1](https://github.com/loomi-labs/arco/compare/v0.17.0...v0.17.1) (2026-01-03)
 
 
