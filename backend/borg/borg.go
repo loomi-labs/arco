@@ -150,6 +150,7 @@ func (e Env) AsList() []string {
 		"-oBatchMode=yes",
 		"-oStrictHostKeyChecking=accept-new",
 		"-oConnectTimeout=10",
+		"-oIdentitiesOnly=yes", // Only use specified keys, ignore SSH agent
 	}
 	for _, key := range e.sshPrivateKeys {
 		sshOptions = append(sshOptions, fmt.Sprintf("-i \"%s\"", key))
