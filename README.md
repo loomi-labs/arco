@@ -25,9 +25,7 @@ Checkout the [website](https://arco-backup.com) for more information.
 ## Installation
 
 ### MacOS
-```bash
-sh -c "$(curl -sSL 'https://arco-backup.com/macos/install.sh')"
-```
+Download and run the installer: [Arco-Installer.pkg](https://github.com/loomi-labs/arco/releases/latest/download/Arco-Installer.pkg)
 
 ### Linux
 ```bash
