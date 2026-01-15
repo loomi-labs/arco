@@ -32,6 +32,16 @@ Download and run the installer: [Arco-Installer.pkg](https://github.com/loomi-la
 sh -c "$(curl -sSL 'https://arco-backup.com/linux/install.sh')"
 ```
 
+## Uninstallation
+
+### Linux
+```bash
+sh -c "$(curl -sSL 'https://arco-backup.com/linux/install.sh')" -- --uninstall
+```
+
+### MacOS
+Download [Arco.dmg](https://github.com/loomi-labs/arco/releases/latest/download/Arco.dmg), open it, and run "Uninstall Arco.app".
+
 ## Features
 - Step-by-step process to create a backup profile
 - Automatic backups based on schedules
