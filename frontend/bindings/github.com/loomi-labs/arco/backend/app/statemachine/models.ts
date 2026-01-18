@@ -7,10 +7,10 @@ import { Create as $Create } from "@wailsio/runtime";
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
-import * as types$1 from "../types/models.js";
+import * as types$0 from "../types/models.js";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
-import * as types$0 from "../../borg/types/models.js";
+import * as types$1 from "../../borg/types/models.js";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
 import * as ent$0 from "../../ent/models.js";
@@ -140,13 +140,13 @@ export class BackingUp {
 }
 
 export class Backup {
-    "backupId": types$1.BackupId;
-    "progress"?: types$0.BackupProgress | null;
+    "backupId": types$0.BackupId;
+    "progress"?: types$1.BackupProgress | null;
 
     /** Creates a new Backup instance. */
     constructor($$source: Partial<Backup> = {}) {
         if (!("backupId" in $$source)) {
-            this["backupId"] = (new types$1.BackupId());
+            this["backupId"] = (new types$0.BackupId());
         }
 
         Object.assign(this, $$source);
@@ -325,14 +325,14 @@ export enum ErrorType {
 };
 
 export class ExaminePrune {
-    "backupId": types$1.BackupId;
+    "backupId": types$0.BackupId;
     "pruningRule": ent$0.PruningRule | null;
     "saveResults": boolean;
 
     /** Creates a new ExaminePrune instance. */
     constructor($$source: Partial<ExaminePrune> = {}) {
         if (!("backupId" in $$source)) {
-            this["backupId"] = (new types$1.BackupId());
+            this["backupId"] = (new types$0.BackupId());
         }
         if (!("pruningRule" in $$source)) {
             this["pruningRule"] = null;
@@ -641,12 +641,12 @@ export class OperationUnion {
 }
 
 export class Prune {
-    "backupId": types$1.BackupId;
+    "backupId": types$0.BackupId;
 
     /** Creates a new Prune instance. */
     constructor($$source: Partial<Prune> = {}) {
         if (!("backupId" in $$source)) {
-            this["backupId"] = (new types$1.BackupId());
+            this["backupId"] = (new types$0.BackupId());
         }
 
         Object.assign(this, $$source);
@@ -666,12 +666,12 @@ export class Prune {
 }
 
 export class Pruning {
-    "backupId": types$1.BackupId;
+    "backupId": types$0.BackupId;
 
     /** Creates a new Pruning instance. */
     constructor($$source: Partial<Pruning> = {}) {
         if (!("backupId" in $$source)) {
-            this["backupId"] = (new types$1.BackupId());
+            this["backupId"] = (new types$0.BackupId());
         }
 
         Object.assign(this, $$source);
@@ -894,8 +894,8 @@ export class UnmountArchive {
 
 // Private type creation functions
 const $$createType0 = Backup.createFrom;
-const $$createType1 = types$1.BackupId.createFrom;
-const $$createType2 = types$0.BackupProgress.createFrom;
+const $$createType1 = types$0.BackupId.createFrom;
+const $$createType2 = types$1.BackupProgress.createFrom;
 const $$createType3 = $Create.Nullable($$createType2);
 const $$createType4 = ent$0.PruningRule.createFrom;
 const $$createType5 = $Create.Nullable($$createType4);
