@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.17.3](https://github.com/loomi-labs/arco/compare/v0.17.2...v0.17.3) (2026-01-18)
+
+
+### Bug Fixes
+
+* default keyring collection ([#248](https://github.com/loomi-labs/arco/issues/248)) ([f02ff95](https://github.com/loomi-labs/arco/commit/f02ff95b3755c69a52b35dfb8956377a628d58bc))
+
 ## [0.17.2](https://github.com/loomi-labs/arco/compare/v0.17.1...v0.17.2) (2026-01-03)
 
 
