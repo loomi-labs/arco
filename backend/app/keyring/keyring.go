@@ -107,7 +107,7 @@ func (s *Service) Init() error {
 }
 
 // getDefaultSecretServiceCollection queries D-Bus to find the default Secret Service collection name.
-// Returns empty string if not on Linux or if query fails.
+// Returns empty string if not on Linux, or "login" (the standard GNOME Keyring collection) if query fails.
 func getDefaultSecretServiceCollection(log *zap.SugaredLogger) string {
 	if !platform.IsLinux() {
 		return ""
@@ -116,7 +116,7 @@ func getDefaultSecretServiceCollection(log *zap.SugaredLogger) string {
 	conn, err := dbus.SessionBus()
 	if err != nil {
 		log.Infof("Failed to connect to D-Bus session bus: %v", err)
-		return ""
+		return "login"
 	}
 	// Note: Do NOT close the session bus connection here.
 	// dbus.SessionBus() returns a shared singleton connection.
@@ -128,7 +128,7 @@ func getDefaultSecretServiceCollection(log *zap.SugaredLogger) string {
 	err = obj.Call("org.freedesktop.Secret.Service.ReadAlias", 0, "default").Store(&path)
 	if err != nil {
 		log.Infof("Failed to query default Secret Service collection: %v", err)
-		return ""
+		return "login"
 	}
 
 	// Path format: /org/freedesktop/secrets/collection/<encoded_name>
@@ -136,7 +136,7 @@ func getDefaultSecretServiceCollection(log *zap.SugaredLogger) string {
 	pathStr := string(path)
 	prefix := "/org/freedesktop/secrets/collection/"
 	if !strings.HasPrefix(pathStr, prefix) {
-		return ""
+		return "login"
 	}
 
 	encodedName := strings.TrimPrefix(pathStr, prefix)
