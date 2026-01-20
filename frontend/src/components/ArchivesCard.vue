@@ -1088,10 +1088,10 @@ onUnmounted(() => {
           </span>
           <label class='input input-bordered flex items-center gap-2 w-full'>
             <input type='text' class='grow' v-model='search' />
-            <label class='swap swap-rotate' :class="{ 'swap-active': !!search }">
-              <MagnifyingGlassIcon class='swap-off size-5' />
-              <XMarkIcon class='swap-on size-5 cursor-pointer' @click="search = ''" />
-            </label>
+            <button v-if='search' type='button' class='btn btn-ghost btn-xs btn-circle' @click="search = ''">
+              <XMarkIcon class='size-4' />
+            </button>
+            <MagnifyingGlassIcon v-else class='size-5 opacity-50' />
           </label>
         </label>
       </div>
