@@ -287,7 +287,7 @@ defineExpose({
   <div class='ac-card p-10'>
     <div class='flex items-center justify-between mb-4'>
       <TooltipTextIcon
-        text='Delete old archives after some time. You can set the rules for when to delete old archives here.'>
+        text='Saves disk space by removing older backups while always keeping recent ones and a selection from each time period (daily, weekly, monthly, yearly).'>
         <h3 class='text-lg font-semibold'>Delete old archives</h3>
       </TooltipTextIcon>
       <input type='checkbox' class='toggle toggle-secondary self-end' v-model='pruningRule.isEnabled'>
