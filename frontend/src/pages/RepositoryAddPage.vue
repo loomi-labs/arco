@@ -1,7 +1,11 @@
 <script setup lang='ts'>
-import { useRouter } from "vue-router";
+import { computed } from "vue";
+import { useRoute, useRouter } from "vue-router";
 import ConnectRepo from "../components/ConnectRepo.vue";
 import { Page, withId } from "../router";
+import * as backupProfileService from "../../bindings/github.com/loomi-labs/arco/backend/app/backup_profile/service";
+import { showAndLogError } from "../common/logger";
+import type { Repository } from "../../bindings/github.com/loomi-labs/arco/backend/app/repository";
 
 /************
  * Types
@@ -12,10 +16,33 @@ import { Page, withId } from "../router";
  ************/
 
 const router = useRouter();
+const route = useRoute();
+
+// Get the source backup profile ID from query params (if coming from backup profile page)
+const fromBackupProfileId = computed(() => {
+  const id = route.query.fromBackupProfile;
+  return id ? parseInt(id as string) : undefined;
+});
 
 /************
  * Functions
  ************/
+
+async function handleRepoCreated(repo: Repository) {
+  // If coming from a backup profile, add the repo to that profile and return there
+  if (fromBackupProfileId.value) {
+    try {
+      await backupProfileService.AddRepositoryToBackupProfile(fromBackupProfileId.value, repo.id);
+      // Note: Toast already shown by the create modal, so we don't add another one here
+    } catch (error: unknown) {
+      await showAndLogError("Failed to add repository to backup profile", error);
+    }
+    await router.push(withId(Page.BackupProfile, fromBackupProfileId.value));
+  } else {
+    // Default behavior: go to the repository page
+    await router.push(withId(Page.Repository, repo.id));
+  }
+}
 
 /************
  * Lifecycle
@@ -30,7 +57,7 @@ const router = useRouter();
 
     <ConnectRepo
       :show-add-repo='true'
-      @update:repo-added='(repo) => router.push(withId(Page.Repository, repo.id))'>
+      @update:repo-added='handleRepoCreated'>
     </ConnectRepo>
   </div>
 </template>
