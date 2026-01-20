@@ -22,6 +22,9 @@ It uses [Borg](https://borgbackup.readthedocs.io/en/stable/index.html) and is co
 
 Checkout the [website](https://arco-backup.com) for more information.
 
+> [!NOTE]
+> **Not vibecoded** I have 10+ years of experience in software development. While I use Claude Code for writing code and Coderabbit for reviews, all features are manually planned and code is reviewed before merging.
+
 ## Installation
 
 ### MacOS
