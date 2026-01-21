@@ -30,8 +30,8 @@ importers:
         specifier: ^14.0.0
         version: 14.0.0(vue@3.5.24(typescript@5.9.3))
       '@wailsio/runtime':
-        specifier: 3.0.0-alpha.73
-        version: 3.0.0-alpha.73
+        specifier: 3.0.0-alpha.78
+        version: 3.0.0-alpha.78
       dayjs:
         specifier: ^1.11.19
         version: 1.11.19
@@ -882,8 +882,8 @@ packages:
     peerDependencies:
       vue: ^3.5.0
 
-  '@wailsio/runtime@3.0.0-alpha.73':
-    resolution: {integrity: sha512-r6/fIAKGAr5iJSkNw0zwSOvuOyXGKYR3dlat0gu59ZGYqsaZhdnlWTlPgOrtnSCV4BJf2DbTdorUQTTnkcYECA==}
+  '@wailsio/runtime@3.0.0-alpha.78':
+    resolution: {integrity: sha512-OwupMaPV20+9rMJdPTSqlmmu3BaMUEZOdngFK2cAjW228ecO5mg5vq1VPx9op1dftbpKJCKqsVhOpxa0EEQnRA==}
 
   accepts@1.3.8:
     resolution: {integrity: sha512-PYAthTa2m2VKxuvSD3DPC/Gy+U+sOA1LAuT8mkmRuvw+NACSaeXEQ+NHcVF7rONl6qcaxV3Uuemwawk+7+SJLw==}
@@ -3002,7 +3002,7 @@ snapshots:
     dependencies:
       vue: 3.5.24(typescript@5.9.3)
 
-  '@wailsio/runtime@3.0.0-alpha.73': {}
+  '@wailsio/runtime@3.0.0-alpha.78': {}
 
   accepts@1.3.8:
     dependencies:

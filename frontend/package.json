@@ -24,7 +24,7 @@
     "@types/lodash": "^4.17.20",
     "@vee-validate/zod": "^4.15.1",
     "@vueuse/core": "^14.0.0",
-    "@wailsio/runtime": "3.0.0-alpha.73",
+    "@wailsio/runtime": "3.0.0-alpha.78",
     "dayjs": "^1.11.19",
     "deep-equal": "^2.2.3",
     "dompurify": "^3.3.1",
