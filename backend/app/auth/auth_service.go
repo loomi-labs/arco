@@ -193,29 +193,22 @@ func (as *Service) Logout(ctx context.Context) error {
 	return nil
 }
 
-func (asi *ServiceInternal) refreshToken(ctx context.Context, userEntity *ent.User) {
+func (asi *ServiceInternal) refreshToken(ctx context.Context, userEntity *ent.User) error {
 	asi.mustHaveDB()
 
-	// Get refresh token from keyring
 	refreshToken, err := asi.keyring.GetRefreshToken()
 	if err != nil {
-		asi.log.Errorf("Failed to get refresh token from keyring: %v", err)
-		return
+		return fmt.Errorf("failed to get refresh token: %w", err)
 	}
 
 	req := connect.NewRequest(&v1.RefreshTokenRequest{RefreshToken: refreshToken})
 
 	resp, err := asi.rpcClient.RefreshToken(ctx, req)
 	if err != nil {
-		asi.log.Errorf("Failed to refresh token: %v", err)
-		return
+		return err
 	}
 
-	err = asi.updateUserTokens(ctx, userEntity, resp.Msg.AccessToken, resp.Msg.RefreshToken, resp.Msg.AccessTokenExpiresIn, resp.Msg.RefreshTokenExpiresIn)
-	if err != nil {
-		asi.log.Errorf("Failed to update local tokens for user %s: %v", userEntity.Email, err)
-		return
-	}
+	return asi.updateUserTokens(ctx, userEntity, resp.Msg.AccessToken, resp.Msg.RefreshToken, resp.Msg.AccessTokenExpiresIn, resp.Msg.RefreshTokenExpiresIn)
 }
 
 // syncAuthenticatedSession syncs tokens from external service to local db
@@ -344,7 +337,24 @@ func (asi *ServiceInternal) ValidateAndRenewStoredTokens(ctx context.Context) er
 	}
 
 	// Attempt to refresh the token
-	asi.refreshToken(ctx, userEntity)
+	if err := asi.refreshToken(ctx, userEntity); err != nil {
+		// Check if this is a connection error (service unavailable)
+		var connectErr *connect.Error
+		if errors.As(err, &connectErr) {
+			switch connectErr.Code() {
+			case connect.CodeUnavailable, connect.CodeDeadlineExceeded, connect.CodeAborted:
+				// Service unreachable - keep user authenticated optimistically
+				// The tokens in keyring may still be valid
+				asi.log.Info("Cloud service unreachable, keeping existing auth state")
+				asi.state.SetAuthenticated(ctx)
+				return nil
+			}
+		}
+		// For other errors, log and mark as not authenticated
+		asi.log.Warnf("Failed to refresh token: %v", err)
+		asi.state.SetNotAuthenticated(ctx)
+		return nil
+	}
 
 	return nil
 }
