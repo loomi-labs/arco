@@ -590,8 +590,8 @@ watch(
                         class='group flex justify-between items-end ac-card-hover w-96 p-10 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2'
                         role='button'
                         tabindex='0'
-                        @click='router.push(Page.AddRepository)'
-                        @keydown='(e) => handleKeyboardActivation(e, () => router.push(Page.AddRepository))'
+                        @click='router.push({ path: Page.AddRepository, query: { fromBackupProfile: backupProfile.id.toString() } })'
+                        @keydown='(e) => handleKeyboardActivation(e, () => router.push({ path: Page.AddRepository, query: { fromBackupProfile: backupProfile.id.toString() } }))'
                         aria-label='Create new repository'
                       >
                         <p>Create new repository</p>
