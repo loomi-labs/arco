@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.19.1](https://github.com/loomi-labs/arco/compare/v0.19.0...v0.19.1) (2026-01-22)
+
+
+### Bug Fixes
+
+* **linux:** remove version from package filenames ([#255](https://github.com/loomi-labs/arco/issues/255)) ([3909350](https://github.com/loomi-labs/arco/commit/390935001414b76601c469e8206a2224997dfd37))
+
 ## [0.19.0](https://github.com/loomi-labs/arco/compare/v0.18.0...v0.19.0) (2026-01-22)
 
 
