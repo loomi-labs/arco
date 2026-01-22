@@ -86,6 +86,7 @@ tasks:
     desc: Creates a deb package
     cmds:
       - go tool wails3 tool package -name {{.BINARY_NAME}} -format deb -config ./build/linux/nfpm/nfpm.yaml -out {{.ROOT_DIR}}/bin
+      - ls -la {{.ROOT_DIR}}/bin/
       - sh -c 'mv {{.ROOT_DIR}}/bin/{{.BINARY_NAME}}_*.deb {{.ROOT_DIR}}/bin/{{.BINARY_NAME}}_amd64.deb'
     env:
       VERSION: '{{.VERSION}}'
