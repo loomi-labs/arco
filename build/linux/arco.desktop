@@ -2,7 +2,7 @@
 Type=Application
 Name=arco
 Exec=arco
-Icon=appicon
+Icon=appicon-light
 Categories=Development;
 Terminal=false
 Keywords=wails

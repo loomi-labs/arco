@@ -4,7 +4,7 @@
 # Build files
 bin
 build/bin
-build/linux/appimage/build
+build/linux/appimage/
 build/windows/nsis/MicrosoftEdgeWebview2Setup.exe
 
 # Task files
