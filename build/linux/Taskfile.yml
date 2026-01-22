@@ -86,7 +86,7 @@ tasks:
     desc: Creates a deb package
     cmds:
       - go tool wails3 tool package -name {{.BINARY_NAME}} -format deb -config ./build/linux/nfpm/nfpm.yaml -out {{.ROOT_DIR}}/bin
-      - mv {{.ROOT_DIR}}/bin/{{.BINARY_NAME}}_*.deb {{.ROOT_DIR}}/bin/{{.BINARY_NAME}}_amd64.deb
+      - sh -c 'mv {{.ROOT_DIR}}/bin/{{.BINARY_NAME}}_*.deb {{.ROOT_DIR}}/bin/{{.BINARY_NAME}}_amd64.deb'
     env:
       VERSION: '{{.VERSION}}'
 
@@ -94,7 +94,7 @@ tasks:
     desc: Creates a rpm package
     cmds:
       - go tool wails3 tool package -name {{.BINARY_NAME}} -format rpm -config ./build/linux/nfpm/nfpm.yaml -out {{.ROOT_DIR}}/bin
-      - mv {{.ROOT_DIR}}/bin/{{.BINARY_NAME}}-*.rpm {{.ROOT_DIR}}/bin/{{.BINARY_NAME}}.x86_64.rpm
+      - sh -c 'mv {{.ROOT_DIR}}/bin/{{.BINARY_NAME}}-*.rpm {{.ROOT_DIR}}/bin/{{.BINARY_NAME}}.x86_64.rpm'
     env:
       VERSION: '{{.VERSION}}'
 
@@ -102,7 +102,7 @@ tasks:
     desc: Creates a arch linux packager package
     cmds:
       - go tool wails3 tool package -name {{.BINARY_NAME}} -format archlinux -config ./build/linux/nfpm/nfpm.yaml -out {{.ROOT_DIR}}/bin
-      - mv {{.ROOT_DIR}}/bin/{{.BINARY_NAME}}-*.pkg.tar.zst {{.ROOT_DIR}}/bin/{{.BINARY_NAME}}-x86_64.pkg.tar.zst
+      - sh -c 'mv {{.ROOT_DIR}}/bin/{{.BINARY_NAME}}-*.pkg.tar.zst {{.ROOT_DIR}}/bin/{{.BINARY_NAME}}-x86_64.pkg.tar.zst'
     env:
       VERSION: '{{.VERSION}}'
 
