@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.19.2](https://github.com/loomi-labs/arco/compare/v0.19.1...v0.19.2) (2026-01-22)
+
+
+### Bug Fixes
+
+* package releasing ([0192125](https://github.com/loomi-labs/arco/commit/0192125237a336becec0e95cbb78b6d2c81b0ab4))
+
 ## [0.19.1](https://github.com/loomi-labs/arco/compare/v0.19.0...v0.19.1) (2026-01-22)
 
 
