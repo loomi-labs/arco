@@ -1,10 +1,11 @@
 [Desktop Entry]
 Type=Application
-Name=arco
+Name=Arco
 Exec=arco
-Icon=appicon
-Categories=Development;
+Icon=appicon-light
+Categories=Utility;
+Comment=A modern backup application based on BorgBackup
 Terminal=false
-Keywords=wails
+Keywords=backup;borg;borgbackup;
 Version=1.0
 StartupNotify=false

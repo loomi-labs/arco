@@ -14,7 +14,7 @@ tasks:
       - task: common:generate:icons
     cmds:
       - task: generate:syso
-      - go build {{.BUILD_FLAGS}} -o {{.BIN_DIR}}/{{.APP_NAME}}.exe
+      - go build {{.BUILD_FLAGS}} -o {{.BIN_DIR}}/{{.BINARY_NAME}}.exe
       - cmd: powershell Remove-item *.syso
         platforms: [windows]
       - cmd: rm -f *.syso
@@ -51,11 +51,11 @@ tasks:
     cmds:
       # Create the Microsoft WebView2 bootstrapper if it doesn't exist
       - go tool wails3 generate webview2bootstrapper -dir "{{.ROOT_DIR}}\build\windows\nsis"
-      - makensis -DARG_WAILS_{{.ARG_FLAG}}_BINARY="{{.ROOT_DIR}}\{{.BIN_DIR}}\{{.APP_NAME}}.exe" project.nsi
+      - makensis -DARG_WAILS_{{.ARG_FLAG}}_BINARY="{{.ROOT_DIR}}\{{.BIN_DIR}}\{{.BINARY_NAME}}.exe" project.nsi
     vars:
       ARCH: '{{.ARCH | default ARCH}}'
       ARG_FLAG: '{{if eq .ARCH "amd64"}}AMD64{{else}}ARM64{{end}}'
 
   run:
     cmds:
-      - '{{.BIN_DIR}}\\{{.APP_NAME}}.exe'
+      - '{{.BIN_DIR}}\\{{.BINARY_NAME}}.exe'

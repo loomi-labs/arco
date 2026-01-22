@@ -6,7 +6,7 @@
 name: "arco"
 arch: ${GOARCH}
 platform: "linux"
-version: "0.14.1"
+version: "${VERSION}"
 section: "default"
 priority: "extra"
 maintainer: ${GIT_COMMITTER_NAME} <${GIT_COMMITTER_EMAIL}>
@@ -18,9 +18,15 @@ release: "1"
 
 contents:
   - src: "./bin/arco"
+    dst: "/usr/local/bin/arco-bin"
+    file_info:
+      mode: 0755
+  - src: "./build/linux/arco-launcher.sh"
     dst: "/usr/local/bin/arco"
-  - src: "./build/appicon.png"
-    dst: "/usr/share/icons/hicolor/128x128/apps/arco.png"
+    file_info:
+      mode: 0755
+  - src: "./build/appicon-light.png"
+    dst: "/usr/share/icons/hicolor/128x128/apps/appicon-light.png"
   - src: "./build/linux/arco.desktop"
     dst: "/usr/share/applications/arco.desktop"
 
@@ -43,12 +49,11 @@ overrides:
       - gtk3
       - webkit2gtk-4.1
 
-# scripts section to ensure desktop database is updated after install
+# scripts section to install/remove systemd user service
 scripts:
   postinstall: "./build/linux/nfpm/scripts/postinstall.sh"
-  # You can also add preremove, postremove if needed
-  # preremove: "./build/linux/nfpm/scripts/preremove.sh"
-  # postremove: "./build/linux/nfpm/scripts/postremove.sh"
+  preremove: "./build/linux/nfpm/scripts/preremove.sh"
+  postremove: "./build/linux/nfpm/scripts/postremove.sh"
 
 # replaces:
 #   - foobar
