@@ -149,6 +149,14 @@ jobs:
         run: chmod +x bin/*
         shell: bash
 
+      # Create Linux packages (deb, rpm, archlinux)
+      - name: Create Linux packages
+        if: steps.should-build.outputs.should_run == 'true' && runner.os == 'Linux'
+        run: task linux:package
+        shell: bash
+        env:
+          VERSION: ${{ inputs.version || 'dev' }}
+
       # Package macOS .app bundle
       - name: Create macOS .app bundle
         if: steps.should-build.outputs.should_run == 'true' && runner.os == 'macOS'
@@ -254,23 +262,31 @@ jobs:
           ditto -c -k --keepParent arco.app arco-macos.zip
           cd ..
 
-      # Compress build artifact (Linux)
-      - name: Compress build artifact (Linux)
+      # Prepare Linux artifacts
+      - name: Prepare Linux artifacts
         if: steps.should-build.outputs.should_run == 'true' && runner.os == 'Linux'
-        id: compress
+        id: prepare-linux
         run: |
           cd ./bin
-          ZIP_NAME="${{ matrix.build.zip-name }}.zip"
-          zip -j "../$ZIP_NAME" arco
-          echo "zip_name=$ZIP_NAME" >> $GITHUB_OUTPUT
+          # Create zip for manual install
+          zip -j "../arco-linux.zip" arco
+          # Rename packages with version
+          VERSION="${{ inputs.version || 'dev' }}"
+          mv arco.deb "arco-${VERSION}-linux-amd64.deb" 2>/dev/null || true
+          mv arco.rpm "arco-${VERSION}-linux-amd64.rpm" 2>/dev/null || true
+          mv arco.pkg.tar.zst "arco-${VERSION}-linux-amd64.pkg.tar.zst" 2>/dev/null || true
 
       # Upload build assets
       - name: Upload build artifacts (Linux)
         if: steps.should-build.outputs.should_run == 'true' && runner.os == 'Linux'
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ steps.compress.outputs.zip_name }}
-          path: ${{ steps.compress.outputs.zip_name }}
+          name: arco-linux
+          path: |
+            arco-linux.zip
+            bin/arco-*-linux-*.deb
+            bin/arco-*-linux-*.rpm
+            bin/arco-*-linux-*.pkg.tar.zst
           retention-days: 30
 
       - name: Upload build artifacts (macOS)
@@ -289,7 +305,11 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ inputs.version }}
-          files: ${{ steps.compress.outputs.zip_name }}
+          files: |
+            arco-linux.zip
+            bin/arco-${{ inputs.version }}-linux-amd64.deb
+            bin/arco-${{ inputs.version }}-linux-amd64.rpm
+            bin/arco-${{ inputs.version }}-linux-amd64.pkg.tar.zst
           draft: false
           prerelease: false
 
