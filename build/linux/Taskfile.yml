@@ -87,16 +87,22 @@ tasks:
     desc: Creates a deb package
     cmds:
       - go tool wails3 tool package -name {{.BINARY_NAME}} -format deb -config ./build/linux/nfpm/nfpm.yaml -out {{.ROOT_DIR}}/bin
+    env:
+      VERSION: '{{.VERSION}}'
 
   generate:rpm:
     desc: Creates a rpm package
     cmds:
       - go tool wails3 tool package -name {{.BINARY_NAME}} -format rpm -config ./build/linux/nfpm/nfpm.yaml -out {{.ROOT_DIR}}/bin
+    env:
+      VERSION: '{{.VERSION}}'
 
   generate:aur:
     desc: Creates a arch linux packager package
     cmds:
       - go tool wails3 tool package -name {{.BINARY_NAME}} -format archlinux -config ./build/linux/nfpm/nfpm.yaml -out {{.ROOT_DIR}}/bin
+    env:
+      VERSION: '{{.VERSION}}'
 
   generate:dotdesktop:
     desc: Generates a `.desktop` file

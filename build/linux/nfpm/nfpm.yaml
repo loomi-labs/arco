@@ -6,7 +6,7 @@
 name: "arco"
 arch: ${GOARCH}
 platform: "linux"
-version: "0.14.1"
+version: "${VERSION}"
 section: "default"
 priority: "extra"
 maintainer: ${GIT_COMMITTER_NAME} <${GIT_COMMITTER_EMAIL}>
