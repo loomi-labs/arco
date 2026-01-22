@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.19.0](https://github.com/loomi-labs/arco/compare/v0.18.0...v0.19.0) (2026-01-22)
+
+
+### Features
+
+* **linux:** add native Linux packaging (deb, rpm, Arch) ([#253](https://github.com/loomi-labs/arco/issues/253)) ([8e74bfd](https://github.com/loomi-labs/arco/commit/8e74bfd9fc2a7f141690d0b865b8685e9871a5d7))
+
 ## [0.18.0](https://github.com/loomi-labs/arco/compare/v0.17.3...v0.18.0) (2026-01-21)
 
 
