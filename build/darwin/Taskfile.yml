@@ -15,7 +15,7 @@ tasks:
     vars:
       LD_FLAGS: '-X github.com/loomi-labs/arco/backend/app/types.Version=v{{.VERSION}}'
       BUILD_FLAGS: '{{if eq .PRODUCTION "true"}}-tags production -trimpath -buildvcs=false -ldflags="-w -s {{.LD_FLAGS}}"{{else}}-race -tags assert -buildvcs=false -gcflags=all="-l" -ldflags="{{.LD_FLAGS}}"{{end}}'
-      DEFAULT_OUTPUT: '{{.BIN_DIR}}/{{.APP_NAME}}'
+      DEFAULT_OUTPUT: '{{.BIN_DIR}}/{{.BINARY_NAME}}'
       OUTPUT: '{{ .OUTPUT | default .DEFAULT_OUTPUT }}'
     env:
       GOOS: darwin
@@ -53,13 +53,13 @@ tasks:
       - task: build:arch
         vars:
           ARCH: amd64
-          OUTPUT: "{{.BIN_DIR}}/{{.APP_NAME}}-amd64"
+          OUTPUT: "{{.BIN_DIR}}/{{.BINARY_NAME}}-amd64"
       - task: build:arch
         vars:
           ARCH: arm64
-          OUTPUT: "{{.BIN_DIR}}/{{.APP_NAME}}-arm64"
-      - lipo -create -output "{{.BIN_DIR}}/{{.APP_NAME}}" "{{.BIN_DIR}}/{{.APP_NAME}}-amd64" "{{.BIN_DIR}}/{{.APP_NAME}}-arm64"
-      - rm "{{.BIN_DIR}}/{{.APP_NAME}}-amd64" "{{.BIN_DIR}}/{{.APP_NAME}}-arm64"
+          OUTPUT: "{{.BIN_DIR}}/{{.BINARY_NAME}}-arm64"
+      - lipo -create -output "{{.BIN_DIR}}/{{.BINARY_NAME}}" "{{.BIN_DIR}}/{{.BINARY_NAME}}-amd64" "{{.BIN_DIR}}/{{.BINARY_NAME}}-arm64"
+      - rm "{{.BIN_DIR}}/{{.BINARY_NAME}}-amd64" "{{.BIN_DIR}}/{{.BINARY_NAME}}-arm64"
 
   package:
     desc: Packages a production build of the application into a `.app` bundle
@@ -83,9 +83,9 @@ tasks:
     cmds:
       - mkdir -p {{.BIN_DIR}}/{{.APP_NAME}}.app/Contents/{MacOS,Resources}
       - cp build/darwin/icons.icns {{.BIN_DIR}}/{{.APP_NAME}}.app/Contents/Resources
-      - cp {{.BIN_DIR}}/{{.APP_NAME}} {{.BIN_DIR}}/{{.APP_NAME}}.app/Contents/MacOS
+      - cp {{.BIN_DIR}}/{{.BINARY_NAME}} {{.BIN_DIR}}/{{.APP_NAME}}.app/Contents/MacOS
       - cp build/darwin/Info.plist {{.BIN_DIR}}/{{.APP_NAME}}.app/Contents
 
   run:
     cmds:
-      - '{{.BIN_DIR}}/{{.APP_NAME}}'
+      - '{{.BIN_DIR}}/{{.BINARY_NAME}}'
