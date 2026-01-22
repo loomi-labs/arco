@@ -16,4 +16,19 @@ Restart=on-failure
 WantedBy=default.target
 EOF
 
-echo "Arco systemd service installed. Enable with: systemctl --user enable --now arco"
+# Enable the service globally for all users (takes effect on next login)
+systemctl --global enable arco.service
+
+echo "Arco backup service enabled. It will start automatically on login."
+echo "To disable for current user: systemctl --user disable arco"
+echo "To disable for all users:    sudo systemctl --global disable arco"
+
+# Update desktop database for .desktop file changes
+if command -v update-desktop-database >/dev/null 2>&1; then
+  update-desktop-database -q /usr/share/applications
+fi
+
+# Update MIME database for custom URL schemes
+if command -v update-mime-database >/dev/null 2>&1; then
+  update-mime-database -n /usr/share/mime
+fi
