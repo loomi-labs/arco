@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.18.0](https://github.com/loomi-labs/arco/compare/v0.17.3...v0.18.0) (2026-01-21)
+
+
+### Features
+
+* UI improvements - search bar, pruning text, and repo creation flow ([#250](https://github.com/loomi-labs/arco/issues/250)) ([daff78d](https://github.com/loomi-labs/arco/commit/daff78d5da7021fc8b325355567c9b10ae1d2fae))
+
+
+### Bug Fixes
+
+* refreshToken is not crashing the app on failure anymore ([#252](https://github.com/loomi-labs/arco/issues/252)) ([ae92dce](https://github.com/loomi-labs/arco/commit/ae92dce97d03181a97a2106e7eddac0c95556278))
+
 ## [0.17.3](https://github.com/loomi-labs/arco/compare/v0.17.2...v0.17.3) (2026-01-18)
 
 
