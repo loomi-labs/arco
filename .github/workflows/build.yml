@@ -270,11 +270,10 @@ jobs:
           cd ./bin
           # Create zip for manual install
           zip -j "../arco-linux.zip" arco
-          # Rename packages with version
-          VERSION="${{ inputs.version || 'dev' }}"
-          mv arco.deb "arco-${VERSION}-linux-amd64.deb" 2>/dev/null || true
-          mv arco.rpm "arco-${VERSION}-linux-amd64.rpm" 2>/dev/null || true
-          mv arco.pkg.tar.zst "arco-${VERSION}-linux-amd64.pkg.tar.zst" 2>/dev/null || true
+          # Rename packages for release
+          mv arco.deb "arco-linux-amd64.deb" 2>/dev/null || true
+          mv arco.rpm "arco-linux-amd64.rpm" 2>/dev/null || true
+          mv arco.pkg.tar.zst "arco-linux-amd64.pkg.tar.zst" 2>/dev/null || true
 
       # Upload build assets
       - name: Upload build artifacts (Linux)
@@ -284,9 +283,9 @@ jobs:
           name: arco-linux
           path: |
             arco-linux.zip
-            bin/arco-*-linux-*.deb
-            bin/arco-*-linux-*.rpm
-            bin/arco-*-linux-*.pkg.tar.zst
+            bin/arco-linux-amd64.deb
+            bin/arco-linux-amd64.rpm
+            bin/arco-linux-amd64.pkg.tar.zst
           retention-days: 30
 
       - name: Upload build artifacts (macOS)
@@ -307,9 +306,9 @@ jobs:
           tag_name: ${{ inputs.version }}
           files: |
             arco-linux.zip
-            bin/arco-${{ inputs.version }}-linux-amd64.deb
-            bin/arco-${{ inputs.version }}-linux-amd64.rpm
-            bin/arco-${{ inputs.version }}-linux-amd64.pkg.tar.zst
+            bin/arco-linux-amd64.deb
+            bin/arco-linux-amd64.rpm
+            bin/arco-linux-amd64.pkg.tar.zst
           draft: false
           prerelease: false
 
