@@ -9,8 +9,9 @@ mkdir -p "$USER_DIR"
 
 # Only copy on first run - self-update handles all subsequent updates
 if [ ! -f "$USER_BIN" ]; then
-    cp "$SYSTEM_BIN" "$USER_BIN"
-    chmod +x "$USER_BIN"
+    tmp="$(mktemp "$USER_DIR/.arco.XXXXXX")"
+    install -m 0755 "$SYSTEM_BIN" "$tmp"
+    mv -f "$tmp" "$USER_BIN"
 fi
 
 exec "$USER_BIN" "$@"

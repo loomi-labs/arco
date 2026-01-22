@@ -19,6 +19,8 @@ release: "1"
 contents:
   - src: "./bin/arco"
     dst: "/usr/local/bin/arco-bin"
+    file_info:
+      mode: 0755
   - src: "./build/linux/arco-launcher.sh"
     dst: "/usr/local/bin/arco"
     file_info:
