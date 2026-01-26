@@ -74,6 +74,7 @@ export enum Event {
     EventOperationErrorOccurred = "operationErrorOccurred",
     EventNotificationDismissed = "notificationDismissed",
     EventNotificationCreated = "notificationCreated",
+    EventWindowCloseRequested = "windowCloseRequested",
 };
 
 export type EventEmitter = any;

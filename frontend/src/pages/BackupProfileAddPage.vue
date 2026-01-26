@@ -1,6 +1,8 @@
 <script setup lang='ts'>
-import { computed, ref, useId, useTemplateRef } from "vue";
+import { computed, onUnmounted, ref, useId, useTemplateRef, watch } from "vue";
 import { onBeforeRouteLeave, useRouter } from "vue-router";
+import { Events } from "@wailsio/runtime";
+import * as EventHelpers from "../common/events";
 import { Page, withId } from "../router";
 import { showAndLogError } from "../common/logger";
 import DataSelection from "../components/DataSelection.vue";
@@ -21,6 +23,7 @@ import ExcludePatternInfoModal from "../components/ExcludePatternInfoModal.vue";
 import ConfirmModal from "../components/common/ConfirmModal.vue";
 import * as backupProfileService from "../../bindings/github.com/loomi-labs/arco/backend/app/backup_profile/service";
 import * as repoService from "../../bindings/github.com/loomi-labs/arco/backend/app/repository/service";
+import * as userService from "../../bindings/github.com/loomi-labs/arco/backend/app/user/service";
 import type { Icon } from "../../bindings/github.com/loomi-labs/arco/backend/ent/backupprofile";
 import { CompressionMode } from "../../bindings/github.com/loomi-labs/arco/backend/ent/backupprofile/models";
 import type { Repository } from "../../bindings/github.com/loomi-labs/arco/backend/app/repository";
@@ -48,6 +51,8 @@ const existingRepos = ref<Repository[]>([]);
 const newBackupProfileCreated = ref(false);
 const wantToGoRoute = ref<string>();
 const discardChangesConfirmed = ref(false);
+const wantToCloseWindow = ref(false);
+const cleanupFunctions: (() => void)[] = [];
 const confirmLeaveModalKey = useId();
 const confirmLeaveModal = useTemplateRef<InstanceType<typeof ConfirmModal>>(confirmLeaveModalKey);
 
@@ -236,7 +241,11 @@ const nextStep = async () => {
 };
 
 async function goTo() {
-  if (wantToGoRoute.value) {
+  if (wantToCloseWindow.value) {
+    // User confirmed discard via window close
+    await userService.CloseWindow();
+  } else if (wantToGoRoute.value) {
+    // User confirmed discard via route navigation
     discardChangesConfirmed.value = true;
     await router.replace(wantToGoRoute.value);
   }
@@ -249,6 +258,27 @@ async function goTo() {
 newBackupProfile();
 getExistingRepositories();
 
+// Set dirty state when past first step (has unsaved changes)
+watch(currentStep, (step) => {
+  if (step > Step.SelectData && !newBackupProfileCreated.value) {
+    userService.SetDirtyPage("BackupProfileAdd");
+  } else {
+    userService.ClearDirtyPage();
+  }
+}, { immediate: true });
+
+// Listen for window close request from backend
+cleanupFunctions.push(Events.On(EventHelpers.windowCloseRequestedEvent(), () => {
+  if (currentStep.value > Step.SelectData && !newBackupProfileCreated.value) {
+    // Show discard confirmation modal
+    wantToCloseWindow.value = true;
+    confirmLeaveModal.value?.showModal();
+  } else {
+    // No unsaved changes, proceed with close
+    userService.CloseWindow();
+  }
+}));
+
 // If the user tries to leave the page with unsaved changes, show a modal to cancel/discard
 onBeforeRouteLeave(async (to, _from) => {
   if (currentStep.value === Step.SelectData) {
@@ -259,10 +289,16 @@ onBeforeRouteLeave(async (to, _from) => {
     return true;
   } else {
     wantToGoRoute.value = to.path;
+    wantToCloseWindow.value = false;
     discardChangesConfirmed.value = false;
     confirmLeaveModal.value?.showModal();
     return false;
   }
+});
+
+onUnmounted(() => {
+  userService.ClearDirtyPage();
+  cleanupFunctions.forEach((cleanup) => cleanup());
 });
 
 </script>

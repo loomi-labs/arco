@@ -233,7 +233,7 @@ func initConfig(configDir string, icons *types.Icons, migrations fs.FS, autoUpda
 	}, nil
 }
 
-func showOrCreateMainWindow(config *types.Config) {
+func showOrCreateMainWindow(config *types.Config, arco *app.App) {
 	// Show dock icon when opening a window on macOS
 	platform.ShowDockIcon()
 
@@ -265,9 +265,16 @@ func showOrCreateMainWindow(config *types.Config) {
 		MaxHeight:        3840,
 	})
 
-	// Hide dock icon when window is closed on macOS
-	newWindow.OnWindowEvent(events.Common.WindowClosing, func(event *application.WindowEvent) {
-		platform.HideDockIcon()
+	// Handle window closing - check for unsaved changes first
+	newWindow.RegisterHook(events.Common.WindowClosing, func(event *application.WindowEvent) {
+		if arco.IsDirty() {
+			// Cancel the close and emit event to frontend
+			event.Cancel()
+			wailsApp.Event.Emit(types.EventWindowCloseRequestedString())
+		} else {
+			// No unsaved changes, proceed with close
+			platform.HideDockIcon()
+		}
 	})
 }
 
@@ -295,7 +302,7 @@ func startApp(log *zap.SugaredLogger, config *types.Config, assets fs.FS, startH
 			UniqueID: uniqueRunId,
 			OnSecondInstanceLaunch: func(data application.SecondInstanceData) {
 				log.Debug("Wake up %s", app.Name)
-				showOrCreateMainWindow(config)
+				showOrCreateMainWindow(config, arco)
 			},
 		},
 		Assets: application.AssetOptions{
@@ -315,7 +322,7 @@ func startApp(log *zap.SugaredLogger, config *types.Config, assets fs.FS, startH
 	})
 
 	if !startHidden {
-		showOrCreateMainWindow(config)
+		showOrCreateMainWindow(config, arco)
 	}
 
 	wailsApp.Event.OnApplicationEvent(events.Common.ApplicationStarted, func(event *application.ApplicationEvent) {
@@ -337,7 +344,7 @@ func startApp(log *zap.SugaredLogger, config *types.Config, assets fs.FS, startH
 	menu := wailsApp.NewMenu()
 	menu.Add("Open").OnClick(func(_ *application.Context) {
 		log.Debugf("Opening %s", app.Name)
-		showOrCreateMainWindow(config)
+		showOrCreateMainWindow(config, arco)
 	})
 	menu.Add("Quit").OnClick(func(_ *application.Context) {
 		log.Debugf("Quitting %s", app.Name)

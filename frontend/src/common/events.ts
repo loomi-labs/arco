@@ -56,3 +56,7 @@ export function notificationDismissedEvent(): string {
 export function notificationCreatedEvent(): string {
   return `${types.Event.EventNotificationCreated}`;
 }
+
+export function windowCloseRequestedEvent(): string {
+  return `${types.Event.EventWindowCloseRequested}`;
+}

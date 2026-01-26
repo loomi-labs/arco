@@ -24,6 +24,20 @@ import * as ent$0 from "../../ent/models.js";
 // @ts-ignore: Unused imports
 import * as $models from "./models.js";
 
+/**
+ * ClearDirtyPage clears the dirty page state
+ */
+export function ClearDirtyPage(): $CancellablePromise<void> {
+    return $Call.ByID(134297611);
+}
+
+/**
+ * CloseWindow closes the application window
+ */
+export function CloseWindow(): $CancellablePromise<void> {
+    return $Call.ByID(334715981);
+}
+
 export function DismissMacFUSEWarning(): $CancellablePromise<void> {
     return $Call.ByID(3490280799);
 }
@@ -86,6 +100,13 @@ export function LogDebug(message: string): $CancellablePromise<void> {
 
 export function SaveSettings(settings: ent$0.Settings | null): $CancellablePromise<void> {
     return $Call.ByID(2503273855, settings);
+}
+
+/**
+ * SetDirtyPage marks a page as having unsaved changes
+ */
+export function SetDirtyPage(pageName: string): $CancellablePromise<void> {
+    return $Call.ByID(2912296960, pageName);
 }
 
 // Private type creation functions

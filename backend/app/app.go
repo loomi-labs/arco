@@ -133,6 +133,11 @@ func (a *App) NotificationService() *notification.Service {
 	return a.notificationService
 }
 
+// IsDirty returns true if any page has unsaved changes
+func (a *App) IsDirty() bool {
+	return a.state.IsDirty()
+}
+
 func (a *App) Startup(ctx context.Context) {
 	a.log.Infof("Running Arco version %s", a.config.Version.String())
 	a.ctx, a.cancel = context.WithCancel(ctx)
