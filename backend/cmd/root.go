@@ -246,8 +246,10 @@ func showOrCreateMainWindow(config *types.Config) {
 	}
 
 	newWindow := wailsApp.Window.NewWithOptions(application.WebviewWindowOptions{
-		Name:  types.WindowTitle,
-		Title: types.WindowTitle,
+		Name:   types.WindowTitle,
+		Title:  types.WindowTitle,
+		Width:  1280,
+		Height: 800,
 		Mac: application.MacWindow{
 			InvisibleTitleBarHeight: 50,
 			Backdrop:                application.MacBackdropTranslucent,

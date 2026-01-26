@@ -416,6 +416,7 @@ watch([name, location, password, isEncrypted], async () => {
                     <label class='input w-full flex items-center gap-2' :class='{ "input-error": nameError }'>
                       <input type='text'
                              class='grow p-0 [font:inherit]'
+                             autocapitalize='off'
                              v-model='name'
                              @input='isNameTouchedByUser = true'
                              placeholder='Repository name' />
