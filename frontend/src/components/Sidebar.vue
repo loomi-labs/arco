@@ -1,9 +1,9 @@
 <script setup lang='ts'>
 
-import { onUnmounted, ref } from "vue";
+import { computed, onUnmounted, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { Page, withId } from "../router";
-import { Bars3Icon, HomeIcon, PlusIcon, UserCircleIcon, Cog6ToothIcon, CreditCardIcon, XMarkIcon } from "@heroicons/vue/24/outline";
+import { HomeIcon, PlusIcon, UserCircleIcon, Cog6ToothIcon, CreditCardIcon, ChevronLeftIcon, ChevronRightIcon } from "@heroicons/vue/24/outline";
 import { ComputerDesktopIcon, GlobeEuropeAfricaIcon, HomeIcon as HomeIconSolid } from "@heroicons/vue/24/solid";
 import ArcoLogo from "./common/ArcoLogo.vue";
 import ArcoFooter from "./common/ArcoFooter.vue";
@@ -34,7 +34,7 @@ const { isAuthenticated, userEmail } = useAuth();
 
 const backupProfiles = ref<BackupProfile[]>([]);
 const repos = ref<repoModels.Repository[]>([]);
-const isMobileMenuOpen = ref(false);
+const isExpanded = ref(false); // Sidebar starts collapsed
 
 // Workaround: Using reactive breakpoint detection to conditionally apply position classes.
 // Using 'fixed xl:sticky' directly in the template causes CSS conflicts in production builds
@@ -90,17 +90,26 @@ function isActiveAddRepo(): boolean {
   return route.path === Page.AddRepository;
 }
 
-function toggleMobileMenu() {
-  isMobileMenuOpen.value = !isMobileMenuOpen.value;
+function toggleExpanded() {
+  isExpanded.value = !isExpanded.value;
 }
 
-function closeMobileMenu() {
-  isMobileMenuOpen.value = false;
+function collapse() {
+  isExpanded.value = false;
 }
+
+// Collapsed = not expanded
+const isCollapsed = computed(() => !isExpanded.value);
+
+// Show backdrop on small screens when expanded
+const showBackdrop = computed(() => !isDesktop.value && isExpanded.value);
 
 function navigateTo(path: string) {
   router.push(path);
-  closeMobileMenu();
+  // Collapse on small screens after navigation
+  if (!isDesktop.value) {
+    collapse();
+  }
 }
 
 /************
@@ -126,61 +135,67 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <!-- Mobile menu button -->
-  <div :class='[
-    "xl:hidden fixed top-4 z-50 transition-all duration-300",
-    isMobileMenuOpen ? "left-46" : "left-4"
-  ]'>
-    <button @click='toggleMobileMenu' class='btn btn-circle btn-ghost'>
-      <component :is='isMobileMenuOpen ? XMarkIcon : Bars3Icon' class='size-6' />
-    </button>
-  </div>
-
-  <!-- Mobile drawer overlay -->
+  <!-- Backdrop (small screen + expanded only) -->
   <div
-    v-if='isMobileMenuOpen'
-    @click='closeMobileMenu'
-    class='xl:hidden fixed inset-0 bg-black/20 z-30 transition-opacity'
+    v-if='showBackdrop'
+    @click='collapse'
+    class='fixed inset-0 bg-black/20 z-30 transition-opacity'
   ></div>
 
-  <!-- Sidebar -->
+  <!-- Sidebar - always visible -->
   <aside
     :class='[
       isDesktop ? "sticky" : "fixed",
-      "top-0 h-screen w-60 bg-base-100 border-r border-base-300 flex flex-col z-40 transition-transform duration-300",
-      isMobileMenuOpen ? "translate-x-0" : "-translate-x-full xl:translate-x-0"
+      isCollapsed ? "w-16" : "w-60",
+      "top-0 h-screen bg-base-100 border-r border-base-300 flex flex-col z-40 transition-all duration-300"
     ]'
   >
     <!-- Logo/Brand -->
-    <div :class='["p-4 border-b border-base-300", System.IsMac() && "pt-10"]'>
-      <button @click='navigateTo(Page.Dashboard)' class='flex items-center gap-2 text-lg font-semibold hover:text-primary transition-colors'>
+    <div :class='["relative p-4 border-b border-base-300 flex items-center", System.IsMac() && "pt-10", isCollapsed ? "justify-center" : ""]'>
+      <button @click='navigateTo(Page.Dashboard)' class='flex items-center gap-2 text-lg font-semibold hover:text-primary transition-colors' :title='isCollapsed ? "Arco - Dashboard" : undefined'>
         <ArcoLogo svgClass='size-8' />
-        <span>Arco</span>
+        <span v-if='!isCollapsed'>Arco</span>
+      </button>
+      <!-- Toggle button - sticks out when collapsed -->
+      <button
+        @click='toggleExpanded'
+        :class='[
+          "btn btn-ghost btn-xs btn-circle absolute top-1/2 -translate-y-1/2 bg-base-100 border border-base-300",
+          isCollapsed ? "left-12" : "right-2"
+        ]'
+        :title='isCollapsed ? "Expand sidebar" : "Collapse sidebar"'
+      >
+        <ChevronRightIcon v-if='isCollapsed' class='size-4' />
+        <ChevronLeftIcon v-else class='size-4' />
       </button>
     </div>
 
     <!-- Navigation -->
     <nav class='flex-1 overflow-y-auto p-4 space-y-1'>
+
       <!-- Dashboard -->
       <button
         @click='navigateTo(Page.Dashboard)'
         :class='[
-          "w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors",
+          "w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors",
+          isCollapsed ? "justify-center" : "text-left",
           isActiveRoute(Page.Dashboard)
             ? "bg-primary/20 border-l-4 border-primary font-semibold"
             : "hover:bg-base-200"
         ]'
+        :title='isCollapsed ? "Dashboard" : undefined'
       >
-        <HomeIconSolid v-if='isActiveRoute(Page.Dashboard)' class='size-5' />
-        <HomeIcon v-else class='size-5' />
-        <span>Dashboard</span>
+        <HomeIconSolid v-if='isActiveRoute(Page.Dashboard)' class='size-5 flex-shrink-0' />
+        <HomeIcon v-else class='size-5 flex-shrink-0' />
+        <span v-if='!isCollapsed'>Dashboard</span>
       </button>
 
       <!-- Backup Profiles Section -->
       <div class='pt-4'>
-        <h3 class='px-3 py-2 text-xs font-semibold text-base-content/70 uppercase tracking-wide'>
+        <h3 v-if='!isCollapsed' class='px-3 py-2 text-xs font-semibold text-base-content/70 uppercase tracking-wide'>
           Backup Profiles
         </h3>
+        <div v-else class='border-t border-base-300 my-2'></div>
 
         <!-- Profiles list -->
         <div class='mt-1 space-y-1'>
@@ -189,37 +204,42 @@ onUnmounted(() => {
             :key='profile.id'
             @click='navigateTo(withId(Page.BackupProfile, profile.id.toString()))'
             :class='[
-              "w-full flex items-center gap-2 px-3 py-1.5 rounded-lg text-left text-sm transition-colors",
+              "w-full flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm transition-colors",
+              isCollapsed ? "justify-center" : "text-left",
               isActiveProfile(profile.id)
                 ? "bg-primary/20 border-l-4 border-primary"
                 : "hover:bg-base-200"
             ]'
+            :title='isCollapsed ? profile.name : undefined'
           >
             <component :is='getIcon(profile.icon).html' class='size-4 flex-shrink-0' />
-            <span class='truncate'>{{ profile.name }}</span>
+            <span v-if='!isCollapsed' class='truncate'>{{ profile.name }}</span>
           </button>
 
           <!-- New Profile Button -->
           <button
             @click='navigateTo(Page.AddBackupProfile)'
             :class='[
-              "w-full flex items-center justify-start gap-2 px-3 py-1.5 rounded-lg text-sm transition-colors",
+              "w-full flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm transition-colors",
+              isCollapsed ? "justify-center" : "justify-start",
               isActiveAddProfile()
                 ? "bg-primary/20 border-l-4 border-primary"
                 : "hover:bg-base-200"
             ]'
+            :title='isCollapsed ? "New Profile" : undefined'
           >
-            <PlusIcon class='size-4' />
-            <span>New Profile</span>
+            <PlusIcon class='size-4 flex-shrink-0' />
+            <span v-if='!isCollapsed'>New Profile</span>
           </button>
         </div>
       </div>
 
       <!-- Repositories Section -->
       <div class='pt-4'>
-        <h3 class='px-3 py-2 text-xs font-semibold text-base-content/70 uppercase tracking-wide'>
+        <h3 v-if='!isCollapsed' class='px-3 py-2 text-xs font-semibold text-base-content/70 uppercase tracking-wide'>
           Repositories
         </h3>
+        <div v-else class='border-t border-base-300 my-2'></div>
 
         <!-- Repos list -->
         <div class='mt-1 space-y-1'>
@@ -228,30 +248,34 @@ onUnmounted(() => {
             :key='repo.id'
             @click='navigateTo(withId(Page.Repository, repo.id.toString()))'
             :class='[
-              "w-full flex items-center gap-2 px-3 py-1.5 rounded-lg text-left text-sm transition-colors",
+              "w-full flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm transition-colors",
+              isCollapsed ? "justify-center" : "text-left",
               isActiveRepo(repo.id)
                 ? "bg-primary/20 border-l-4 border-primary"
                 : "hover:bg-base-200"
             ]'
+            :title='isCollapsed ? repo.name : undefined'
           >
             <ComputerDesktopIcon v-if='repo.type.type === LocationType.LocationTypeLocal' class='size-4 flex-shrink-0' />
             <ArcoLogo v-else-if='repo.type.type === LocationType.LocationTypeArcoCloud' svgClass='size-4 flex-shrink-0' />
             <GlobeEuropeAfricaIcon v-else class='size-4 flex-shrink-0' />
-            <span class='truncate'>{{ repo.name }}</span>
+            <span v-if='!isCollapsed' class='truncate'>{{ repo.name }}</span>
           </button>
 
           <!-- New Repository Button -->
           <button
             @click='navigateTo(Page.AddRepository)'
             :class='[
-              "w-full flex items-center justify-start gap-2 px-3 py-1.5 rounded-lg text-sm transition-colors",
+              "w-full flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm transition-colors",
+              isCollapsed ? "justify-center" : "justify-start",
               isActiveAddRepo()
                 ? "bg-primary/20 border-l-4 border-primary"
                 : "hover:bg-base-200"
             ]'
+            :title='isCollapsed ? "New Repository" : undefined'
           >
-            <PlusIcon class='size-4' />
-            <span>New Repository</span>
+            <PlusIcon class='size-4 flex-shrink-0' />
+            <span v-if='!isCollapsed'>New Repository</span>
           </button>
         </div>
       </div>
@@ -265,13 +289,15 @@ onUnmounted(() => {
           @click='navigateTo(Page.Subscription)'
           :class='[
             "w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors",
+            isCollapsed ? "justify-center" : "",
             isActiveRoute(Page.Subscription)
               ? "bg-primary/20 border-l-4 border-primary font-semibold"
               : "hover:bg-base-200"
           ]'
+          :title='isCollapsed ? "Subscription" : undefined'
         >
-          <CreditCardIcon class='size-5' />
-          <span>Subscription</span>
+          <CreditCardIcon class='size-5 flex-shrink-0' />
+          <span v-if='!isCollapsed'>Subscription</span>
         </button>
       </template>
 
@@ -280,23 +306,25 @@ onUnmounted(() => {
         @click='navigateTo(Page.Settings)'
         :class='[
           "w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors",
+          isCollapsed ? "justify-center" : "",
           isActiveRoute(Page.Settings)
             ? "bg-primary/20 border-l-4 border-primary font-semibold"
             : "hover:bg-base-200"
         ]'
+        :title='isCollapsed ? "Settings" : undefined'
       >
-        <Cog6ToothIcon class='size-5' />
-        <span>Settings</span>
+        <Cog6ToothIcon class='size-5 flex-shrink-0' />
+        <span v-if='!isCollapsed'>Settings</span>
       </button>
 
       <!-- User Email Display (only show if authenticated) -->
       <template v-if='isAuthenticated'>
-        <div class='flex items-center gap-3 px-3 py-2 rounded-lg bg-base-200'>
-          <div class='relative'>
+        <div :class='["flex items-center gap-3 px-3 py-2 rounded-lg bg-base-200", isCollapsed ? "justify-center" : ""]' :title='isCollapsed ? userEmail : undefined'>
+          <div class='relative flex-shrink-0'>
             <UserCircleIcon class='size-5' />
             <span class='absolute -top-1 -right-1 w-2 h-2 bg-success rounded-full'></span>
           </div>
-          <span class='flex-1 truncate text-left text-sm'>{{ userEmail }}</span>
+          <span v-if='!isCollapsed' class='flex-1 truncate text-left text-sm'>{{ userEmail }}</span>
         </div>
       </template>
 
@@ -304,16 +332,17 @@ onUnmounted(() => {
       <template v-if='!isAuthenticated'>
         <button
           @click='showAuthModal'
-          class='w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-base-200 transition-colors'
+          :class='["w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-base-200 transition-colors", isCollapsed ? "justify-center" : ""]'
+          :title='isCollapsed ? "Login" : undefined'
         >
-          <UserCircleIcon class='size-5' />
-          <span>Login</span>
+          <UserCircleIcon class='size-5 flex-shrink-0' />
+          <span v-if='!isCollapsed'>Login</span>
         </button>
       </template>
     </div>
 
-    <!-- Footer -->
-    <div>
+    <!-- Footer (hidden when collapsed) -->
+    <div v-if='!isCollapsed'>
       <ArcoFooter />
     </div>
   </aside>
