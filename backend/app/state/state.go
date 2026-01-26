@@ -19,6 +19,7 @@ type State struct {
 	authState       *AuthState
 	checkoutSession *arcov1.CreateCheckoutSessionResponse
 	checkoutResult  *CheckoutResult
+	dirtyPageName   string // tracks which page has unsaved changes
 }
 
 type StartupStatus string
@@ -217,4 +218,29 @@ func (s *State) ClearCheckoutResult() {
 // EmitSubscriptionCancelled emits a subscription cancelled event
 func (s *State) EmitSubscriptionCancelled(ctx context.Context) {
 	s.eventEmitter.EmitEvent(ctx, types.EventSubscriptionCancelledString())
+}
+
+/***********************************/
+/********** Dirty Page State *******/
+/***********************************/
+
+// SetDirtyPage marks a page as having unsaved changes
+func (s *State) SetDirtyPage(pageName string) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.dirtyPageName = pageName
+}
+
+// ClearDirtyPage clears the dirty page state
+func (s *State) ClearDirtyPage() {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.dirtyPageName = ""
+}
+
+// IsDirty returns true if any page has unsaved changes
+func (s *State) IsDirty() bool {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.dirtyPageName != ""
 }

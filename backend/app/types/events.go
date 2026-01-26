@@ -32,6 +32,7 @@ const (
 	EventOperationErrorOccurred Event = "operationErrorOccurred"
 	EventNotificationDismissed  Event = "notificationDismissed"
 	EventNotificationCreated    Event = "notificationCreated"
+	EventWindowCloseRequested   Event = "windowCloseRequested"
 )
 
 var AllEvents = []Event{
@@ -55,6 +56,7 @@ var AllEvents = []Event{
 	EventOperationErrorOccurred,
 	EventNotificationDismissed,
 	EventNotificationCreated,
+	EventWindowCloseRequested,
 }
 
 func (e Event) String() string {
@@ -119,6 +121,10 @@ func EventNotificationDismissedString() string {
 
 func EventNotificationCreatedString() string {
 	return EventNotificationCreated.String()
+}
+
+func EventWindowCloseRequestedString() string {
+	return EventWindowCloseRequested.String()
 }
 
 type RuntimeEventEmitter struct{}

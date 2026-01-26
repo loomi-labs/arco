@@ -173,3 +173,21 @@ func (s *Service) DismissMacFUSEWarning(ctx context.Context) error {
 		SetMacfuseWarningDismissed(true).
 		Exec(ctx)
 }
+
+// SetDirtyPage marks a page as having unsaved changes
+func (s *Service) SetDirtyPage(ctx context.Context, pageName string) {
+	s.state.SetDirtyPage(pageName)
+}
+
+// ClearDirtyPage clears the dirty page state
+func (s *Service) ClearDirtyPage(ctx context.Context) {
+	s.state.ClearDirtyPage()
+}
+
+// CloseWindow closes the application window
+func (s *Service) CloseWindow(ctx context.Context) {
+	s.state.ClearDirtyPage()
+	if window, ok := application.Get().Window.GetByName(types.WindowTitle); ok {
+		window.Close()
+	}
+}
