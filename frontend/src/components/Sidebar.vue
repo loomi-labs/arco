@@ -129,9 +129,13 @@ cleanupFunctions.push(Events.On(EventHelpers.repositoryUpdatedEvent(), loadData)
 cleanupFunctions.push(Events.On(EventHelpers.repositoryDeletedEvent(), loadData));
 
 // Auto-expand/collapse sidebar based on screen size
-watch(isDesktop, (newValue) => {
-  isExpanded.value = newValue;
-});
+watch(
+  isDesktop,
+  (newValue) => {
+    isExpanded.value = newValue;
+  },
+  { immediate: true }
+);
 
 onUnmounted(() => {
   cleanupFunctions.forEach((cleanup) => cleanup());
