@@ -152,7 +152,7 @@ onUnmounted(() => {
   >
     <!-- Logo/Brand -->
     <div :class='["relative p-4 border-b border-base-300 flex items-center", System.IsMac() && "pt-10", isCollapsed ? "justify-center" : ""]'>
-      <button @click='navigateTo(Page.Dashboard)' class='flex items-center gap-2 text-lg font-semibold hover:text-primary transition-colors' :title='isCollapsed ? "Arco - Dashboard" : undefined'>
+      <button @click='navigateTo(Page.Dashboard)' class='flex items-center gap-2 text-lg font-semibold hover:text-primary transition-colors cursor-pointer' :title='isCollapsed ? "Arco - Dashboard" : undefined'>
         <ArcoLogo svgClass='size-8' />
         <span v-if='!isCollapsed'>Arco</span>
       </button>
@@ -177,11 +177,11 @@ onUnmounted(() => {
       <button
         @click='navigateTo(Page.Dashboard)'
         :class='[
-          "w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors",
+          "w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors cursor-pointer",
           isCollapsed ? "justify-center" : "text-left",
           isActiveRoute(Page.Dashboard)
             ? "bg-primary/20 border-l-4 border-primary font-semibold"
-            : "hover:bg-base-200"
+            : "hover:bg-base-300"
         ]'
         :title='isCollapsed ? "Dashboard" : undefined'
       >
@@ -204,11 +204,11 @@ onUnmounted(() => {
             :key='profile.id'
             @click='navigateTo(withId(Page.BackupProfile, profile.id.toString()))'
             :class='[
-              "w-full flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm transition-colors",
+              "w-full flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm transition-colors cursor-pointer",
               isCollapsed ? "justify-center" : "text-left",
               isActiveProfile(profile.id)
                 ? "bg-primary/20 border-l-4 border-primary"
-                : "hover:bg-base-200"
+                : "hover:bg-base-300"
             ]'
             :title='isCollapsed ? profile.name : undefined'
           >
@@ -220,11 +220,11 @@ onUnmounted(() => {
           <button
             @click='navigateTo(Page.AddBackupProfile)'
             :class='[
-              "w-full flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm transition-colors",
+              "w-full flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm transition-colors cursor-pointer",
               isCollapsed ? "justify-center" : "justify-start",
               isActiveAddProfile()
                 ? "bg-primary/20 border-l-4 border-primary"
-                : "hover:bg-base-200"
+                : "hover:bg-base-300"
             ]'
             :title='isCollapsed ? "New Profile" : undefined'
           >
@@ -248,11 +248,11 @@ onUnmounted(() => {
             :key='repo.id'
             @click='navigateTo(withId(Page.Repository, repo.id.toString()))'
             :class='[
-              "w-full flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm transition-colors",
+              "w-full flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm transition-colors cursor-pointer",
               isCollapsed ? "justify-center" : "text-left",
               isActiveRepo(repo.id)
                 ? "bg-primary/20 border-l-4 border-primary"
-                : "hover:bg-base-200"
+                : "hover:bg-base-300"
             ]'
             :title='isCollapsed ? repo.name : undefined'
           >
@@ -266,11 +266,11 @@ onUnmounted(() => {
           <button
             @click='navigateTo(Page.AddRepository)'
             :class='[
-              "w-full flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm transition-colors",
+              "w-full flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm transition-colors cursor-pointer",
               isCollapsed ? "justify-center" : "justify-start",
               isActiveAddRepo()
                 ? "bg-primary/20 border-l-4 border-primary"
-                : "hover:bg-base-200"
+                : "hover:bg-base-300"
             ]'
             :title='isCollapsed ? "New Repository" : undefined'
           >
@@ -288,11 +288,11 @@ onUnmounted(() => {
         <button
           @click='navigateTo(Page.Subscription)'
           :class='[
-            "w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors",
+            "w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors cursor-pointer",
             isCollapsed ? "justify-center" : "",
             isActiveRoute(Page.Subscription)
               ? "bg-primary/20 border-l-4 border-primary font-semibold"
-              : "hover:bg-base-200"
+              : "hover:bg-base-300"
           ]'
           :title='isCollapsed ? "Subscription" : undefined'
         >
@@ -305,11 +305,11 @@ onUnmounted(() => {
       <button
         @click='navigateTo(Page.Settings)'
         :class='[
-          "w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors",
+          "w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors cursor-pointer",
           isCollapsed ? "justify-center" : "",
           isActiveRoute(Page.Settings)
             ? "bg-primary/20 border-l-4 border-primary font-semibold"
-            : "hover:bg-base-200"
+            : "hover:bg-base-300"
         ]'
         :title='isCollapsed ? "Settings" : undefined'
       >
@@ -332,7 +332,7 @@ onUnmounted(() => {
       <template v-if='!isAuthenticated'>
         <button
           @click='showAuthModal'
-          :class='["w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-base-200 transition-colors", isCollapsed ? "justify-center" : ""]'
+          :class='["w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-base-300 transition-colors cursor-pointer", isCollapsed ? "justify-center" : ""]'
           :title='isCollapsed ? "Login" : undefined'
         >
           <UserCircleIcon class='size-5 flex-shrink-0' />
