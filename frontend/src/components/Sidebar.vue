@@ -1,6 +1,6 @@
 <script setup lang='ts'>
 
-import { computed, onUnmounted, ref } from "vue";
+import { computed, onUnmounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { Page, withId } from "../router";
 import { HomeIcon, PlusIcon, UserCircleIcon, Cog6ToothIcon, CreditCardIcon, ChevronLeftIcon, ChevronRightIcon } from "@heroicons/vue/24/outline";
@@ -127,6 +127,11 @@ cleanupFunctions.push(Events.On(EventHelpers.backupProfileDeletedEvent(), loadDa
 cleanupFunctions.push(Events.On(EventHelpers.repositoryCreatedEvent(), loadData));
 cleanupFunctions.push(Events.On(EventHelpers.repositoryUpdatedEvent(), loadData));
 cleanupFunctions.push(Events.On(EventHelpers.repositoryDeletedEvent(), loadData));
+
+// Auto-expand/collapse sidebar based on screen size
+watch(isDesktop, (newValue) => {
+  isExpanded.value = newValue;
+});
 
 onUnmounted(() => {
   cleanupFunctions.forEach((cleanup) => cleanup());
