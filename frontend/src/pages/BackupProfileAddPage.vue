@@ -339,7 +339,7 @@ onBeforeRouteLeave(async (to, _from) => {
         <!-- Name -->
         <label class='w-full py-6'>
           <FormField :error='step1Form.errors.value.name' :isValid='!step1Form.errors.value.name && !!name'>
-            <input :class='formInputClass' type='text' placeholder='fancy-pants-backup'
+            <input :class='formInputClass' type='text' autocapitalize='off' placeholder='fancy-pants-backup'
                    v-model='name'
                    v-bind='nameAttrs' />
           </FormField>

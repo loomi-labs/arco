@@ -17,7 +17,7 @@ import * as repoService from "../../bindings/github.com/loomi-labs/arco/backend/
 import type * as repoModels from "../../bindings/github.com/loomi-labs/arco/backend/app/repository/models";
 import { LocationType } from "../../bindings/github.com/loomi-labs/arco/backend/app/repository";
 import type { BackupProfile } from "../../bindings/github.com/loomi-labs/arco/backend/app/backup_profile";
-import { Events } from "@wailsio/runtime";
+import { Events, System } from "@wailsio/runtime";
 import * as EventHelpers from "../common/events";
 
 /************
@@ -152,7 +152,7 @@ onUnmounted(() => {
     ]'
   >
     <!-- Logo/Brand -->
-    <div class='p-4 border-b border-base-300'>
+    <div :class='["p-4 border-b border-base-300", System.IsMac() && "pt-10"]'>
       <button @click='navigateTo(Page.Dashboard)' class='flex items-center gap-2 text-lg font-semibold hover:text-primary transition-colors'>
         <ArcoLogo svgClass='size-8' />
         <span>Arco</span>

@@ -1,6 +1,7 @@
 <script setup lang='ts'>
 import { computed, ref, toRaw, watch } from "vue";
 import { isEqual } from "@formkit/tempo";
+import { InformationCircleIcon } from "@heroicons/vue/24/outline";
 import { getTime, setTime } from "../common/time";
 import type { BackupSchedule } from "../../bindings/github.com/loomi-labs/arco/backend/app/backup_profile";
 import * as backupschedule from "../../bindings/github.com/loomi-labs/arco/backend/ent/backupschedule";
@@ -221,6 +222,12 @@ watch(schedule, (newSchedule) => {
           </div>
         </div>
       </div>
+    </div>
+
+    <!-- Info box -->
+    <div class='flex items-start gap-2 mt-4 p-3 bg-info/10 border border-info/30 rounded-lg'>
+      <InformationCircleIcon class='size-5 text-info flex-shrink-0 mt-0.5' />
+      <p class='text-sm text-base-content/80'>If a scheduled backup is missed (e.g., your device was off), it will run automatically as soon as the device is available.</p>
     </div>
   </div>
 </template>

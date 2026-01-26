@@ -275,6 +275,7 @@ watch(isAuthenticated, (authenticated) => {
         <input
           :class="formInputClass"
           type="email"
+          autocapitalize="off"
           v-model="email"
           @input="onEmailInput"
           placeholder="your.email@example.com"

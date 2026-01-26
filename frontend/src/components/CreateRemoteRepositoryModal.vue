@@ -324,6 +324,7 @@ watch([name, location, password, isEncrypted], async () => {
                       <label class='input w-full flex items-center gap-2' :class='{ "input-error": locationError }'>
                         <input type='text'
                                class='grow p-0 [font:inherit]'
+                               autocapitalize='off'
                                v-model='location'
                                placeholder='user@host:path/to/repo'
                                list='remote-locations' />
