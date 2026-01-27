@@ -48,8 +48,12 @@ async function dismiss() {
   }
 }
 
-function openSystemSettings() {
-  Browser.OpenURL('x-apple.systempreferences:com.apple.preference.security?Privacy_AllFiles');
+async function openSystemSettings() {
+  try {
+    await Browser.OpenURL('x-apple.systempreferences:com.apple.preference.security?Privacy_AllFiles');
+  } catch (error: unknown) {
+    await showAndLogError('Failed to open System Settings', error);
+  }
 }
 
 /************
