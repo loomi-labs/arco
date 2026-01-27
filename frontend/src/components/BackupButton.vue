@@ -316,12 +316,12 @@ onUnmounted(() => {
 
 <template>
   <div v-if='buttonStatus'
-       class='relative flex items-center justify-center w-[94px] h-[94px]'
+       class='relative flex items-center justify-center w-[5.875rem] h-[5.875rem]'
        :class='hasRepositoryErrors ? "tooltip tooltip-left tooltip-error" : ""'
        :data-tip='errorTooltipText'>
     <div class='absolute radial-progress'
          :class='[buttonTextColor, hasRepositoryErrors ? "bg-error/20" : "bg-transparent"]'
-         :style='`--value:${progress}; --size:95px; --thickness: 6px;`'
+         :style='`--value:${progress}; --size:5.9375rem; --thickness: 0.375rem;`'
          role='progressbar'>
     </div>
     <button class='absolute btn btn-circle p-4 m-0 w-16 h-16 '
@@ -332,7 +332,7 @@ onUnmounted(() => {
     </button>
   </div>
   <div v-else>
-    <span class='loading loading-ring w-[94px] h-[94px]'></span>
+    <span class='loading loading-ring w-[5.875rem] h-[5.875rem]'></span>
   </div>
 
   <div v-if='showProgressSpinner'
