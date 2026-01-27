@@ -260,7 +260,7 @@ func showOrCreateMainWindow(config *types.Config, arco *app.App) {
 		},
 		BackgroundColour: application.NewRGB(27, 38, 54),
 		URL:              "/",
-		StartState:       application.WindowStateMinimised,
+		StartState:       application.WindowStateNormal,
 		MaxWidth:         3840,
 		MaxHeight:        3840,
 	})
