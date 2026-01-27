@@ -118,6 +118,20 @@ func (_c *SettingsCreate) SetNillableMacfuseWarningDismissed(v *bool) *SettingsC
 	return _c
 }
 
+// SetFullDiskAccessWarningDismissed sets the "full_disk_access_warning_dismissed" field.
+func (_c *SettingsCreate) SetFullDiskAccessWarningDismissed(v bool) *SettingsCreate {
+	_c.mutation.SetFullDiskAccessWarningDismissed(v)
+	return _c
+}
+
+// SetNillableFullDiskAccessWarningDismissed sets the "full_disk_access_warning_dismissed" field if the given value is not nil.
+func (_c *SettingsCreate) SetNillableFullDiskAccessWarningDismissed(v *bool) *SettingsCreate {
+	if v != nil {
+		_c.SetFullDiskAccessWarningDismissed(*v)
+	}
+	return _c
+}
+
 // Mutation returns the SettingsMutation object of the builder.
 func (_c *SettingsCreate) Mutation() *SettingsMutation {
 	return _c.mutation
@@ -181,6 +195,10 @@ func (_c *SettingsCreate) defaults() {
 		v := settings.DefaultMacfuseWarningDismissed
 		_c.mutation.SetMacfuseWarningDismissed(v)
 	}
+	if _, ok := _c.mutation.FullDiskAccessWarningDismissed(); !ok {
+		v := settings.DefaultFullDiskAccessWarningDismissed
+		_c.mutation.SetFullDiskAccessWarningDismissed(v)
+	}
 }
 
 // check runs all checks and user-defined validators on the builder.
@@ -210,6 +228,9 @@ func (_c *SettingsCreate) check() error {
 	}
 	if _, ok := _c.mutation.MacfuseWarningDismissed(); !ok {
 		return &ValidationError{Name: "macfuse_warning_dismissed", err: errors.New(`ent: missing required field "Settings.macfuse_warning_dismissed"`)}
+	}
+	if _, ok := _c.mutation.FullDiskAccessWarningDismissed(); !ok {
+		return &ValidationError{Name: "full_disk_access_warning_dismissed", err: errors.New(`ent: missing required field "Settings.full_disk_access_warning_dismissed"`)}
 	}
 	return nil
 }
@@ -264,6 +285,10 @@ func (_c *SettingsCreate) createSpec() (*Settings, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.MacfuseWarningDismissed(); ok {
 		_spec.SetField(settings.FieldMacfuseWarningDismissed, field.TypeBool, value)
 		_node.MacfuseWarningDismissed = value
+	}
+	if value, ok := _c.mutation.FullDiskAccessWarningDismissed(); ok {
+		_spec.SetField(settings.FieldFullDiskAccessWarningDismissed, field.TypeBool, value)
+		_node.FullDiskAccessWarningDismissed = value
 	}
 	return _node, _spec
 }

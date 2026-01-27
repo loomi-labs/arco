@@ -31,7 +31,9 @@ type Settings struct {
 	DisableShadows bool `json:"disableShadows"`
 	// MacfuseWarningDismissed holds the value of the "macfuse_warning_dismissed" field.
 	MacfuseWarningDismissed bool `json:"macfuseWarningDismissed"`
-	selectValues            sql.SelectValues
+	// FullDiskAccessWarningDismissed holds the value of the "full_disk_access_warning_dismissed" field.
+	FullDiskAccessWarningDismissed bool `json:"fullDiskAccessWarningDismissed"`
+	selectValues                   sql.SelectValues
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -39,7 +41,7 @@ func (*Settings) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case settings.FieldExpertMode, settings.FieldDisableTransitions, settings.FieldDisableShadows, settings.FieldMacfuseWarningDismissed:
+		case settings.FieldExpertMode, settings.FieldDisableTransitions, settings.FieldDisableShadows, settings.FieldMacfuseWarningDismissed, settings.FieldFullDiskAccessWarningDismissed:
 			values[i] = new(sql.NullBool)
 		case settings.FieldID:
 			values[i] = new(sql.NullInt64)
@@ -110,6 +112,12 @@ func (_m *Settings) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.MacfuseWarningDismissed = value.Bool
 			}
+		case settings.FieldFullDiskAccessWarningDismissed:
+			if value, ok := values[i].(*sql.NullBool); !ok {
+				return fmt.Errorf("unexpected type %T for field full_disk_access_warning_dismissed", values[i])
+			} else if value.Valid {
+				_m.FullDiskAccessWarningDismissed = value.Bool
+			}
 		default:
 			_m.selectValues.Set(columns[i], values[i])
 		}
@@ -166,6 +174,9 @@ func (_m *Settings) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("macfuse_warning_dismissed=")
 	builder.WriteString(fmt.Sprintf("%v", _m.MacfuseWarningDismissed))
+	builder.WriteString(", ")
+	builder.WriteString("full_disk_access_warning_dismissed=")
+	builder.WriteString(fmt.Sprintf("%v", _m.FullDiskAccessWarningDismissed))
 	builder.WriteByte(')')
 	return builder.String()
 }

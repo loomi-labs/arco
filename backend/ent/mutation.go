@@ -8387,20 +8387,21 @@ func (m *RepositoryMutation) ResetEdge(name string) error {
 // SettingsMutation represents an operation that mutates the Settings nodes in the graph.
 type SettingsMutation struct {
 	config
-	op                        Op
-	typ                       string
-	id                        *int
-	created_at                *time.Time
-	updated_at                *time.Time
-	expert_mode               *bool
-	theme                     *settings.Theme
-	disable_transitions       *bool
-	disable_shadows           *bool
-	macfuse_warning_dismissed *bool
-	clearedFields             map[string]struct{}
-	done                      bool
-	oldValue                  func(context.Context) (*Settings, error)
-	predicates                []predicate.Settings
+	op                                 Op
+	typ                                string
+	id                                 *int
+	created_at                         *time.Time
+	updated_at                         *time.Time
+	expert_mode                        *bool
+	theme                              *settings.Theme
+	disable_transitions                *bool
+	disable_shadows                    *bool
+	macfuse_warning_dismissed          *bool
+	full_disk_access_warning_dismissed *bool
+	clearedFields                      map[string]struct{}
+	done                               bool
+	oldValue                           func(context.Context) (*Settings, error)
+	predicates                         []predicate.Settings
 }
 
 var _ ent.Mutation = (*SettingsMutation)(nil)
@@ -8753,6 +8754,42 @@ func (m *SettingsMutation) ResetMacfuseWarningDismissed() {
 	m.macfuse_warning_dismissed = nil
 }
 
+// SetFullDiskAccessWarningDismissed sets the "full_disk_access_warning_dismissed" field.
+func (m *SettingsMutation) SetFullDiskAccessWarningDismissed(b bool) {
+	m.full_disk_access_warning_dismissed = &b
+}
+
+// FullDiskAccessWarningDismissed returns the value of the "full_disk_access_warning_dismissed" field in the mutation.
+func (m *SettingsMutation) FullDiskAccessWarningDismissed() (r bool, exists bool) {
+	v := m.full_disk_access_warning_dismissed
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldFullDiskAccessWarningDismissed returns the old "full_disk_access_warning_dismissed" field's value of the Settings entity.
+// If the Settings object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SettingsMutation) OldFullDiskAccessWarningDismissed(ctx context.Context) (v bool, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldFullDiskAccessWarningDismissed is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldFullDiskAccessWarningDismissed requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldFullDiskAccessWarningDismissed: %w", err)
+	}
+	return oldValue.FullDiskAccessWarningDismissed, nil
+}
+
+// ResetFullDiskAccessWarningDismissed resets all changes to the "full_disk_access_warning_dismissed" field.
+func (m *SettingsMutation) ResetFullDiskAccessWarningDismissed() {
+	m.full_disk_access_warning_dismissed = nil
+}
+
 // Where appends a list predicates to the SettingsMutation builder.
 func (m *SettingsMutation) Where(ps ...predicate.Settings) {
 	m.predicates = append(m.predicates, ps...)
@@ -8787,7 +8824,7 @@ func (m *SettingsMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *SettingsMutation) Fields() []string {
-	fields := make([]string, 0, 7)
+	fields := make([]string, 0, 8)
 	if m.created_at != nil {
 		fields = append(fields, settings.FieldCreatedAt)
 	}
@@ -8808,6 +8845,9 @@ func (m *SettingsMutation) Fields() []string {
 	}
 	if m.macfuse_warning_dismissed != nil {
 		fields = append(fields, settings.FieldMacfuseWarningDismissed)
+	}
+	if m.full_disk_access_warning_dismissed != nil {
+		fields = append(fields, settings.FieldFullDiskAccessWarningDismissed)
 	}
 	return fields
 }
@@ -8831,6 +8871,8 @@ func (m *SettingsMutation) Field(name string) (ent.Value, bool) {
 		return m.DisableShadows()
 	case settings.FieldMacfuseWarningDismissed:
 		return m.MacfuseWarningDismissed()
+	case settings.FieldFullDiskAccessWarningDismissed:
+		return m.FullDiskAccessWarningDismissed()
 	}
 	return nil, false
 }
@@ -8854,6 +8896,8 @@ func (m *SettingsMutation) OldField(ctx context.Context, name string) (ent.Value
 		return m.OldDisableShadows(ctx)
 	case settings.FieldMacfuseWarningDismissed:
 		return m.OldMacfuseWarningDismissed(ctx)
+	case settings.FieldFullDiskAccessWarningDismissed:
+		return m.OldFullDiskAccessWarningDismissed(ctx)
 	}
 	return nil, fmt.Errorf("unknown Settings field %s", name)
 }
@@ -8911,6 +8955,13 @@ func (m *SettingsMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetMacfuseWarningDismissed(v)
+		return nil
+	case settings.FieldFullDiskAccessWarningDismissed:
+		v, ok := value.(bool)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetFullDiskAccessWarningDismissed(v)
 		return nil
 	}
 	return fmt.Errorf("unknown Settings field %s", name)
@@ -8981,6 +9032,9 @@ func (m *SettingsMutation) ResetField(name string) error {
 		return nil
 	case settings.FieldMacfuseWarningDismissed:
 		m.ResetMacfuseWarningDismissed()
+		return nil
+	case settings.FieldFullDiskAccessWarningDismissed:
+		m.ResetFullDiskAccessWarningDismissed()
 		return nil
 	}
 	return fmt.Errorf("unknown Settings field %s", name)

@@ -38,6 +38,10 @@ export function CloseWindow(): $CancellablePromise<void> {
     return $Call.ByID(334715981);
 }
 
+export function DismissFullDiskAccessWarning(): $CancellablePromise<void> {
+    return $Call.ByID(326913697);
+}
+
 export function DismissMacFUSEWarning(): $CancellablePromise<void> {
     return $Call.ByID(3490280799);
 }
@@ -60,33 +64,39 @@ export function GetEnvVars(): $CancellablePromise<$models.Env> {
     });
 }
 
+export function GetFullDiskAccessStatus(): $CancellablePromise<$models.FullDiskAccessStatus | null> {
+    return $Call.ByID(1162256901).then(($result: any) => {
+        return $$createType4($result);
+    });
+}
+
 export function GetMacFUSEStatus(): $CancellablePromise<$models.MacFUSEStatus | null> {
     return $Call.ByID(1826245899).then(($result: any) => {
-        return $$createType4($result);
+        return $$createType6($result);
     });
 }
 
 export function GetNotifications(): $CancellablePromise<types$0.Notification[]> {
     return $Call.ByID(3798281507).then(($result: any) => {
-        return $$createType6($result);
+        return $$createType8($result);
     });
 }
 
 export function GetSettings(): $CancellablePromise<ent$0.Settings | null> {
     return $Call.ByID(1364114100).then(($result: any) => {
-        return $$createType8($result);
+        return $$createType10($result);
     });
 }
 
 export function GetStartupState(): $CancellablePromise<state$0.StartupState> {
     return $Call.ByID(1427095267).then(($result: any) => {
-        return $$createType9($result);
+        return $$createType11($result);
     });
 }
 
 export function GetUser(): $CancellablePromise<$models.User | null> {
     return $Call.ByID(3844979126).then(($result: any) => {
-        return $$createType11($result);
+        return $$createType13($result);
     });
 }
 
@@ -113,12 +123,14 @@ export function SetDirtyPage(pageName: string): $CancellablePromise<void> {
 const $$createType0 = $Create.Array($Create.Any);
 const $$createType1 = $models.AppInfo.createFrom;
 const $$createType2 = $models.Env.createFrom;
-const $$createType3 = $models.MacFUSEStatus.createFrom;
+const $$createType3 = $models.FullDiskAccessStatus.createFrom;
 const $$createType4 = $Create.Nullable($$createType3);
-const $$createType5 = types$0.Notification.createFrom;
-const $$createType6 = $Create.Array($$createType5);
-const $$createType7 = ent$0.Settings.createFrom;
-const $$createType8 = $Create.Nullable($$createType7);
-const $$createType9 = state$0.StartupState.createFrom;
-const $$createType10 = $models.User.createFrom;
-const $$createType11 = $Create.Nullable($$createType10);
+const $$createType5 = $models.MacFUSEStatus.createFrom;
+const $$createType6 = $Create.Nullable($$createType5);
+const $$createType7 = types$0.Notification.createFrom;
+const $$createType8 = $Create.Array($$createType7);
+const $$createType9 = ent$0.Settings.createFrom;
+const $$createType10 = $Create.Nullable($$createType9);
+const $$createType11 = state$0.StartupState.createFrom;
+const $$createType12 = $models.User.createFrom;
+const $$createType13 = $Create.Nullable($$createType12);

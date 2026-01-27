@@ -16,6 +16,7 @@ import BackupConceptsInfoModal from "../components/BackupConceptsInfoModal.vue";
 import EmptyStateCard from "../components/EmptyStateCard.vue";
 import ErrorSection from "../components/ErrorSection.vue";
 import MacFUSEWarning from "../components/MacFUSEWarning.vue";
+import FullDiskAccessWarning from "../components/FullDiskAccessWarning.vue";
 import WelcomeModal from "../components/common/WelcomeModal.vue";
 import * as EventHelpers from "../common/events";
 import * as backupProfileService from "../../bindings/github.com/loomi-labs/arco/backend/app/backup_profile/service";

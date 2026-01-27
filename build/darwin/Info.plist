@@ -23,5 +23,7 @@
             <string>true</string>
         <key>NSHumanReadableCopyright</key>
             <string>(c) 2025, Loomi Labs</string>
+        <key>NSSystemAdministrationUsageDescription</key>
+            <string>Arco needs access to back up your files and folders.</string>
     </dict>
 </plist>

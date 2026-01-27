@@ -28,6 +28,8 @@ const (
 	FieldDisableShadows = "disable_shadows"
 	// FieldMacfuseWarningDismissed holds the string denoting the macfuse_warning_dismissed field in the database.
 	FieldMacfuseWarningDismissed = "macfuse_warning_dismissed"
+	// FieldFullDiskAccessWarningDismissed holds the string denoting the full_disk_access_warning_dismissed field in the database.
+	FieldFullDiskAccessWarningDismissed = "full_disk_access_warning_dismissed"
 	// Table holds the table name of the settings in the database.
 	Table = "settings"
 )
@@ -42,6 +44,7 @@ var Columns = []string{
 	FieldDisableTransitions,
 	FieldDisableShadows,
 	FieldMacfuseWarningDismissed,
+	FieldFullDiskAccessWarningDismissed,
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -69,6 +72,8 @@ var (
 	DefaultDisableShadows bool
 	// DefaultMacfuseWarningDismissed holds the default value on creation for the "macfuse_warning_dismissed" field.
 	DefaultMacfuseWarningDismissed bool
+	// DefaultFullDiskAccessWarningDismissed holds the default value on creation for the "full_disk_access_warning_dismissed" field.
+	DefaultFullDiskAccessWarningDismissed bool
 )
 
 // Theme defines the type for the "theme" enum field.
@@ -139,4 +144,9 @@ func ByDisableShadows(opts ...sql.OrderTermOption) OrderOption {
 // ByMacfuseWarningDismissed orders the results by the macfuse_warning_dismissed field.
 func ByMacfuseWarningDismissed(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldMacfuseWarningDismissed, opts...).ToFunc()
+}
+
+// ByFullDiskAccessWarningDismissed orders the results by the full_disk_access_warning_dismissed field.
+func ByFullDiskAccessWarningDismissed(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldFullDiskAccessWarningDismissed, opts...).ToFunc()
 }
