@@ -65,12 +65,16 @@ export class Env {
 
 export class FullDiskAccessStatus {
     "isMacOS": boolean;
+    "isGranted": boolean;
     "warningDismissed": boolean;
 
     /** Creates a new FullDiskAccessStatus instance. */
     constructor($$source: Partial<FullDiskAccessStatus> = {}) {
         if (!("isMacOS" in $$source)) {
             this["isMacOS"] = false;
+        }
+        if (!("isGranted" in $$source)) {
+            this["isGranted"] = false;
         }
         if (!("warningDismissed" in $$source)) {
             this["warningDismissed"] = false;

@@ -3,7 +3,6 @@ package platform
 import (
 	"fmt"
 	"os"
-	"path/filepath"
 	"runtime"
 )
 
