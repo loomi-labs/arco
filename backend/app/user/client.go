@@ -176,6 +176,7 @@ func (s *Service) DismissMacFUSEWarning(ctx context.Context) error {
 
 type FullDiskAccessStatus struct {
 	IsMacOS          bool `json:"isMacOS"`
+	IsGranted        bool `json:"isGranted"`
 	WarningDismissed bool `json:"warningDismissed"`
 }
 

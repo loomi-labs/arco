@@ -2,6 +2,8 @@
 
 package platform
 
+import "os"
+
 /*
 #cgo CFLAGS: -x objective-c
 #cgo LDFLAGS: -framework Cocoa
@@ -32,4 +34,12 @@ func ShowDockIcon() {
 // This should be called when all windows are closed.
 func HideDockIcon() {
 	C.hideDockIcon()
+}
+
+// HasFullDiskAccess checks if the application has Full Disk Access permission on macOS.
+// This is done by attempting to read a directory that requires FDA.
+func HasFullDiskAccess() bool {
+	// The TCC database directory requires Full Disk Access to read
+	_, err := os.ReadDir("/Library/Application Support/com.apple.TCC")
+	return err == nil
 }

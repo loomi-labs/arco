@@ -13,3 +13,9 @@ func ShowDockIcon() {
 func HideDockIcon() {
 	// No-op on Linux
 }
+
+// HasFullDiskAccess always returns true on Linux.
+// Full Disk Access is a macOS-specific permission.
+func HasFullDiskAccess() bool {
+	return true
+}
