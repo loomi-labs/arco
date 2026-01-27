@@ -63,6 +63,35 @@ export class Env {
     }
 }
 
+export class FullDiskAccessStatus {
+    "isMacOS": boolean;
+    "isGranted": boolean;
+    "warningDismissed": boolean;
+
+    /** Creates a new FullDiskAccessStatus instance. */
+    constructor($$source: Partial<FullDiskAccessStatus> = {}) {
+        if (!("isMacOS" in $$source)) {
+            this["isMacOS"] = false;
+        }
+        if (!("isGranted" in $$source)) {
+            this["isGranted"] = false;
+        }
+        if (!("warningDismissed" in $$source)) {
+            this["warningDismissed"] = false;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new FullDiskAccessStatus instance from a string or object.
+     */
+    static createFrom($$source: any = {}): FullDiskAccessStatus {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new FullDiskAccessStatus($$parsedSource as Partial<FullDiskAccessStatus>);
+    }
+}
+
 export class MacFUSEStatus {
     "isMacOS": boolean;
     "isInstalled": boolean;

@@ -35,6 +35,9 @@ func (Settings) Fields() []ent.Field {
 		field.Bool("macfuse_warning_dismissed").
 			StructTag(`json:"macfuseWarningDismissed"`).
 			Default(false),
+		field.Bool("full_disk_access_warning_dismissed").
+			StructTag(`json:"fullDiskAccessWarningDismissed"`).
+			Default(false),
 	}
 }
 

@@ -9,6 +9,7 @@ export {
 export {
     AppInfo,
     Env,
+    FullDiskAccessStatus,
     MacFUSEStatus,
     User
 } from "./models.js";
