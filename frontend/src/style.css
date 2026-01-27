@@ -11,6 +11,11 @@
         src: url('assets/fonts/nunito-v16-latin-regular.woff2') format('woff2');
     }
 
+    /* Responsive font sizing - scales smoothly with viewport width */
+    html {
+        font-size: clamp(13px, 1.1vw, 16px);
+    }
+
     /* Reduced motion / accessibility utilities */
     .no-transitions *,
     .no-transitions *::before,
