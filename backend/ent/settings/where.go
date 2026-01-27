@@ -84,6 +84,11 @@ func MacfuseWarningDismissed(v bool) predicate.Settings {
 	return predicate.Settings(sql.FieldEQ(FieldMacfuseWarningDismissed, v))
 }
 
+// FullDiskAccessWarningDismissed applies equality check predicate on the "full_disk_access_warning_dismissed" field. It's identical to FullDiskAccessWarningDismissedEQ.
+func FullDiskAccessWarningDismissed(v bool) predicate.Settings {
+	return predicate.Settings(sql.FieldEQ(FieldFullDiskAccessWarningDismissed, v))
+}
+
 // CreatedAtEQ applies the EQ predicate on the "created_at" field.
 func CreatedAtEQ(v time.Time) predicate.Settings {
 	return predicate.Settings(sql.FieldEQ(FieldCreatedAt, v))
@@ -222,6 +227,16 @@ func MacfuseWarningDismissedEQ(v bool) predicate.Settings {
 // MacfuseWarningDismissedNEQ applies the NEQ predicate on the "macfuse_warning_dismissed" field.
 func MacfuseWarningDismissedNEQ(v bool) predicate.Settings {
 	return predicate.Settings(sql.FieldNEQ(FieldMacfuseWarningDismissed, v))
+}
+
+// FullDiskAccessWarningDismissedEQ applies the EQ predicate on the "full_disk_access_warning_dismissed" field.
+func FullDiskAccessWarningDismissedEQ(v bool) predicate.Settings {
+	return predicate.Settings(sql.FieldEQ(FieldFullDiskAccessWarningDismissed, v))
+}
+
+// FullDiskAccessWarningDismissedNEQ applies the NEQ predicate on the "full_disk_access_warning_dismissed" field.
+func FullDiskAccessWarningDismissedNEQ(v bool) predicate.Settings {
+	return predicate.Settings(sql.FieldNEQ(FieldFullDiskAccessWarningDismissed, v))
 }
 
 // And groups predicates with the AND operator between them.

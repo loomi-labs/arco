@@ -303,6 +303,10 @@ func init() {
 	settingsDescMacfuseWarningDismissed := settingsFields[4].Descriptor()
 	// settings.DefaultMacfuseWarningDismissed holds the default value on creation for the macfuse_warning_dismissed field.
 	settings.DefaultMacfuseWarningDismissed = settingsDescMacfuseWarningDismissed.Default.(bool)
+	// settingsDescFullDiskAccessWarningDismissed is the schema descriptor for full_disk_access_warning_dismissed field.
+	settingsDescFullDiskAccessWarningDismissed := settingsFields[5].Descriptor()
+	// settings.DefaultFullDiskAccessWarningDismissed holds the default value on creation for the full_disk_access_warning_dismissed field.
+	settings.DefaultFullDiskAccessWarningDismissed = settingsDescFullDiskAccessWarningDismissed.Default.(bool)
 	userMixin := schema.User{}.Mixin()
 	userMixinFields0 := userMixin[0].Fields()
 	_ = userMixinFields0

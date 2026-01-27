@@ -1515,6 +1515,11 @@ export class Settings {
      */
     "macfuseWarningDismissed": boolean;
 
+    /**
+     * FullDiskAccessWarningDismissed holds the value of the "full_disk_access_warning_dismissed" field.
+     */
+    "fullDiskAccessWarningDismissed": boolean;
+
     /** Creates a new Settings instance. */
     constructor($$source: Partial<Settings> = {}) {
         if (!("createdAt" in $$source)) {
@@ -1534,6 +1539,9 @@ export class Settings {
         }
         if (!("macfuseWarningDismissed" in $$source)) {
             this["macfuseWarningDismissed"] = false;
+        }
+        if (!("fullDiskAccessWarningDismissed" in $$source)) {
+            this["fullDiskAccessWarningDismissed"] = false;
         }
 
         Object.assign(this, $$source);

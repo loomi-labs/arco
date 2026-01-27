@@ -174,6 +174,33 @@ func (s *Service) DismissMacFUSEWarning(ctx context.Context) error {
 		Exec(ctx)
 }
 
+type FullDiskAccessStatus struct {
+	IsMacOS          bool `json:"isMacOS"`
+	WarningDismissed bool `json:"warningDismissed"`
+}
+
+func (s *Service) GetFullDiskAccessStatus(ctx context.Context) (*FullDiskAccessStatus, error) {
+	s.mustHaveDB()
+	settings, err := s.db.Settings.Query().First(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get settings: %w", err)
+	}
+
+	return &FullDiskAccessStatus{
+		IsMacOS:          platform.IsMacOS(),
+		IsGranted:        platform.HasFullDiskAccess(),
+		WarningDismissed: settings.FullDiskAccessWarningDismissed,
+	}, nil
+}
+
+func (s *Service) DismissFullDiskAccessWarning(ctx context.Context) error {
+	s.mustHaveDB()
+	return s.db.Settings.
+		Update().
+		SetFullDiskAccessWarningDismissed(true).
+		Exec(ctx)
+}
+
 // SetDirtyPage marks a page as having unsaved changes
 func (s *Service) SetDirtyPage(ctx context.Context, pageName string) {
 	s.state.SetDirtyPage(pageName)

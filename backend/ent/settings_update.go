@@ -105,6 +105,20 @@ func (_u *SettingsUpdate) SetNillableMacfuseWarningDismissed(v *bool) *SettingsU
 	return _u
 }
 
+// SetFullDiskAccessWarningDismissed sets the "full_disk_access_warning_dismissed" field.
+func (_u *SettingsUpdate) SetFullDiskAccessWarningDismissed(v bool) *SettingsUpdate {
+	_u.mutation.SetFullDiskAccessWarningDismissed(v)
+	return _u
+}
+
+// SetNillableFullDiskAccessWarningDismissed sets the "full_disk_access_warning_dismissed" field if the given value is not nil.
+func (_u *SettingsUpdate) SetNillableFullDiskAccessWarningDismissed(v *bool) *SettingsUpdate {
+	if v != nil {
+		_u.SetFullDiskAccessWarningDismissed(*v)
+	}
+	return _u
+}
+
 // Mutation returns the SettingsMutation object of the builder.
 func (_u *SettingsUpdate) Mutation() *SettingsMutation {
 	return _u.mutation
@@ -191,6 +205,9 @@ func (_u *SettingsUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if value, ok := _u.mutation.MacfuseWarningDismissed(); ok {
 		_spec.SetField(settings.FieldMacfuseWarningDismissed, field.TypeBool, value)
+	}
+	if value, ok := _u.mutation.FullDiskAccessWarningDismissed(); ok {
+		_spec.SetField(settings.FieldFullDiskAccessWarningDismissed, field.TypeBool, value)
 	}
 	_spec.AddModifiers(_u.modifiers...)
 	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
@@ -286,6 +303,20 @@ func (_u *SettingsUpdateOne) SetMacfuseWarningDismissed(v bool) *SettingsUpdateO
 func (_u *SettingsUpdateOne) SetNillableMacfuseWarningDismissed(v *bool) *SettingsUpdateOne {
 	if v != nil {
 		_u.SetMacfuseWarningDismissed(*v)
+	}
+	return _u
+}
+
+// SetFullDiskAccessWarningDismissed sets the "full_disk_access_warning_dismissed" field.
+func (_u *SettingsUpdateOne) SetFullDiskAccessWarningDismissed(v bool) *SettingsUpdateOne {
+	_u.mutation.SetFullDiskAccessWarningDismissed(v)
+	return _u
+}
+
+// SetNillableFullDiskAccessWarningDismissed sets the "full_disk_access_warning_dismissed" field if the given value is not nil.
+func (_u *SettingsUpdateOne) SetNillableFullDiskAccessWarningDismissed(v *bool) *SettingsUpdateOne {
+	if v != nil {
+		_u.SetFullDiskAccessWarningDismissed(*v)
 	}
 	return _u
 }
@@ -406,6 +437,9 @@ func (_u *SettingsUpdateOne) sqlSave(ctx context.Context) (_node *Settings, err 
 	}
 	if value, ok := _u.mutation.MacfuseWarningDismissed(); ok {
 		_spec.SetField(settings.FieldMacfuseWarningDismissed, field.TypeBool, value)
+	}
+	if value, ok := _u.mutation.FullDiskAccessWarningDismissed(); ok {
+		_spec.SetField(settings.FieldFullDiskAccessWarningDismissed, field.TypeBool, value)
 	}
 	_spec.AddModifiers(_u.modifiers...)
 	_node = &Settings{config: _u.config}
