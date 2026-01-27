@@ -202,6 +202,7 @@ function handleNameKeydown(event: KeyboardEvent) {
                     <input
                       :class="formInputClass"
                       type="text"
+                      autocapitalize="off"
                       v-model="newName"
                       @input="validateName"
                       @keydown="handleNameKeydown"
@@ -213,6 +214,7 @@ function handleNameKeydown(event: KeyboardEvent) {
                     <input
                       :class="formInputClass"
                       type='text'
+                      autocapitalize="off"
                       v-model="newComment"
                       @keydown="handleKeydown"
                       placeholder="Enter archive comment"

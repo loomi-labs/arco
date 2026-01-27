@@ -378,6 +378,7 @@ watch([name, location, password, isEncrypted], async () => {
                       <div class='join w-full'>
                         <label class='input join-item flex-1 flex items-center gap-2' :class='{ "input-error": passwordError, "input-disabled": !isEncrypted }'>
                           <input :type="showPassword ? 'text' : 'password'"
+                                 autocapitalize="off"
                                  v-model='password'
                                  class='grow p-0 [font:inherit]'
                                  :disabled='!isEncrypted'
@@ -414,6 +415,7 @@ watch([name, location, password, isEncrypted], async () => {
                       </label>
                       <label class='input w-full flex items-center gap-2' :class='{ "input-error": confirmPasswordError, "input-disabled": !isEncrypted }'>
                         <input :type="showPassword ? 'text' : 'password'"
+                               autocapitalize="off"
                                class='grow p-0 [font:inherit]'
                                v-model='confirmPassword'
                                :disabled='!isEncrypted'
@@ -431,6 +433,7 @@ watch([name, location, password, isEncrypted], async () => {
                       </label>
                       <label class='input w-full flex items-center gap-2' :class='{ "input-error": nameError }'>
                         <input type='text'
+                               autocapitalize='off'
                                class='grow p-0 [font:inherit]'
                                v-model='name'
                                @input='isNameTouchedByUser = true'

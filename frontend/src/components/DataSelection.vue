@@ -306,7 +306,7 @@ onMounted(() => {
       <div class='flex gap-2' v-for='(field, index) in fields' :key='field.key'>
         <div class='grow'>
           <FormField :size='Size.Small' :error='getError(index)' :isValid='!getError(index) && !!field.value'>
-            <input type='text' v-model='field.value'
+            <input type='text' autocapitalize='off' v-model='field.value'
                    @change='() => onPathChange()'
                    @input='() => onPathInput()'
                    :class='formInputClass' />
@@ -325,7 +325,7 @@ onMounted(() => {
       <div class='flex gap-2'>
         <div class='grow'>
           <FormField :size='Size.Small' :error='!!newPath ? newPathForm.errors.value.newPath : undefined'>
-            <input :class='formInputClass' type='text' v-model='newPath' v-bind='newPathAttrs' />
+            <input :class='formInputClass' type='text' autocapitalize="off" v-model='newPath' v-bind='newPathAttrs' />
           </FormField>
         </div>
         <div class='text-right w-20'>

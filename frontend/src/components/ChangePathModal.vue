@@ -235,6 +235,7 @@ defineExpose({
                       <label class='input join-item flex-1 flex items-center gap-2'
                              :class='{ "input-error": hasBlockingError, "input-success": connectionSuccess, "input-warning": connectionWarning }'>
                         <input type='text'
+                               autocapitalize='off'
                                v-model='newPath'
                                class='grow p-0 [font:inherit] font-mono text-sm'
                                :disabled='isLoading'
@@ -255,6 +256,7 @@ defineExpose({
                     <label v-else class='input flex items-center gap-2'
                            :class='{ "input-error": hasBlockingError, "input-success": connectionSuccess, "input-warning": connectionWarning }'>
                       <input type='text'
+                             autocapitalize='off'
                              v-model='newPath'
                              class='grow p-0 [font:inherit] font-mono text-sm'
                              :disabled='isLoading'
@@ -294,6 +296,7 @@ defineExpose({
                     </label>
                     <div class='join w-full'>
                       <input :type="showPassword ? 'text' : 'password'"
+                             autocapitalize='off'
                              v-model='password'
                              class='input join-item flex-1'
                              :disabled='isLoading'
