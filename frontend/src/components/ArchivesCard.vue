@@ -1087,7 +1087,7 @@ onUnmounted(() => {
             <span class='label-text-alt'>Search</span>
           </span>
           <label class='input input-bordered flex items-center gap-2 w-full'>
-            <input type='text' class='grow' v-model='search' />
+            <input type='text' autocapitalize="off" class='grow' v-model='search' />
             <button v-if='search' type='button' class='btn btn-ghost btn-xs btn-circle' @click="search = ''">
               <XMarkIcon class='size-4' />
             </button>

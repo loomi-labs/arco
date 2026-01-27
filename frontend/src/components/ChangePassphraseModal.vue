@@ -167,6 +167,7 @@ defineExpose({
                       <input :type="showNewPassword ? 'text' : 'password'"
                              :value='newPassword'
                              readonly
+                             autocapitalize='off'
                              class='input input-bordered join-item flex-1 bg-base-200' />
                       <button type='button'
                               class='btn btn-square join-item'
@@ -207,6 +208,7 @@ defineExpose({
                       <div class='join w-full'>
                         <label class='input join-item flex-1 flex items-center gap-2' :class='{ "input-error": errorMessage }'>
                           <input :type="showCurrentPassword ? 'text' : 'password'"
+                                 autocapitalize='off'
                                  v-model='currentPassword'
                                  class='grow p-0 [font:inherit]'
                                  :disabled='isLoading'
@@ -231,6 +233,7 @@ defineExpose({
                       </label>
                       <div class='join w-full'>
                         <input :type="showNewPassword ? 'text' : 'password'"
+                               autocapitalize='off'
                                v-model='newPassword'
                                class='input join-item flex-1'
                                :disabled='isLoading'
@@ -252,6 +255,7 @@ defineExpose({
                       </label>
                       <label class='input flex items-center w-full gap-2' :class='{ "input-error": confirmPasswordError }'>
                         <input :type="showNewPassword ? 'text' : 'password'"
+                               autocapitalize='off'
                                v-model='confirmPassword'
                                class='grow p-0 [font:inherit]'
                                :disabled='isLoading'

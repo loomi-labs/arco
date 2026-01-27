@@ -370,6 +370,7 @@ onUnmounted(() => {
       <label class='flex items-center gap-2'>
         <input :ref='nameInputKey'
                type='text'
+               autocapitalize='off'
                class='text-2xl font-bold bg-transparent w-10 input input-bordered border-transparent focus:border-primary -ml-3 shadow-none'
                v-model='name'
                v-bind='nameAttrs'
@@ -426,6 +427,7 @@ onUnmounted(() => {
       <div v-if='repo.state.error?.action === ErrorAction.ErrorActionChangePassphrase' class='flex-none flex gap-2'>
         <input v-model='newPassphrase'
                type='password'
+               autocapitalize='off'
                placeholder='New passphrase'
                class='input input-sm input-bordered'
                :disabled='isChangingPassphrase' />
@@ -694,7 +696,7 @@ onUnmounted(() => {
         </div>
         <p class='pt-2'>Type <span class='italic font-semibold'>{{ repo.name }}</span> to confirm.</p>
         <div class='flex items-center gap-2'>
-          <input type='text' class='input input-sm input-bordered' v-model='confirmDeleteInput' />
+          <input type='text' autocapitalize="off" class='input input-sm input-bordered' v-model='confirmDeleteInput' />
         </div>
       </div>
       <template v-slot:actionButtons>
