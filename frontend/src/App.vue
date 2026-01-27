@@ -27,7 +27,6 @@ const toast = useToast();
 const cleanupFunctions: (() => void)[] = [];
 const startupState = ref<state.StartupState>(state.StartupState.createFrom());
 const isInitialized = computed(() => startupState.value.status === state.StartupStatus.StartupStatusReady);
-const fullDiskAccessModal = ref<InstanceType<typeof FullDiskAccessModal> | null>(null);
 
 /************
  * Functions
@@ -77,18 +76,6 @@ async function getStartupState() {
   }
 }
 
-async function checkFullDiskAccess() {
-  try {
-    const status = await userService.GetFullDiskAccessStatus();
-    // Show modal only if: macOS AND not granted AND not dismissed
-    if (status && status.isMacOS && !status.isGranted && !status.warningDismissed) {
-      fullDiskAccessModal.value?.showModal();
-    }
-  } catch (error: unknown) {
-    await showAndLogError("Failed to check Full Disk Access status", error);
-  }
-}
-
 // Convert strings like 'initializingDatabase' to 'Initializing database'
 function toTitleCase(str: string | undefined): string {
   if (!str) {
@@ -125,9 +112,6 @@ watch(isInitialized, async (initialized) => {
     await initializeExpertMode();
     await initializeReducedMotion();
 
-    // Check if Full Disk Access warning should be shown (macOS only)
-    await checkFullDiskAccess();
-
     await goToNextPage();
   }
 }, { once: true });
@@ -145,7 +129,6 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <FullDiskAccessModal ref='fullDiskAccessModal' />
   <div v-if='isInitialized' class='bg-base-200 w-full min-h-svh flex flex-row'>
     <Sidebar />
     <div class='flex-1 flex flex-col min-h-screen overflow-x-hidden pt-16 2xl:pt-24 px-4 md:px-6 xl:px-12'>

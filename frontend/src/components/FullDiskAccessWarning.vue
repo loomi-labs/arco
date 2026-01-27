@@ -19,7 +19,7 @@ const isLoading = ref(true);
 
 const shouldShow = computed(() => {
   if (isLoading.value || !status.value) return false;
-  return status.value.isMacOS && !status.value.warningDismissed;
+  return status.value.isMacOS && !status.value.isGranted && !status.value.warningDismissed;
 });
 
 /************

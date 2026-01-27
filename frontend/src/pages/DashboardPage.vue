@@ -118,6 +118,9 @@ onUnmounted(() => {
     <!-- macFUSE Warning (macOS only) -->
     <MacFUSEWarning />
 
+    <!-- Full Disk Access Warning (macOS only) -->
+    <FullDiskAccessWarning />
+
     <!-- Backup Profiles Section -->
     <div class='flex items-center gap-2 text-base-strong pb-2'>
       <h1 class='text-4xl font-bold' :id='Anchor.BackupProfiles'>Backup Profiles</h1>
