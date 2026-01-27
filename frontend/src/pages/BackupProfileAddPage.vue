@@ -243,8 +243,15 @@ const nextStep = async () => {
 async function goTo() {
   if (wantToCloseWindow.value) {
     // User confirmed discard via window close
-    await userService.CloseWindow();
-  } else if (wantToGoRoute.value) {
+    try {
+      await userService.CloseWindow();
+    } catch (error: unknown) {
+      await showAndLogError("Failed to close window", error);
+      wantToCloseWindow.value = false;
+    }
+    return;
+  }
+  if (wantToGoRoute.value) {
     // User confirmed discard via route navigation
     discardChangesConfirmed.value = true;
     await router.replace(wantToGoRoute.value);
@@ -259,23 +266,31 @@ newBackupProfile();
 getExistingRepositories();
 
 // Set dirty state when past first step (has unsaved changes)
-watch(currentStep, (step) => {
-  if (step > Step.SelectData && !newBackupProfileCreated.value) {
-    userService.SetDirtyPage("BackupProfileAdd");
-  } else {
-    userService.ClearDirtyPage();
+watch([currentStep, newBackupProfileCreated], async ([step, created]) => {
+  try {
+    if (step > Step.SelectData && !created) {
+      await userService.SetDirtyPage("BackupProfileAdd");
+    } else {
+      await userService.ClearDirtyPage();
+    }
+  } catch (error: unknown) {
+    await showAndLogError("Failed to update dirty page state", error);
   }
 }, { immediate: true });
 
 // Listen for window close request from backend
-cleanupFunctions.push(Events.On(EventHelpers.windowCloseRequestedEvent(), () => {
+cleanupFunctions.push(Events.On(EventHelpers.windowCloseRequestedEvent(), async () => {
   if (currentStep.value > Step.SelectData && !newBackupProfileCreated.value) {
     // Show discard confirmation modal
     wantToCloseWindow.value = true;
     confirmLeaveModal.value?.showModal();
   } else {
     // No unsaved changes, proceed with close
-    userService.CloseWindow();
+    try {
+      await userService.CloseWindow();
+    } catch (error: unknown) {
+      await showAndLogError("Failed to close window", error);
+    }
   }
 }));
 
@@ -296,9 +311,14 @@ onBeforeRouteLeave(async (to, _from) => {
   }
 });
 
-onUnmounted(() => {
-  userService.ClearDirtyPage();
-  cleanupFunctions.forEach((cleanup) => cleanup());
+onUnmounted(async () => {
+  try {
+    await userService.ClearDirtyPage();
+  } catch (error: unknown) {
+    await showAndLogError("Failed to clear dirty page state", error);
+  } finally {
+    cleanupFunctions.forEach((cleanup) => cleanup());
+  }
 });
 
 </script>
