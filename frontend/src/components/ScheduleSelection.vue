@@ -227,7 +227,7 @@ watch(schedule, (newSchedule) => {
     <!-- Info box -->
     <div class='flex items-start gap-2 mt-4 p-3 bg-info/10 border border-info/30 rounded-lg'>
       <InformationCircleIcon class='size-5 text-info flex-shrink-0 mt-0.5' />
-      <p class='text-sm text-base-content/80'>If a scheduled backup is missed (e.g., your device was off), it will run automatically as soon as the device is available.</p>
+      <p class='text-sm text-base-content/80'>If a scheduled backup is missed (e.g., your device was off), it will run automatically after the next restart.</p>
     </div>
   </div>
 </template>

@@ -1,6 +1,7 @@
 <script setup lang='ts'>
 import { computed, ref, useId, useTemplateRef, watchEffect } from "vue";
 import { onBeforeRouteLeave, onBeforeRouteUpdate, useRouter } from "vue-router";
+import { ChevronDownIcon } from "@heroicons/vue/24/outline";
 import TooltipTextIcon from "../components/common/TooltipTextIcon.vue";
 import ConfirmModal from "./common/ConfirmModal.vue";
 import { showAndLogError } from "../common/logger";
@@ -58,6 +59,7 @@ const confirmSaveModal = useTemplateRef<InstanceType<typeof ConfirmModal>>(confi
 const wantToGoRoute = ref<string | undefined>(undefined);
 const cleanupImpact = ref<CleanupImpact>({ Summary: "", Rows: [], ShowWarning: false, AskForSave: false });
 const isExaminingPrunes = ref<boolean>(false);
+const showAdvanced = ref(false);
 
 /************
  * Functions
@@ -243,6 +245,13 @@ getPruningOptions();
 // This way we can compare the current pruning rule with the new one and save or discard changes
 watchEffect(() => copyCurrentPruningRule());
 
+// Auto-expand custom options when "Custom" preset is selected
+watchEffect(() => {
+  if (selectedPruningOption.value?.name === 'custom') {
+    showAdvanced.value = true;
+  }
+});
+
 // If the user tries to leave the page with unsaved changes, show a modal to confirm/discard the changes
 onBeforeRouteLeave(async (to, _from) => {
   if (props.askForSaveBeforeLeaving && hasUnsavedChanges.value) {
@@ -309,8 +318,8 @@ defineExpose({
     </div>
     <!--  Keep none/some/many options -->
     <div class='flex items-center justify-between mb-4'>
-      <TooltipTextIcon text='Number of archives to keep'>
-        <p>Keep</p>
+      <TooltipTextIcon text='How much backups to keep'>
+        <p>Retention level</p>
       </TooltipTextIcon>
       <select class='select select-sm w-32'
               :disabled='!pruningRule.isEnabled'
@@ -324,8 +333,19 @@ defineExpose({
       </select>
     </div>
 
-    <!-- Custom option -->
-    <div class='flex items-start justify-between mb-5'>
+    <!-- Advanced toggle button -->
+    <div class='flex items-center mb-2'>
+      <button
+        class='text-sm text-base-content/70 hover:underline cursor-pointer flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed'
+        :disabled='!pruningRule.isEnabled'
+        @click='showAdvanced = !showAdvanced'>
+        <span>{{ showAdvanced ? 'Hide custom options' : 'Show custom options' }}</span>
+        <ChevronDownIcon :class='["size-4 transition-transform", showAdvanced ? "rotate-180" : ""]' />
+      </button>
+    </div>
+
+    <!-- Custom option with collapse -->
+    <div v-if='showAdvanced' class='flex items-start justify-between mb-5'>
       <p class='pt-1'>Custom</p>
       <div class='flex items-center gap-4'>
         <fieldset class='fieldset'>
