@@ -3,7 +3,15 @@
 import { computed, onUnmounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { Page, withId } from "../router";
-import { HomeIcon, PlusIcon, UserCircleIcon, Cog6ToothIcon, CreditCardIcon, ChevronLeftIcon, ChevronRightIcon } from "@heroicons/vue/24/outline";
+import {
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  Cog6ToothIcon,
+  CreditCardIcon,
+  HomeIcon,
+  PlusIcon,
+  UserCircleIcon
+} from "@heroicons/vue/24/outline";
 import { ComputerDesktopIcon, GlobeEuropeAfricaIcon, HomeIcon as HomeIconSolid } from "@heroicons/vue/24/solid";
 import ArcoLogo from "./common/ArcoLogo.vue";
 import ArcoFooter from "./common/ArcoFooter.vue";
@@ -33,7 +41,7 @@ const route = useRoute();
 const { isAuthenticated, userEmail } = useAuth();
 
 const backupProfiles = ref<BackupProfile[]>([]);
-const repos = ref<repoModels.Repository[]>([]);
+const allRepos = ref<repoModels.Repository[]>([]);
 const isExpanded = ref(false); // Sidebar starts collapsed
 
 // Workaround: Using reactive breakpoint detection to conditionally apply position classes.
@@ -43,7 +51,7 @@ const isExpanded = ref(false); // Sidebar starts collapsed
 const breakpoints = useBreakpoints({
   xl: 1280  // Tailwind's xl breakpoint
 });
-const isDesktop = breakpoints.greaterOrEqual('xl');
+const isDesktop = breakpoints.greaterOrEqual("xl");
 
 const authModal = ref<InstanceType<typeof AuthModal>>();
 const cleanupFunctions: (() => void)[] = [];
@@ -64,11 +72,22 @@ function onAuthenticated() {
 async function loadData() {
   try {
     backupProfiles.value = (await backupProfileService.GetBackupProfiles()).filter((p): p is BackupProfile => p !== null) ?? [];
-    repos.value = (await repoService.All()).filter((repo): repo is repoModels.Repository => repo !== null);
+    allRepos.value = (await repoService.All()).filter((r): r is repoModels.Repository => r !== null) ?? [];
   } catch (error: unknown) {
     await showAndLogError("Failed to load sidebar data", error);
   }
 }
+
+// Orphaned repos: repos not linked to any backup profile
+const orphanedRepos = computed(() => {
+  const linkedRepoIds = new Set<number>();
+  for (const profile of backupProfiles.value) {
+    for (const repo of profile.repositories) {
+      linkedRepoIds.add(repo.id);
+    }
+  }
+  return allRepos.value.filter(repo => !linkedRepoIds.has(repo.id));
+});
 
 function isActiveRoute(path: string): boolean {
   return route.path === path;
@@ -160,8 +179,11 @@ onUnmounted(() => {
     ]'
   >
     <!-- Logo/Brand -->
-    <div :class='["relative p-4 border-b border-base-300 flex items-center", System.IsMac() && "pt-10", isCollapsed ? "justify-center" : ""]'>
-      <button @click='navigateTo(Page.Dashboard)' class='flex items-center gap-2 text-lg font-semibold hover:text-primary transition-colors cursor-pointer' :title='isCollapsed ? "Arco - Dashboard" : undefined'>
+    <div
+      :class='["relative p-4 border-b border-base-300 flex items-center", System.IsMac() && "pt-10", isCollapsed ? "justify-center" : ""]'>
+      <button @click='navigateTo(Page.Dashboard)'
+              class='flex items-center gap-2 text-lg font-semibold hover:text-primary transition-colors cursor-pointer'
+              :title='isCollapsed ? "Arco - Dashboard" : undefined'>
         <ArcoLogo svgClass='size-8' />
         <span v-if='!isCollapsed'>Arco</span>
       </button>
@@ -206,24 +228,43 @@ onUnmounted(() => {
         </h3>
         <div v-else class='border-t border-base-300 my-2'></div>
 
-        <!-- Profiles list -->
+        <!-- Profiles list with nested repositories -->
         <div class='mt-1 space-y-1'>
-          <button
-            v-for='profile in backupProfiles'
-            :key='profile.id'
-            @click='navigateTo(withId(Page.BackupProfile, profile.id.toString()))'
-            :class='[
-              "w-full flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm transition-colors cursor-pointer",
-              isCollapsed ? "justify-center" : "text-left",
-              isActiveProfile(profile.id)
-                ? "bg-primary/20 border-l-4 border-primary"
-                : "hover:bg-base-300"
-            ]'
-            :title='isCollapsed ? profile.name : undefined'
-          >
-            <component :is='getIcon(profile.icon).html' class='size-4 flex-shrink-0' />
-            <span v-if='!isCollapsed' class='truncate'>{{ profile.name }}</span>
-          </button>
+          <div v-for='profile in backupProfiles' :key='profile.id'>
+            <!-- Profile button -->
+            <button
+              @click='navigateTo(withId(Page.BackupProfile, profile.id.toString()))'
+              :class='[
+                "w-full flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm transition-colors cursor-pointer",
+                isCollapsed ? "justify-center" : "text-left",
+                isActiveProfile(profile.id)
+                  ? "bg-primary/20 border-l-4 border-primary"
+                  : "hover:bg-base-300"
+              ]'
+              :title='isCollapsed ? profile.name : undefined'
+            >
+              <component :is='getIcon(profile.icon).html' class='size-4 flex-shrink-0' />
+              <span v-if='!isCollapsed' class='truncate'>{{ profile.name }}</span>
+            </button>
+
+            <!-- Nested repositories (only when expanded) -->
+            <div v-if='!isCollapsed && profile.repositories.length > 0' class='ml-4 space-y-0.5'>
+              <button
+                v-for='repo in profile.repositories'
+                :key='repo.id'
+                @click='navigateTo(withId(Page.Repository, repo.id.toString()))'
+                :class='[
+                  "w-full flex items-center gap-2 px-3 py-1 rounded-lg text-xs transition-colors cursor-pointer text-left",
+                  isActiveRepo(repo.id)
+                    ? "bg-primary/10 text-primary font-medium"
+                    : "text-base-content/60 hover:bg-base-300 hover:text-base-content"
+                ]'
+              >
+                <span class='text-base-content/40'>&#8627;</span>
+                <span class='truncate'>{{ repo.name }}</span>
+              </button>
+            </div>
+          </div>
 
           <!-- New Profile Button -->
           <button
@@ -243,17 +284,17 @@ onUnmounted(() => {
         </div>
       </div>
 
-      <!-- Repositories Section -->
+      <!-- Repositories Section (orphaned repos + New Repository) -->
       <div class='pt-4'>
         <h3 v-if='!isCollapsed' class='px-3 py-2 text-xs font-semibold text-base-content/70 uppercase tracking-wide'>
           Repositories
         </h3>
         <div v-else class='border-t border-base-300 my-2'></div>
 
-        <!-- Repos list -->
         <div class='mt-1 space-y-1'>
+          <!-- Orphaned repos -->
           <button
-            v-for='repo in repos'
+            v-for='repo in orphanedRepos'
             :key='repo.id'
             @click='navigateTo(withId(Page.Repository, repo.id.toString()))'
             :class='[
@@ -261,12 +302,14 @@ onUnmounted(() => {
               isCollapsed ? "justify-center" : "text-left",
               isActiveRepo(repo.id)
                 ? "bg-primary/20 border-l-4 border-primary"
-                : "hover:bg-base-300"
+                : "text-base-content/60 hover:bg-base-300 hover:text-base-content"
             ]'
             :title='isCollapsed ? repo.name : undefined'
           >
-            <ComputerDesktopIcon v-if='repo.type.type === LocationType.LocationTypeLocal' class='size-4 flex-shrink-0' />
-            <ArcoLogo v-else-if='repo.type.type === LocationType.LocationTypeArcoCloud' svgClass='size-4 flex-shrink-0' />
+            <ComputerDesktopIcon v-if='repo.type.type === LocationType.LocationTypeLocal'
+                                 class='size-4 flex-shrink-0' />
+            <ArcoLogo v-else-if='repo.type.type === LocationType.LocationTypeArcoCloud'
+                      svgClass='size-4 flex-shrink-0' />
             <GlobeEuropeAfricaIcon v-else class='size-4 flex-shrink-0' />
             <span v-if='!isCollapsed' class='truncate'>{{ repo.name }}</span>
           </button>
@@ -328,7 +371,8 @@ onUnmounted(() => {
 
       <!-- User Email Display (only show if authenticated) -->
       <template v-if='isAuthenticated'>
-        <div :class='["flex items-center gap-3 px-3 py-2 rounded-lg bg-base-200", isCollapsed ? "justify-center" : ""]' :title='isCollapsed ? userEmail : undefined'>
+        <div :class='["flex items-center gap-3 px-3 py-2 rounded-lg bg-base-200", isCollapsed ? "justify-center" : ""]'
+             :title='isCollapsed ? userEmail : undefined'>
           <div class='relative flex-shrink-0'>
             <UserCircleIcon class='size-5' />
             <span class='absolute -top-1 -right-1 w-2 h-2 bg-success rounded-full'></span>
