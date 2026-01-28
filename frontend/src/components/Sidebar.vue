@@ -253,6 +253,7 @@ onUnmounted(() => {
                 v-for='repo in profile.repositories'
                 :key='repo.id'
                 @click='navigateTo(withId(Page.Repository, repo.id.toString()))'
+                :title='"Repository: " + repo.name'
                 :class='[
                   "w-full flex items-center gap-2 px-3 py-1 rounded-lg text-xs transition-colors cursor-pointer text-left",
                   isActiveRepo(repo.id)
@@ -266,7 +267,7 @@ onUnmounted(() => {
             </div>
           </div>
 
-          <!-- New Profile Button -->
+          <!-- New Backup Profile Button -->
           <button
             @click='navigateTo(Page.AddBackupProfile)'
             :class='[
@@ -276,10 +277,10 @@ onUnmounted(() => {
                 ? "bg-primary/20 border-l-4 border-primary"
                 : "hover:bg-base-300"
             ]'
-            :title='isCollapsed ? "New Profile" : undefined'
+            :title='isCollapsed ? "New Backup Profile" : undefined'
           >
             <PlusIcon class='size-4 flex-shrink-0' />
-            <span v-if='!isCollapsed'>New Profile</span>
+            <span v-if='!isCollapsed'>New Backup Profile</span>
           </button>
         </div>
       </div>
