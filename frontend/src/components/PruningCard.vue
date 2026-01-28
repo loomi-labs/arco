@@ -86,6 +86,59 @@ const isValid = computed(() => {
   return !validationError.value;
 });
 
+// Timeline visualization - shows retention over 1 year
+// Note: keepWithinDays keeps ALL archives within that period
+// Daily/weekly/monthly/yearly retention applies to archives AFTER the keepWithinDays period
+const timelineData = computed(() => {
+  const totalDays = 400; // Extended beyond 365 so yearly marker is visible inside bar
+  const rule = pruningRule.value;
+  const safetyDays = rule.keepWithinDays;
+
+  // Calculate percentage position for each time marker
+  const dayToPercent = (days: number) => Math.min((days / totalDays) * 100, 100);
+
+  // Generate markers for each retention type - they start AFTER the safety zone
+  const markers: Array<{ position: number; color: string; label: string }> = [];
+
+  // Daily markers start after safety zone
+  for (let i = 1; i <= rule.keepDaily; i++) {
+    const day = safetyDays + i;
+    if (day <= totalDays) {
+      markers.push({ position: dayToPercent(day), color: 'bg-info', label: 'daily' });
+    }
+  }
+
+  // Weekly markers start after safety zone
+  for (let i = 1; i <= rule.keepWeekly; i++) {
+    const day = safetyDays + (i * 7);
+    if (day <= totalDays) {
+      markers.push({ position: dayToPercent(day), color: 'bg-warning', label: 'weekly' });
+    }
+  }
+
+  // Monthly markers start after safety zone
+  for (let i = 1; i <= rule.keepMonthly; i++) {
+    const day = safetyDays + (i * 30);
+    if (day <= totalDays) {
+      markers.push({ position: dayToPercent(day), color: 'bg-secondary', label: 'monthly' });
+    }
+  }
+
+  // Yearly markers start after safety zone
+  for (let i = 1; i <= rule.keepYearly; i++) {
+    const day = safetyDays + (i * 365);
+    if (day <= totalDays) {
+      markers.push({ position: dayToPercent(day), color: 'bg-primary', label: 'yearly' });
+    }
+  }
+
+  return {
+    safetyZonePercent: dayToPercent(safetyDays),
+    markers,
+    hasAnyRetention: safetyDays > 0 || rule.keepDaily > 0 || rule.keepWeekly > 0 || rule.keepMonthly > 0 || rule.keepYearly > 0
+  };
+});
+
 async function getPruningOptions() {
   try {
     pruningOptions.value = (await backupProfileService.GetPruningOptions()).options;
@@ -331,6 +384,68 @@ defineExpose({
           {{ option.name.charAt(0).toUpperCase() + option.name.slice(1) }}
         </option>
       </select>
+    </div>
+
+    <!-- Timeline visualization -->
+    <div v-if='pruningRule.isEnabled && timelineData.hasAnyRetention' class='mb-4 p-4 bg-base-200 rounded-lg'>
+      <p class='text-sm font-medium mb-2'>Retention preview</p>
+
+      <!-- Time labels above bar -->
+      <div class='relative text-xs text-base-content/60 mb-1'>
+        <span>Today</span>
+        <span class='absolute' style='left: 91.25%'>1 year</span>
+      </div>
+
+      <!-- Timeline bar -->
+      <div class='relative h-6 bg-base-300 rounded-full overflow-hidden'>
+        <!-- Month indicator lines -->
+        <div
+          v-for='month in 11'
+          :key='"month-" + month'
+          class='absolute top-0 bottom-0 w-px bg-base-content/20'
+          :style='{ left: (month / 12 * 100) + "%" }'>
+        </div>
+
+        <!-- Safety zone (keepWithinDays) -->
+        <div
+          v-if='timelineData.safetyZonePercent > 0'
+          class='absolute left-0 h-full bg-success/40'
+          :style='{ width: timelineData.safetyZonePercent + "%" }'>
+        </div>
+
+        <!-- Time markers -->
+        <div
+          v-for='(marker, index) in timelineData.markers'
+          :key='"marker-" + index'
+          class='absolute top-1/2 -translate-y-1/2 w-2 h-2 rounded-full'
+          :class='marker.color'
+          :style='{ left: marker.position + "%" }'>
+        </div>
+      </div>
+
+      <!-- Legend -->
+      <div class='flex flex-wrap gap-x-4 gap-y-1 mt-2 text-xs text-base-content/70'>
+        <span v-if='pruningRule.keepWithinDays > 0' class='flex items-center gap-1'>
+          <span class='inline-block w-2 h-2 rounded-full bg-success/40'></span>
+          Keep all ({{ pruningRule.keepWithinDays }} days)
+        </span>
+        <span v-if='pruningRule.keepDaily > 0' class='flex items-center gap-1'>
+          <span class='inline-block w-2 h-2 rounded-full bg-info'></span>
+          Daily ({{ pruningRule.keepDaily }})
+        </span>
+        <span v-if='pruningRule.keepWeekly > 0' class='flex items-center gap-1'>
+          <span class='inline-block w-2 h-2 rounded-full bg-warning'></span>
+          Weekly ({{ pruningRule.keepWeekly }})
+        </span>
+        <span v-if='pruningRule.keepMonthly > 0' class='flex items-center gap-1'>
+          <span class='inline-block w-2 h-2 rounded-full bg-secondary'></span>
+          Monthly ({{ pruningRule.keepMonthly }})
+        </span>
+        <span v-if='pruningRule.keepYearly > 0' class='flex items-center gap-1'>
+          <span class='inline-block w-2 h-2 rounded-full bg-primary'></span>
+          Yearly ({{ pruningRule.keepYearly }})
+        </span>
+      </div>
     </div>
 
     <!-- Advanced toggle button -->
