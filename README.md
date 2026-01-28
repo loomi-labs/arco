@@ -33,13 +33,37 @@ Checkout the [website](https://arco-backup.com) for more information.
 Download and run the installer: [Arco-Installer.pkg](https://github.com/loomi-labs/arco/releases/latest/download/Arco-Installer.pkg)
 
 ### Linux
+
+#### Ubuntu / Debian (.deb)
 ```bash
-sh -c "$(curl -sSL 'https://arco-backup.com/linux/install.sh')"
+curl -sL https://github.com/loomi-labs/arco/releases/latest/download/arco-linux-amd64.deb -o /tmp/arco-linux-amd64.deb
+sudo apt install /tmp/arco-linux-amd64.deb
+```
+
+#### Fedora / RHEL (.rpm)
+```bash
+curl -sL https://github.com/loomi-labs/arco/releases/latest/download/arco-linux-amd64.rpm -o /tmp/arco-linux-amd64.rpm
+sudo dnf install /tmp/arco-linux-amd64.rpm
+```
+
+#### Arch Linux (.pkg.tar.zst)
+```bash
+curl -sL https://github.com/loomi-labs/arco/releases/latest/download/arco-linux-amd64.pkg.tar.zst -o /tmp/arco-linux-amd64.pkg.tar.zst
+sudo pacman -U /tmp/arco-linux-amd64.pkg.tar.zst
+```
+
+#### Universal Installation (Any Distribution)
+```bash
+sh -c "$(curl -sSL 'https://arco-backup.com/linux/install.sh')"  
 ```
 
 ## Uninstallation
 
 ### Linux
+
+Use your package manager to uninstall. 
+
+If installed via universal installation run:
 ```bash
 sh -c "$(curl -sSL 'https://arco-backup.com/linux/install.sh')" -- --uninstall
 ```
@@ -51,7 +75,7 @@ Download [Arco.dmg](https://github.com/loomi-labs/arco/releases/latest/download/
 - Step-by-step process to create a backup profile
 - Automatic backups based on schedules
 - Backup with encryption, compression, and deduplication
-- Backup to local or remote repositories
+- Backup to local, remote or ArcoCloud repositories
 - Restore backups
 
 ## Development

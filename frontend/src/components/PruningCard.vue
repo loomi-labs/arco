@@ -84,6 +84,59 @@ const isValid = computed(() => {
   return !validationError.value;
 });
 
+// Timeline visualization - shows retention over 1 year
+// Note: keepWithinDays keeps ALL archives within that period
+// Daily/weekly/monthly/yearly retention applies to archives AFTER the keepWithinDays period
+const timelineData = computed(() => {
+  const totalDays = 400; // Extended beyond 365 so yearly marker is visible inside bar
+  const rule = pruningRule.value;
+  const safetyDays = rule.keepWithinDays;
+
+  // Calculate percentage position for each time marker
+  const dayToPercent = (days: number) => Math.min((days / totalDays) * 100, 100);
+
+  // Generate markers for each retention type - they start AFTER the safety zone
+  const markers: Array<{ position: number; color: string; label: string }> = [];
+
+  // Daily markers start after safety zone
+  for (let i = 1; i <= rule.keepDaily; i++) {
+    const day = safetyDays + i;
+    if (day <= totalDays) {
+      markers.push({ position: dayToPercent(day), color: 'bg-info', label: 'daily' });
+    }
+  }
+
+  // Weekly markers start after safety zone
+  for (let i = 1; i <= rule.keepWeekly; i++) {
+    const day = safetyDays + (i * 7);
+    if (day <= totalDays) {
+      markers.push({ position: dayToPercent(day), color: 'bg-warning', label: 'weekly' });
+    }
+  }
+
+  // Monthly markers start after safety zone
+  for (let i = 1; i <= rule.keepMonthly; i++) {
+    const day = safetyDays + (i * 30);
+    if (day <= totalDays) {
+      markers.push({ position: dayToPercent(day), color: 'bg-secondary', label: 'monthly' });
+    }
+  }
+
+  // Yearly markers start after safety zone
+  for (let i = 1; i <= rule.keepYearly; i++) {
+    const day = safetyDays + (i * 365);
+    if (day <= totalDays) {
+      markers.push({ position: dayToPercent(day), color: 'bg-primary', label: 'yearly' });
+    }
+  }
+
+  return {
+    safetyZonePercent: dayToPercent(safetyDays),
+    markers,
+    hasAnyRetention: safetyDays > 0 || rule.keepDaily > 0 || rule.keepWeekly > 0 || rule.keepMonthly > 0 || rule.keepYearly > 0
+  };
+});
+
 async function getPruningOptions() {
   try {
     pruningOptions.value = (await backupProfileService.GetPruningOptions()).options;
@@ -285,99 +338,153 @@ defineExpose({
 
 <template>
   <div class='ac-card p-10'>
-    <div class='flex items-center justify-between mb-4'>
+    <div class='flex items-center justify-between mb-6'>
       <TooltipTextIcon
-        text='Saves disk space by removing older backups while always keeping recent ones and a selection from each time period (daily, weekly, monthly, yearly).'>
+        text='Saves disk space by removing older archives while always keeping recent ones and a selection from each time period (daily, weekly, monthly, yearly).'>
         <h3 class='text-lg font-semibold'>Delete old archives</h3>
       </TooltipTextIcon>
       <input type='checkbox' class='toggle toggle-secondary self-end' v-model='pruningRule.isEnabled'>
     </div>
-    <!--  Keep days option -->
-    <div class='flex items-center justify-between mb-4'>
-      <TooltipTextIcon text='Archives created in the last X days will never be deleted'>
-        <p>
-          Always keep the last
-          {{ pruningRule.keepWithinDays >= 1 ? `${pruningRule.keepWithinDays}` : "X" }}
-          {{ pruningRule.keepWithinDays === 1 ? " day" : "days" }}</p>
-      </TooltipTextIcon>
+
+    <!-- Protected period -->
+    <div class='flex items-center gap-2 mb-6'>
+      <span class='text-base-content/80'>Keep all archives from the last</span>
       <input type='number'
              class='input input-sm w-16'
              min='0'
              max='999'
              :disabled='!pruningRule.isEnabled'
              v-model='pruningRule.keepWithinDays' />
-    </div>
-    <!--  Keep none/some/many options -->
-    <div class='flex items-center justify-between mb-4'>
-      <TooltipTextIcon text='Number of archives to keep'>
-        <p>Keep</p>
-      </TooltipTextIcon>
-      <select class='select select-sm w-32'
-              :disabled='!pruningRule.isEnabled'
-              v-model='selectedPruningOption'
-              @change='toPruningRule'
-      >
-        <option v-for='option in Array.from(pruningOptions)' :key='option.name' :value='option'
-                :disabled='option.name === "custom"'>
-          {{ option.name.charAt(0).toUpperCase() + option.name.slice(1) }}
-        </option>
-      </select>
+      <span class='text-base-content/80'>days</span>
     </div>
 
-    <!-- Custom option -->
-    <div class='flex items-start justify-between mb-5'>
-      <p class='pt-1'>Custom</p>
-      <div class='flex items-center gap-4'>
-        <fieldset class='fieldset'>
-          <legend class='fieldset-legend text-right'>Hourly</legend>
-          <input type='number'
-                 class='input input-sm w-14'
-                 min='0'
-                 max='99'
-                 :disabled='!pruningRule.isEnabled'
-                 v-model='pruningRule.keepHourly'
-                 @change='ruleToPruningOption(pruningRule)' />
-        </fieldset>
-        <fieldset class='fieldset'>
-          <legend class='fieldset-legend text-right'>Daily</legend>
-          <input type='number'
-                 class='input input-sm w-14'
-                 min='0'
-                 max='99'
-                 :disabled='!pruningRule.isEnabled'
-                 v-model='pruningRule.keepDaily'
-                 @change='ruleToPruningOption(pruningRule)' />
-        </fieldset>
-        <fieldset class='fieldset'>
-          <legend class='fieldset-legend text-right'>Weekly</legend>
-          <input type='number'
-                 class='input input-sm w-14'
-                 min='0'
-                 max='99'
-                 :disabled='!pruningRule.isEnabled'
-                 v-model='pruningRule.keepWeekly'
-                 @change='ruleToPruningOption(pruningRule)' />
-        </fieldset>
-        <fieldset class='fieldset'>
-          <legend class='fieldset-legend text-right'>Monthly</legend>
-          <input type='number'
-                 class='input input-sm w-14'
-                 min='0'
-                 max='99'
-                 :disabled='!pruningRule.isEnabled'
-                 v-model='pruningRule.keepMonthly'
-                 @change='ruleToPruningOption(pruningRule)' />
-        </fieldset>
-        <fieldset class='fieldset'>
-          <legend class='fieldset-legend text-right'>Yearly</legend>
-          <input type='number'
-                 class='input input-sm w-14'
-                 min='0'
-                 max='99'
-                 :disabled='!pruningRule.isEnabled'
-                 v-model='pruningRule.keepYearly'
-                 @change='ruleToPruningOption(pruningRule)' />
-        </fieldset>
+    <!-- Preset buttons -->
+    <div class='mb-4'>
+      <p class='text-sm text-base-content/70 mb-2'>Additional retention (for older archives):</p>
+      <div class='flex gap-2'>
+        <button
+          v-for='option in pruningOptions'
+          :key='option.name'
+          class='btn btn-sm'
+          :class='selectedPruningOption?.name === option.name ? "btn-primary" : "btn-outline"'
+          :disabled='!pruningRule.isEnabled'
+          @click='selectedPruningOption = option; toPruningRule()'>
+          {{ option.name.charAt(0).toUpperCase() + option.name.slice(1) }}
+        </button>
+      </div>
+    </div>
+
+    <!-- Custom fields (shown when Custom is selected) -->
+    <div v-if='selectedPruningOption?.name === "custom"' class='flex flex-wrap gap-4 mb-4 p-3 bg-base-200 rounded-lg'>
+      <div class='flex items-center gap-2'>
+        <span class='text-sm'>Hourly</span>
+        <input type='number'
+               class='input input-sm w-14'
+               min='0'
+               max='99'
+               :disabled='!pruningRule.isEnabled'
+               v-model='pruningRule.keepHourly'
+               @change='ruleToPruningOption(pruningRule)' />
+      </div>
+      <div class='flex items-center gap-2'>
+        <span class='text-sm'>Daily</span>
+        <input type='number'
+               class='input input-sm w-14'
+               min='0'
+               max='99'
+               :disabled='!pruningRule.isEnabled'
+               v-model='pruningRule.keepDaily'
+               @change='ruleToPruningOption(pruningRule)' />
+      </div>
+      <div class='flex items-center gap-2'>
+        <span class='text-sm'>Weekly</span>
+        <input type='number'
+               class='input input-sm w-14'
+               min='0'
+               max='99'
+               :disabled='!pruningRule.isEnabled'
+               v-model='pruningRule.keepWeekly'
+               @change='ruleToPruningOption(pruningRule)' />
+      </div>
+      <div class='flex items-center gap-2'>
+        <span class='text-sm'>Monthly</span>
+        <input type='number'
+               class='input input-sm w-14'
+               min='0'
+               max='99'
+               :disabled='!pruningRule.isEnabled'
+               v-model='pruningRule.keepMonthly'
+               @change='ruleToPruningOption(pruningRule)' />
+      </div>
+      <div class='flex items-center gap-2'>
+        <span class='text-sm'>Yearly</span>
+        <input type='number'
+               class='input input-sm w-14'
+               min='0'
+               max='99'
+               :disabled='!pruningRule.isEnabled'
+               v-model='pruningRule.keepYearly'
+               @change='ruleToPruningOption(pruningRule)' />
+      </div>
+    </div>
+
+    <!-- Timeline visualization -->
+    <div v-if='pruningRule.isEnabled && timelineData.hasAnyRetention' class='mb-4 p-4 bg-base-200 rounded-lg'>
+      <!-- Time labels above bar -->
+      <div class='relative text-xs text-base-content/60 mb-1'>
+        <span>Today</span>
+        <span class='absolute' style='left: 91.25%'>1 year</span>
+      </div>
+
+      <!-- Timeline bar -->
+      <div class='relative h-6 bg-base-300 rounded-full overflow-hidden'>
+        <!-- Month indicator lines -->
+        <div
+          v-for='month in 11'
+          :key='"month-" + month'
+          class='absolute top-0 bottom-0 w-px bg-base-content/20'
+          :style='{ left: (month / 12 * 100) + "%" }'>
+        </div>
+
+        <!-- Safety zone (keepWithinDays) -->
+        <div
+          v-if='timelineData.safetyZonePercent > 0'
+          class='absolute left-0 h-full bg-success/40'
+          :style='{ width: timelineData.safetyZonePercent + "%" }'>
+        </div>
+
+        <!-- Time markers -->
+        <div
+          v-for='(marker, index) in timelineData.markers'
+          :key='"marker-" + index'
+          class='absolute top-1/2 -translate-y-1/2 w-2 h-2 rounded-full'
+          :class='marker.color'
+          :style='{ left: marker.position + "%" }'>
+        </div>
+      </div>
+
+      <!-- Legend -->
+      <div class='flex flex-wrap gap-x-4 gap-y-1 mt-2 text-xs text-base-content/70'>
+        <span v-if='pruningRule.keepWithinDays > 0' class='flex items-center gap-1'>
+          <span class='inline-block w-2 h-2 rounded-full bg-success/40'></span>
+          Protected ({{ pruningRule.keepWithinDays }}d)
+        </span>
+        <span v-if='pruningRule.keepDaily > 0' class='flex items-center gap-1'>
+          <span class='inline-block w-2 h-2 rounded-full bg-info'></span>
+          Daily ({{ pruningRule.keepDaily }})
+        </span>
+        <span v-if='pruningRule.keepWeekly > 0' class='flex items-center gap-1'>
+          <span class='inline-block w-2 h-2 rounded-full bg-warning'></span>
+          Weekly ({{ pruningRule.keepWeekly }})
+        </span>
+        <span v-if='pruningRule.keepMonthly > 0' class='flex items-center gap-1'>
+          <span class='inline-block w-2 h-2 rounded-full bg-secondary'></span>
+          Monthly ({{ pruningRule.keepMonthly }})
+        </span>
+        <span v-if='pruningRule.keepYearly > 0' class='flex items-center gap-1'>
+          <span class='inline-block w-2 h-2 rounded-full bg-primary'></span>
+          Yearly ({{ pruningRule.keepYearly }})
+        </span>
       </div>
     </div>
 
