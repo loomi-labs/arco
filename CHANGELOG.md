@@ -1,5 +1,26 @@
 # Changelog
 
+## [0.20.0](https://github.com/loomi-labs/arco/compare/v0.19.2...v0.20.0) (2026-01-28)
+
+
+### Features
+
+* show discard dialog when closing window during profile creation ([1578b2b](https://github.com/loomi-labs/arco/commit/1578b2b44c5b992d7ebf712daf3503fe3142900b))
+* **sidebar:** add collapsible sidebar with improved UX ([#260](https://github.com/loomi-labs/arco/issues/260)) ([978bcce](https://github.com/loomi-labs/arco/commit/978bcce112d21cacd374c992aadb627aaa2d6ea2))
+* **ui:** add Full Disk Access warning and UI improvements ([#264](https://github.com/loomi-labs/arco/issues/264)) ([19cd0bc](https://github.com/loomi-labs/arco/commit/19cd0bcb93f02a0f1537ee2bb495f45e72eda863))
+* **ui:** add responsive font sizing based on window width ([befc829](https://github.com/loomi-labs/arco/commit/befc8291d74a87b650ca7487e85382aabf5957ab))
+* **ui:** disable auto-capitalization on all text inputs ([a55e0f4](https://github.com/loomi-labs/arco/commit/a55e0f4ff1a00d09cd3d0e7e880417cd1b09e8a6))
+* **ui:** improve PruningCard with timeline and preset buttons ([#265](https://github.com/loomi-labs/arco/issues/265)) ([7e9141e](https://github.com/loomi-labs/arco/commit/7e9141e385bc6919492a516d81e6ba72805e6c0e))
+* **ui:** improve UX with window size, macOS padding, and input fixes ([238dcad](https://github.com/loomi-labs/arco/commit/238dcad2f58cb4bd7736434c97848192aafc7781))
+* **ui:** increase default window size to 1440x900 ([8e2dbce](https://github.com/loomi-labs/arco/commit/8e2dbce4d221029d7a12f387750289a79a985fcf))
+
+
+### Bug Fixes
+
+* **macos:** window appears and disappears immediately on open ([0051714](https://github.com/loomi-labs/arco/commit/00517140a54558aa88182ecf2583ea59ed74786c))
+* **ui:** add error handling for async service calls in BackupProfileAddPage ([c60813e](https://github.com/loomi-labs/arco/commit/c60813e1b3b52fb06ad197cf33a437f9912863f7))
+* **ui:** prevent horizontal scrollbar on small screens ([82aef56](https://github.com/loomi-labs/arco/commit/82aef56dd48b358121faa9ef63ce109ba2a1632b))
+
 ## [0.19.2](https://github.com/loomi-labs/arco/compare/v0.19.1...v0.19.2) (2026-01-22)
 
 
