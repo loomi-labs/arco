@@ -78,17 +78,6 @@ async function loadData() {
   }
 }
 
-// Orphaned repos: repos not linked to any backup profile
-const orphanedRepos = computed(() => {
-  const linkedRepoIds = new Set<number>();
-  for (const profile of backupProfiles.value) {
-    for (const repo of profile.repositories) {
-      linkedRepoIds.add(repo.id);
-    }
-  }
-  return allRepos.value.filter(repo => !linkedRepoIds.has(repo.id));
-});
-
 function isActiveRoute(path: string): boolean {
   return route.path === path;
 }
@@ -257,11 +246,11 @@ onUnmounted(() => {
                 :class='[
                   "w-full flex items-center gap-2 px-3 py-1 rounded-lg text-xs transition-colors cursor-pointer text-left",
                   isActiveRepo(repo.id)
-                    ? "bg-primary/10 text-primary font-medium"
+                    ? "border-l-2 border-primary pl-2 text-base-content/60"
                     : "text-base-content/60 hover:bg-base-300 hover:text-base-content"
                 ]'
               >
-                <span class='text-base-content/40'>&#8627;</span>
+                <span :class='isActiveRepo(repo.id) ? "text-primary" : "text-base-content/40"'>&#8627;</span>
                 <span class='truncate'>{{ repo.name }}</span>
               </button>
             </div>
@@ -285,7 +274,7 @@ onUnmounted(() => {
         </div>
       </div>
 
-      <!-- Repositories Section (orphaned repos + New Repository) -->
+      <!-- Repositories Section (all repos + New Repository) -->
       <div class='pt-4'>
         <h3 v-if='!isCollapsed' class='px-3 py-2 text-xs font-semibold text-base-content/70 uppercase tracking-wide'>
           Repositories
@@ -293,9 +282,9 @@ onUnmounted(() => {
         <div v-else class='border-t border-base-300 my-2'></div>
 
         <div class='mt-1 space-y-1'>
-          <!-- Orphaned repos -->
+          <!-- All repos -->
           <button
-            v-for='repo in orphanedRepos'
+            v-for='repo in allRepos'
             :key='repo.id'
             @click='navigateTo(withId(Page.Repository, repo.id.toString()))'
             :class='[

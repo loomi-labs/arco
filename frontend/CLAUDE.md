@@ -530,3 +530,11 @@ onUnmounted(() => {
   cleanupFunctions.forEach(cleanup => cleanup());
 });
 ```
+
+## Demo Pages
+
+When creating temporary demo/preview pages for UI decisions:
+- **Always add a link** to the demo page from the sidebar or the affected page
+- Use a distinctive style (e.g., `text-warning`, emoji) to indicate it's temporary
+- Remove the demo page and link after the decision is made
+- Route pattern: `/style-demo`, `/feature-demo`, etc. (not added to Page enum)
