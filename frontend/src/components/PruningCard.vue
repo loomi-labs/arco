@@ -1,7 +1,6 @@
 <script setup lang='ts'>
 import { computed, ref, useId, useTemplateRef, watchEffect } from "vue";
 import { onBeforeRouteLeave, onBeforeRouteUpdate, useRouter } from "vue-router";
-import { ChevronDownIcon } from "@heroicons/vue/24/outline";
 import TooltipTextIcon from "../components/common/TooltipTextIcon.vue";
 import ConfirmModal from "./common/ConfirmModal.vue";
 import { showAndLogError } from "../common/logger";
@@ -59,7 +58,6 @@ const confirmSaveModal = useTemplateRef<InstanceType<typeof ConfirmModal>>(confi
 const wantToGoRoute = ref<string | undefined>(undefined);
 const cleanupImpact = ref<CleanupImpact>({ Summary: "", Rows: [], ShowWarning: false, AskForSave: false });
 const isExaminingPrunes = ref<boolean>(false);
-const showAdvanced = ref(false);
 
 /************
  * Functions
@@ -298,13 +296,6 @@ getPruningOptions();
 // This way we can compare the current pruning rule with the new one and save or discard changes
 watchEffect(() => copyCurrentPruningRule());
 
-// Auto-expand custom options when "Custom" preset is selected
-watchEffect(() => {
-  if (selectedPruningOption.value?.name === 'custom') {
-    showAdvanced.value = true;
-  }
-});
-
 // If the user tries to leave the page with unsaved changes, show a modal to confirm/discard the changes
 onBeforeRouteLeave(async (to, _from) => {
   if (props.askForSaveBeforeLeaving && hasUnsavedChanges.value) {
@@ -347,49 +338,98 @@ defineExpose({
 
 <template>
   <div class='ac-card p-10'>
-    <div class='flex items-center justify-between mb-4'>
+    <div class='flex items-center justify-between mb-6'>
       <TooltipTextIcon
-        text='Saves disk space by removing older backups while always keeping recent ones and a selection from each time period (daily, weekly, monthly, yearly).'>
+        text='Saves disk space by removing older archives while always keeping recent ones and a selection from each time period (daily, weekly, monthly, yearly).'>
         <h3 class='text-lg font-semibold'>Delete old archives</h3>
       </TooltipTextIcon>
       <input type='checkbox' class='toggle toggle-secondary self-end' v-model='pruningRule.isEnabled'>
     </div>
-    <!--  Keep days option -->
-    <div class='flex items-center justify-between mb-4'>
-      <TooltipTextIcon text='Archives created in the last X days will never be deleted'>
-        <p>
-          Always keep the last
-          {{ pruningRule.keepWithinDays >= 1 ? `${pruningRule.keepWithinDays}` : "X" }}
-          {{ pruningRule.keepWithinDays === 1 ? " day" : "days" }}</p>
-      </TooltipTextIcon>
+
+    <!-- Protected period -->
+    <div class='flex items-center gap-2 mb-6'>
+      <span class='text-base-content/80'>Keep all archives from the last</span>
       <input type='number'
              class='input input-sm w-16'
              min='0'
              max='999'
              :disabled='!pruningRule.isEnabled'
              v-model='pruningRule.keepWithinDays' />
+      <span class='text-base-content/80'>days</span>
     </div>
-    <!--  Keep none/some/many options -->
-    <div class='flex items-center justify-between mb-4'>
-      <TooltipTextIcon text='How much backups to keep'>
-        <p>Retention level</p>
-      </TooltipTextIcon>
-      <select class='select select-sm w-32'
-              :disabled='!pruningRule.isEnabled'
-              v-model='selectedPruningOption'
-              @change='toPruningRule'
-      >
-        <option v-for='option in Array.from(pruningOptions)' :key='option.name' :value='option'
-                :disabled='option.name === "custom"'>
+
+    <!-- Preset buttons -->
+    <div class='mb-4'>
+      <p class='text-sm text-base-content/70 mb-2'>Additional retention (for older archives):</p>
+      <div class='flex gap-2'>
+        <button
+          v-for='option in pruningOptions'
+          :key='option.name'
+          class='btn btn-sm'
+          :class='selectedPruningOption?.name === option.name ? "btn-primary" : "btn-outline"'
+          :disabled='!pruningRule.isEnabled'
+          @click='selectedPruningOption = option; toPruningRule()'>
           {{ option.name.charAt(0).toUpperCase() + option.name.slice(1) }}
-        </option>
-      </select>
+        </button>
+      </div>
+    </div>
+
+    <!-- Custom fields (shown when Custom is selected) -->
+    <div v-if='selectedPruningOption?.name === "custom"' class='flex flex-wrap gap-4 mb-4 p-3 bg-base-200 rounded-lg'>
+      <div class='flex items-center gap-2'>
+        <span class='text-sm'>Hourly</span>
+        <input type='number'
+               class='input input-sm w-14'
+               min='0'
+               max='99'
+               :disabled='!pruningRule.isEnabled'
+               v-model='pruningRule.keepHourly'
+               @change='ruleToPruningOption(pruningRule)' />
+      </div>
+      <div class='flex items-center gap-2'>
+        <span class='text-sm'>Daily</span>
+        <input type='number'
+               class='input input-sm w-14'
+               min='0'
+               max='99'
+               :disabled='!pruningRule.isEnabled'
+               v-model='pruningRule.keepDaily'
+               @change='ruleToPruningOption(pruningRule)' />
+      </div>
+      <div class='flex items-center gap-2'>
+        <span class='text-sm'>Weekly</span>
+        <input type='number'
+               class='input input-sm w-14'
+               min='0'
+               max='99'
+               :disabled='!pruningRule.isEnabled'
+               v-model='pruningRule.keepWeekly'
+               @change='ruleToPruningOption(pruningRule)' />
+      </div>
+      <div class='flex items-center gap-2'>
+        <span class='text-sm'>Monthly</span>
+        <input type='number'
+               class='input input-sm w-14'
+               min='0'
+               max='99'
+               :disabled='!pruningRule.isEnabled'
+               v-model='pruningRule.keepMonthly'
+               @change='ruleToPruningOption(pruningRule)' />
+      </div>
+      <div class='flex items-center gap-2'>
+        <span class='text-sm'>Yearly</span>
+        <input type='number'
+               class='input input-sm w-14'
+               min='0'
+               max='99'
+               :disabled='!pruningRule.isEnabled'
+               v-model='pruningRule.keepYearly'
+               @change='ruleToPruningOption(pruningRule)' />
+      </div>
     </div>
 
     <!-- Timeline visualization -->
     <div v-if='pruningRule.isEnabled && timelineData.hasAnyRetention' class='mb-4 p-4 bg-base-200 rounded-lg'>
-      <p class='text-sm font-medium mb-2'>Retention preview</p>
-
       <!-- Time labels above bar -->
       <div class='relative text-xs text-base-content/60 mb-1'>
         <span>Today</span>
@@ -427,7 +467,7 @@ defineExpose({
       <div class='flex flex-wrap gap-x-4 gap-y-1 mt-2 text-xs text-base-content/70'>
         <span v-if='pruningRule.keepWithinDays > 0' class='flex items-center gap-1'>
           <span class='inline-block w-2 h-2 rounded-full bg-success/40'></span>
-          Keep all ({{ pruningRule.keepWithinDays }} days)
+          Protected ({{ pruningRule.keepWithinDays }}d)
         </span>
         <span v-if='pruningRule.keepDaily > 0' class='flex items-center gap-1'>
           <span class='inline-block w-2 h-2 rounded-full bg-info'></span>
@@ -445,74 +485,6 @@ defineExpose({
           <span class='inline-block w-2 h-2 rounded-full bg-primary'></span>
           Yearly ({{ pruningRule.keepYearly }})
         </span>
-      </div>
-    </div>
-
-    <!-- Advanced toggle button -->
-    <div class='flex items-center mb-2'>
-      <button
-        class='text-sm text-base-content/70 hover:underline cursor-pointer flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed'
-        :disabled='!pruningRule.isEnabled'
-        @click='showAdvanced = !showAdvanced'>
-        <span>{{ showAdvanced ? 'Hide custom options' : 'Show custom options' }}</span>
-        <ChevronDownIcon :class='["size-4 transition-transform", showAdvanced ? "rotate-180" : ""]' />
-      </button>
-    </div>
-
-    <!-- Custom option with collapse -->
-    <div v-if='showAdvanced' class='flex items-start justify-between mb-5'>
-      <p class='pt-1'>Custom</p>
-      <div class='flex items-center gap-4'>
-        <fieldset class='fieldset'>
-          <legend class='fieldset-legend text-right'>Hourly</legend>
-          <input type='number'
-                 class='input input-sm w-14'
-                 min='0'
-                 max='99'
-                 :disabled='!pruningRule.isEnabled'
-                 v-model='pruningRule.keepHourly'
-                 @change='ruleToPruningOption(pruningRule)' />
-        </fieldset>
-        <fieldset class='fieldset'>
-          <legend class='fieldset-legend text-right'>Daily</legend>
-          <input type='number'
-                 class='input input-sm w-14'
-                 min='0'
-                 max='99'
-                 :disabled='!pruningRule.isEnabled'
-                 v-model='pruningRule.keepDaily'
-                 @change='ruleToPruningOption(pruningRule)' />
-        </fieldset>
-        <fieldset class='fieldset'>
-          <legend class='fieldset-legend text-right'>Weekly</legend>
-          <input type='number'
-                 class='input input-sm w-14'
-                 min='0'
-                 max='99'
-                 :disabled='!pruningRule.isEnabled'
-                 v-model='pruningRule.keepWeekly'
-                 @change='ruleToPruningOption(pruningRule)' />
-        </fieldset>
-        <fieldset class='fieldset'>
-          <legend class='fieldset-legend text-right'>Monthly</legend>
-          <input type='number'
-                 class='input input-sm w-14'
-                 min='0'
-                 max='99'
-                 :disabled='!pruningRule.isEnabled'
-                 v-model='pruningRule.keepMonthly'
-                 @change='ruleToPruningOption(pruningRule)' />
-        </fieldset>
-        <fieldset class='fieldset'>
-          <legend class='fieldset-legend text-right'>Yearly</legend>
-          <input type='number'
-                 class='input input-sm w-14'
-                 min='0'
-                 max='99'
-                 :disabled='!pruningRule.isEnabled'
-                 v-model='pruningRule.keepYearly'
-                 @change='ruleToPruningOption(pruningRule)' />
-        </fieldset>
       </div>
     </div>
 
