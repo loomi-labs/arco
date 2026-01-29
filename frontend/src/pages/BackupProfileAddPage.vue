@@ -1,5 +1,5 @@
 <script setup lang='ts'>
-import { computed, onUnmounted, ref, useId, useTemplateRef, watch } from "vue";
+import { computed, nextTick, onUnmounted, ref, useId, useTemplateRef, watch } from "vue";
 import { onBeforeRouteLeave, useRouter } from "vue-router";
 import { Events } from "@wailsio/runtime";
 import * as EventHelpers from "../common/events";
@@ -206,6 +206,8 @@ async function saveBackupProfile(): Promise<boolean> {
 // Navigation
 const previousStep = async () => {
   currentStep.value--;
+  await nextTick();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
 };
 
 const nextStep = async () => {
@@ -216,6 +218,8 @@ const nextStep = async () => {
       }
       backupProfile.value.name = step1Form.values.name ?? "";
       currentStep.value++;
+      await nextTick();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
       break;
     case Step.Schedule:
       if (!isStep2Valid.value) {
@@ -223,6 +227,8 @@ const nextStep = async () => {
       }
       backupProfile.value.pruningRule = pruningCardRef.value?.pruningRule ?? null;
       currentStep.value++;
+      await nextTick();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
       break;
     case Step.Repository:
       if (!isStep3Valid.value) {
