@@ -378,7 +378,7 @@ defineExpose({
           v-for='option in pruningOptions'
           :key='option.name'
           class='btn btn-sm'
-          :class='selectedPruningOption?.name === option.name ? "bg-secondary/20 border-secondary" : "btn-outline"'
+          :class='pruningRule.isEnabled && selectedPruningOption?.name === option.name ? "bg-secondary/20 border-secondary" : "btn-outline"'
           :disabled='!pruningRule.isEnabled'
           @click='selectedPruningOption = option; toPruningRule()'>
           {{ option.name.charAt(0).toUpperCase() + option.name.slice(1) }}

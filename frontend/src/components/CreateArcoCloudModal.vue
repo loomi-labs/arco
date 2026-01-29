@@ -162,7 +162,9 @@ const modalDescription = computed(() => {
     case ComponentState.SUBSCRIPTION_AUTHENTICATED:
       return "Checking your subscription status...";
     case ComponentState.CHECKOUT_PROCESSING:
-      return "Complete your subscription checkout in the browser.";
+      return selectedPlanData.value?.is_free
+        ? "Activating your free plan..."
+        : "Complete your subscription checkout in the browser.";
     case ComponentState.REPOSITORY_CREATION:
       return "Create a repository in Arco Cloud.";
     case ComponentState.ERROR_PLANS:

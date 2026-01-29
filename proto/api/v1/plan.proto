@@ -72,4 +72,8 @@ message Plan {
   // Trials are configured in Polar and allow users to try the plan
   // before being charged.
   int32 trial_days = 9;
+
+  // Whether this is a free plan (no payment required).
+  // Free plans have hard storage/repository limits with no overage billing.
+  bool is_free = 10;
 }

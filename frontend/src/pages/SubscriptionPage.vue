@@ -2,7 +2,7 @@
 import { computed, onMounted, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 import { Dialog, DialogPanel, DialogTitle, TransitionChild, TransitionRoot } from "@headlessui/vue";
-import { CheckIcon, Cog6ToothIcon, CreditCardIcon, ExclamationTriangleIcon } from "@heroicons/vue/24/outline";
+import { CheckIcon, Cog6ToothIcon, CreditCardIcon, ExclamationTriangleIcon, InformationCircleIcon } from "@heroicons/vue/24/outline";
 import ArcoLogo from "../components/common/ArcoLogo.vue";
 import { Browser } from "@wailsio/runtime";
 import { Page } from "../router";
@@ -44,6 +44,7 @@ const isCanceling = ref(false);
 const errorMessage = ref<string | undefined>(undefined);
 const isCancelModalOpen = ref(false);
 const isSwitchModalOpen = ref(false);
+const portalOpened = ref(false);
 const isReactivateModalOpen = ref(false);
 const cloudModal = ref<InstanceType<typeof CreateArcoCloudModal>>();
 
@@ -148,7 +149,12 @@ const nextBillingDate = computed(() => {
     return "Invalid date";
   }
 });
+const isFreePlan = computed(() => {
+  return subscription.value?.plan?.is_free === true;
+});
+
 const currentPrice = computed(() => {
+  if (isFreePlan.value) return "Free";
   if (!subscription.value?.plan?.price_cents) return "$0";
   return `$${(subscription.value.plan.price_cents / 100).toFixed(2)}`;
 });
@@ -380,6 +386,15 @@ function showSwitchConfirmation() {
 
 function closeSwitchConfirmation() {
   isSwitchModalOpen.value = false;
+  // Delay reset to allow fade animation to complete
+  setTimeout(() => {
+    portalOpened.value = false;
+  }, 200);
+}
+
+async function closeAndRefresh() {
+  closeSwitchConfirmation();
+  await loadSubscription();
 }
 
 function showReactivateConfirmation() {
@@ -434,12 +449,22 @@ function onCheckoutCompleted() {
 
 function onCheckoutFailed(error: string) {
   errorMessage.value = error;
-  currentPageState.value = PageState.NO_SUBSCRIPTION_PLANS;
+  // Go back to subscription view if user had a subscription (upgrading from free)
+  if (subscription.value) {
+    currentPageState.value = PageState.HAS_SUBSCRIPTION;
+  } else {
+    currentPageState.value = PageState.NO_SUBSCRIPTION_PLANS;
+  }
 }
 
 function onCheckoutCancelled() {
   selectedCheckoutPlan.value = undefined;
-  currentPageState.value = PageState.NO_SUBSCRIPTION_PLANS;
+  // Go back to subscription view if user had a subscription (upgrading from free)
+  if (subscription.value) {
+    currentPageState.value = PageState.HAS_SUBSCRIPTION;
+  } else {
+    currentPageState.value = PageState.NO_SUBSCRIPTION_PLANS;
+  }
 }
 
 function onRepoCreated(_repo: unknown) {
@@ -472,15 +497,22 @@ async function reactivateSubscription() {
 async function switchPlan() {
   if (!selectedSwitchPlan.value || !subscription.value?.id) return;
 
+  const targetPlan = selectedSwitchPlanDetails.value;
+  if (!targetPlan?.id) {
+    errorMessage.value = "Please select a plan to switch to.";
+    return;
+  }
+
+  // If upgrading FROM a free plan, open customer portal to upgrade
+  if (isFreePlan.value && isSwitchUpgrade.value) {
+    await openCustomerPortal();
+    portalOpened.value = true;
+    return;
+  }
+
   isSwitchingPlan.value = true;
 
   try {
-    const targetPlan = selectedSwitchPlanDetails.value;
-    if (!targetPlan?.id) {
-      errorMessage.value = "Please select a plan to switch to.";
-      return;
-    }
-
     // Determine if upgrade or downgrade based on price
     const isUpgrade = isSwitchUpgrade.value;
 
@@ -706,17 +738,18 @@ onMounted(async () => {
           <div class='card-body'>
             <h2 class='card-title flex items-center gap-2'>
               <CreditCardIcon class='size-6' />
-              Billing Information
+              {{ isFreePlan ? 'Plan Information' : 'Billing Information' }}
             </h2>
 
             <div class='space-y-4 mt-4'>
               <div class='grid grid-cols-2 gap-4'>
                 <div>
-                  <div class='font-semibold text-sm'>Current Price</div>
+                  <div class='font-semibold text-sm'>{{ isFreePlan ? 'Plan Type' : 'Current Price' }}</div>
                   <div class='text-2xl font-bold'>{{ currentPrice }}</div>
-                  <div class='text-sm text-base-content/70'>per year</div>
+                  <div v-if='!isFreePlan' class='text-sm text-base-content/70'>per year</div>
+                  <div v-else class='text-sm text-base-content/70'>No credit card required</div>
                 </div>
-                <div>
+                <div v-if='!isFreePlan'>
                   <div class='font-semibold text-sm'>{{
                       subscription.cancel_at_period_end ? "Ends On" : "Next Billing"
                     }}
@@ -726,8 +759,8 @@ onMounted(async () => {
                 </div>
               </div>
 
-              <!-- Overage Charges -->
-              <div v-if='isOverage' class='pt-4 border-t border-warning/30'>
+              <!-- Overage Charges (not shown for free plans - they have hard limits) -->
+              <div v-if='isOverage && !isFreePlan' class='pt-4 border-t border-warning/30'>
                 <div class='bg-warning/10 rounded-lg p-4'>
                   <div class='flex items-center justify-between'>
                     <div>
@@ -742,8 +775,8 @@ onMounted(async () => {
                 </div>
               </div>
 
-              <!-- Billing Portal Button -->
-              <div class='pt-4 border-t border-base-300'>
+              <!-- Billing Portal Button (not shown for free plans) -->
+              <div v-if='!isFreePlan' class='pt-4 border-t border-base-300'>
                 <button
                   class='btn btn-outline btn-sm'
                   @click='openCustomerPortal'
@@ -796,12 +829,13 @@ onMounted(async () => {
                             <div class='flex flex-col gap-1'>
                               <span class='font-medium'>{{ plan.name }}</span>
                               <span class='text-xs text-base-content/70'>
-                                {{ plan.storage_gb ?? 0 }} GB storage • {{ plan.allowed_repositories ?? 0 }} repos
+                                {{ plan.storage_gb ?? 0 }} GB storage • {{ (plan.allowed_repositories ?? 0) === 0 ? 'Unlimited' : plan.allowed_repositories }} repos
                               </span>
                               <span class='text-xs text-base-content/70'>
-                                ${{
-                                  formatMonthlyPrice(plan.price_cents ?? 0)
-                                }}/month (${{ formatYearlyPrice(plan.price_cents ?? 0) }}/year)
+                                <template v-if='plan.is_free'>Free</template>
+                                <template v-else>
+                                  ${{ formatMonthlyPrice(plan.price_cents ?? 0) }}/month (${{ formatYearlyPrice(plan.price_cents ?? 0) }}/year)
+                                </template>
                               </span>
                             </div>
                           </a>
@@ -833,25 +867,32 @@ onMounted(async () => {
                     </span>
                     <!-- Overage Price -->
                     <span class='text-sm text-base-content/70'>Overage Price</span>
-                    <span class='text-sm text-right'>${{ ((subscription?.plan?.overage_cents_per_gb ?? 0) / 100).toFixed(2) }} per GB over {{ subscription?.plan?.storage_gb ?? 0 }}GB</span>
+                    <span class='text-sm text-right'>
+                      <template v-if='subscription?.plan?.is_free'>Hard limit</template>
+                      <template v-else>${{ ((subscription?.plan?.overage_cents_per_gb ?? 0) / 100).toFixed(2) }} per GB over {{ subscription?.plan?.storage_gb ?? 0 }}GB</template>
+                    </span>
                     <span class='text-center' :class='isSwitchUpgrade ? "text-success" : "text-warning"'>→</span>
                     <span :class='["text-sm font-medium", isSwitchUpgrade ? "text-success" : "text-warning"]'>
-                      ${{ ((selectedSwitchPlanDetails.overage_cents_per_gb ?? 0) / 100).toFixed(2) }} per GB over {{ selectedSwitchPlanDetails.storage_gb ?? 0 }}GB
+                      <template v-if='selectedSwitchPlanDetails.is_free'>Hard limit</template>
+                      <template v-else>${{ ((selectedSwitchPlanDetails.overage_cents_per_gb ?? 0) / 100).toFixed(2) }} per GB over {{ selectedSwitchPlanDetails.storage_gb ?? 0 }}GB</template>
                     </span>
                     <!-- Repositories -->
                     <span class='text-sm text-base-content/70'>Repositories</span>
-                    <span class='text-sm text-right'>{{ subscription?.plan?.allowed_repositories ?? 0 }}</span>
+                    <span class='text-sm text-right'>{{ (subscription?.plan?.allowed_repositories ?? 0) === 0 ? 'Unlimited' : subscription?.plan?.allowed_repositories }}</span>
                     <span class='text-center' :class='isSwitchUpgrade ? "text-success" : "text-warning"'>→</span>
                     <span :class='["text-sm font-medium", isSwitchUpgrade ? "text-success" : "text-warning"]'>
-                      {{ selectedSwitchPlanDetails.allowed_repositories ?? 0 }}
+                      {{ (selectedSwitchPlanDetails.allowed_repositories ?? 0) === 0 ? 'Unlimited' : selectedSwitchPlanDetails.allowed_repositories }}
                     </span>
                   </div>
                   <!-- Price summary -->
                   <div class='flex items-center justify-between pt-2 border-t border-base-300'>
                     <span class='text-sm text-base-content/70'>New Price</span>
                     <span class='font-medium'>
-                      ${{ formatMonthlyPrice(selectedSwitchPlanDetails.price_cents ?? 0) }}/month
-                      (${{ formatYearlyPrice(selectedSwitchPlanDetails.price_cents ?? 0) }}/year)
+                      <template v-if='selectedSwitchPlanDetails.is_free'>Free</template>
+                      <template v-else>
+                        ${{ formatMonthlyPrice(selectedSwitchPlanDetails.price_cents ?? 0) }}/month
+                        (${{ formatYearlyPrice(selectedSwitchPlanDetails.price_cents ?? 0) }}/year)
+                      </template>
                     </span>
                   </div>
                 </div>
@@ -947,19 +988,27 @@ onMounted(async () => {
                         <div class='flex justify-between text-sm'>
                           <span>New price:</span>
                           <span class='font-medium'>
-                          ${{ formatMonthlyPrice(selectedSwitchPlanDetails.price_cents ?? 0) }}/month
-                          (${{ formatYearlyPrice(selectedSwitchPlanDetails.price_cents ?? 0) }}/year)
-                        </span>
+                            <template v-if='selectedSwitchPlanDetails.is_free'>Free</template>
+                            <template v-else>
+                              ${{ formatMonthlyPrice(selectedSwitchPlanDetails.price_cents ?? 0) }}/month
+                              (${{ formatYearlyPrice(selectedSwitchPlanDetails.price_cents ?? 0) }}/year)
+                            </template>
+                          </span>
                         </div>
                         <div class='flex justify-between text-sm pt-2 border-t border-success/20'>
                           <span>Prorated charge now:</span>
                           <span class='font-bold text-success'>${{ prorationAmount.toFixed(2) }}</span>
                         </div>
                       </div>
-                      <p class='text-sm text-base-content/70'>
+                      <p v-if='!isFreePlan' class='text-sm text-base-content/70'>
                         You'll be charged <strong>${{ prorationAmount.toFixed(2) }}</strong> now for the {{ daysRemaining }}
                         days remaining in your billing period.
                       </p>
+                      <!-- Info for free plan users - payment method needed -->
+                      <div v-if='isFreePlan' class='flex items-start gap-2 p-3 bg-info/10 border border-info/30 rounded-lg'>
+                        <InformationCircleIcon class='size-5 text-info flex-shrink-0 mt-0.5' />
+                        <p class='text-sm text-base-content/80'>You'll need to add a payment method in the customer portal to complete the upgrade.</p>
+                      </div>
                     </template>
 
                     <!-- Downgrade explanation -->
@@ -979,34 +1028,48 @@ onMounted(async () => {
                         <div class='flex justify-between text-sm'>
                           <span>New price:</span>
                           <span class='font-medium'>
-                          ${{ formatMonthlyPrice(selectedSwitchPlanDetails.price_cents ?? 0) }}/month
-                          (${{ formatYearlyPrice(selectedSwitchPlanDetails.price_cents ?? 0) }}/year)
-                        </span>
+                            <template v-if='selectedSwitchPlanDetails.is_free'>Free</template>
+                            <template v-else>
+                              ${{ formatMonthlyPrice(selectedSwitchPlanDetails.price_cents ?? 0) }}/month
+                              (${{ formatYearlyPrice(selectedSwitchPlanDetails.price_cents ?? 0) }}/year)
+                            </template>
+                          </span>
                         </div>
-                        <div class='flex justify-between text-sm pt-2 border-t border-warning/20'>
+                        <div v-if='!selectedSwitchPlanDetails.is_free' class='flex justify-between text-sm pt-2 border-t border-warning/20'>
                           <span>Credit on next invoice:</span>
                           <span class='font-bold text-warning'>${{ prorationAmount.toFixed(2) }}</span>
                         </div>
                       </div>
-                      <p class='text-sm text-base-content/70'>
+                      <p v-if='!selectedSwitchPlanDetails.is_free' class='text-sm text-base-content/70'>
                         You'll receive a <strong>${{ prorationAmount.toFixed(2) }}</strong> credit on your next invoice for the
                         {{ daysRemaining }} unused days.
+                      </p>
+                      <p v-else class='text-sm text-base-content/70'>
+                        Your subscription will be changed to the free plan immediately.
                       </p>
                     </template>
                   </div>
 
                   <div class='flex justify-between pt-6'>
-                    <button class='btn btn-outline' @click='closeSwitchConfirmation' :disabled='isSwitchingPlan'>
-                      Cancel
-                    </button>
-                    <button
-                      :class='["btn", isSwitchUpgrade ? "btn-success" : "btn-warning"]'
-                      @click='switchPlan'
-                      :disabled='isSwitchingPlan'
-                    >
-                      <span v-if='isSwitchingPlan' class='loading loading-spinner loading-sm'></span>
-                      {{ isSwitchUpgrade ? "Confirm Upgrade" : "Confirm Downgrade" }}
-                    </button>
+                    <template v-if='portalOpened'>
+                      <div></div>
+                      <button class='btn btn-primary' @click='closeAndRefresh'>
+                        Close
+                      </button>
+                    </template>
+                    <template v-else>
+                      <button class='btn btn-outline' @click='closeSwitchConfirmation' :disabled='isSwitchingPlan'>
+                        Cancel
+                      </button>
+                      <button
+                        :class='["btn", isSwitchUpgrade ? "btn-success" : "btn-warning"]'
+                        @click='switchPlan'
+                        :disabled='isSwitchingPlan'
+                      >
+                        <span v-if='isSwitchingPlan' class='loading loading-spinner loading-sm'></span>
+                        {{ isFreePlan && isSwitchUpgrade ? "Open Plan Change in Browser" : (isSwitchUpgrade ? "Confirm Upgrade" : "Confirm Downgrade") }}
+                      </button>
+                    </template>
                   </div>
                 </DialogPanel>
               </TransitionChild>

@@ -86,6 +86,11 @@ function subscribeToTrialPlan(planName: string) {
   emit("subscribe-clicked", planName);
 }
 
+function subscribeToFreePlan(planName: string) {
+  internalSelectedPlan.value = planName;
+  emit("subscribe-clicked", planName);
+}
+
 </script>
 
 <template>
@@ -112,6 +117,12 @@ function subscribeToTrialPlan(planName: string) {
           Active
         </div>
 
+        <!-- Free plan badge -->
+        <div v-else-if='plan.is_free'
+             class='absolute -top-2 left-4 bg-success text-success-content px-3 py-1 text-xs rounded-full font-medium'>
+          Free
+        </div>
+
         <!-- Trial available badge -->
         <div v-else-if='(plan.trial_days ?? 0) > 0'
              class='absolute -top-2 left-4 bg-primary text-primary-content px-3 py-1 text-xs rounded-full font-medium'>
@@ -129,13 +140,19 @@ function subscribeToTrialPlan(planName: string) {
           <div class='flex-1'>
             <h3 class='text-xl font-bold'>{{ plan.name }}</h3>
             <div class='mt-2'>
-              <p class='text-3xl font-bold'>
-                ${{ getMonthlyPrice(plan) }}
-                <span class='text-sm font-normal text-base-content/70'>/mo</span>
-              </p>
-              <p class='text-xs text-base-content/60'>
-                Billed yearly at ${{ getPlanPrice(plan) }}
-              </p>
+              <template v-if='plan.is_free'>
+                <p class='text-3xl font-bold'>Free</p>
+                <p class='text-xs text-base-content/60'>No credit card required</p>
+              </template>
+              <template v-else>
+                <p class='text-3xl font-bold'>
+                  ${{ getMonthlyPrice(plan) }}
+                  <span class='text-sm font-normal text-base-content/70'>/mo</span>
+                </p>
+                <p class='text-xs text-base-content/60'>
+                  Billed yearly at ${{ getPlanPrice(plan) }}
+                </p>
+              </template>
             </div>
           </div>
         </div>
@@ -155,7 +172,7 @@ function subscribeToTrialPlan(planName: string) {
           <div class='flex items-center gap-3'>
             <FolderIcon class='size-5 text-base-content/50' />
             <div>
-              <p class='font-semibold'>{{ plan.allowed_repositories ?? 0 }}</p>
+              <p class='font-semibold'>{{ (plan.allowed_repositories ?? 0) === 0 ? 'Unlimited' : plan.allowed_repositories }}</p>
               <p class='text-xs text-base-content/60'>Repositories</p>
             </div>
           </div>
@@ -164,9 +181,15 @@ function subscribeToTrialPlan(planName: string) {
           <div class='flex items-center gap-3'>
             <CurrencyDollarIcon class='size-5 text-base-content/50' />
             <div>
-              <p class='font-semibold' v-if='getOveragePrice(plan)'>${{ getOveragePrice(plan) }} per GB</p>
-              <p class='font-semibold text-base-content/40' v-else>—</p>
-              <p class='text-xs text-base-content/60'>over {{ plan.storage_gb ?? 0 }}GB</p>
+              <template v-if='plan.is_free'>
+                <p class='font-semibold text-base-content/40'>—</p>
+                <p class='text-xs text-base-content/60'>Hard limit (no overage)</p>
+              </template>
+              <template v-else>
+                <p class='font-semibold' v-if='getOveragePrice(plan)'>${{ getOveragePrice(plan) }} per GB</p>
+                <p class='font-semibold text-base-content/40' v-else>—</p>
+                <p class='text-xs text-base-content/60'>over {{ plan.storage_gb ?? 0 }}GB</p>
+              </template>
             </div>
           </div>
         </div>
@@ -180,10 +203,20 @@ function subscribeToTrialPlan(planName: string) {
                              class='size-8 text-secondary' />
           </div>
 
-          <!-- Trial button area -->
+          <!-- Action button area -->
           <div class='h-8'>
+            <!-- Free plan button -->
             <button
-              v-if='(plan.trial_days ?? 0) > 0 && !hasActiveSubscription'
+              v-if='plan.is_free && !hasActiveSubscription'
+              class='btn btn-success btn-sm w-full'
+              :disabled='disabled'
+              @click.stop='subscribeToFreePlan(plan.name ?? "")'
+            >
+              Get Started
+            </button>
+            <!-- Trial button -->
+            <button
+              v-else-if='(plan.trial_days ?? 0) > 0 && !hasActiveSubscription'
               class='btn btn-primary btn-sm w-full'
               :disabled='disabled'
               @click.stop='subscribeToTrialPlan(plan.name ?? "")'
@@ -198,11 +231,11 @@ function subscribeToTrialPlan(planName: string) {
     <!-- Subscribe Button -->
     <div v-if='!hasActiveSubscription && !hideSubscribeButton' class='flex justify-start'>
       <button
-        class='btn btn-primary btn-lg'
+        :class='["btn btn-lg", selectedPlanData?.is_free ? "btn-success" : "btn-primary"]'
         :disabled='!internalSelectedPlan || disabled'
         @click='subscribeToPlan()'
       >
-        Subscribe to {{ selectedPlanData?.name }}
+        {{ selectedPlanData?.is_free ? 'Get Started with' : 'Subscribe to' }} {{ selectedPlanData?.name }}
       </button>
     </div>
 
