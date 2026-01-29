@@ -8,11 +8,11 @@ import {
   ChevronRightIcon,
   Cog6ToothIcon,
   CreditCardIcon,
-  HomeIcon,
   PlusIcon,
+  Squares2X2Icon,
   UserCircleIcon
 } from "@heroicons/vue/24/outline";
-import { ComputerDesktopIcon, GlobeEuropeAfricaIcon, HomeIcon as HomeIconSolid } from "@heroicons/vue/24/solid";
+import { ComputerDesktopIcon, GlobeEuropeAfricaIcon, Squares2X2Icon as Squares2X2IconSolid } from "@heroicons/vue/24/solid";
 import ArcoLogo from "./common/ArcoLogo.vue";
 import ArcoFooter from "./common/ArcoFooter.vue";
 import AuthModal from "./AuthModal.vue";
@@ -205,8 +205,8 @@ onUnmounted(() => {
         ]'
         :title='isCollapsed ? "Dashboard" : undefined'
       >
-        <HomeIconSolid v-if='isActiveRoute(Page.Dashboard)' class='size-5 flex-shrink-0' />
-        <HomeIcon v-else class='size-5 flex-shrink-0' />
+        <Squares2X2IconSolid v-if='isActiveRoute(Page.Dashboard)' class='size-5 flex-shrink-0' />
+        <Squares2X2Icon v-else class='size-5 flex-shrink-0' />
         <span v-if='!isCollapsed'>Dashboard</span>
       </button>
 
