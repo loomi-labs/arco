@@ -98,6 +98,14 @@ const timelineData = computed(() => {
   // Generate markers for each retention type - they start AFTER the safety zone
   const markers: Array<{ position: number; color: string; label: string }> = [];
 
+  // Single hourly marker (just one to indicate hourly retention exists)
+  if (rule.keepHourly > 0) {
+    const day = safetyDays + 1;
+    if (day <= totalDays) {
+      markers.push({ position: dayToPercent(day), color: 'bg-blue-800', label: 'hourly' });
+    }
+  }
+
   // Daily markers start after safety zone
   for (let i = 1; i <= rule.keepDaily; i++) {
     const day = safetyDays + i;
@@ -110,7 +118,7 @@ const timelineData = computed(() => {
   for (let i = 1; i <= rule.keepWeekly; i++) {
     const day = safetyDays + (i * 7);
     if (day <= totalDays) {
-      markers.push({ position: dayToPercent(day), color: 'bg-warning', label: 'weekly' });
+      markers.push({ position: dayToPercent(day), color: 'bg-yellow-400', label: 'weekly' });
     }
   }
 
@@ -133,7 +141,7 @@ const timelineData = computed(() => {
   return {
     safetyZonePercent: dayToPercent(safetyDays),
     markers,
-    hasAnyRetention: safetyDays > 0 || rule.keepDaily > 0 || rule.keepWeekly > 0 || rule.keepMonthly > 0 || rule.keepYearly > 0
+    hasAnyRetention: safetyDays > 0 || rule.keepHourly > 0 || rule.keepDaily > 0 || rule.keepWeekly > 0 || rule.keepMonthly > 0 || rule.keepYearly > 0
   };
 });
 
@@ -381,6 +389,16 @@ defineExpose({
     <!-- Custom fields (shown when Custom is selected) -->
     <div v-if='selectedPruningOption?.name === "custom"' class='flex flex-wrap gap-4 mb-4 p-3 bg-base-200 rounded-lg'>
       <div class='flex items-center gap-2'>
+        <span class='text-sm'>Hourly</span>
+        <input type='number'
+               class='input input-sm w-14'
+               min='0'
+               max='99'
+               :disabled='!pruningRule.isEnabled'
+               v-model='pruningRule.keepHourly'
+               @change='ruleToPruningOption(pruningRule)' />
+      </div>
+      <div class='flex items-center gap-2'>
         <span class='text-sm'>Daily</span>
         <input type='number'
                class='input input-sm w-14'
@@ -464,12 +482,16 @@ defineExpose({
           <span class='inline-block w-2 h-2 rounded-full bg-success/40'></span>
           Protected ({{ pruningRule.keepWithinDays }}d)
         </span>
+        <span v-if='pruningRule.keepHourly > 0' class='flex items-center gap-1'>
+          <span class='inline-block w-2 h-2 rounded-full bg-blue-800'></span>
+          Hourly ({{ pruningRule.keepHourly }})
+        </span>
         <span v-if='pruningRule.keepDaily > 0' class='flex items-center gap-1'>
           <span class='inline-block w-2 h-2 rounded-full bg-info'></span>
           Daily ({{ pruningRule.keepDaily }})
         </span>
         <span v-if='pruningRule.keepWeekly > 0' class='flex items-center gap-1'>
-          <span class='inline-block w-2 h-2 rounded-full bg-warning'></span>
+          <span class='inline-block w-2 h-2 rounded-full bg-yellow-400'></span>
           Weekly ({{ pruningRule.keepWeekly }})
         </span>
         <span v-if='pruningRule.keepMonthly > 0' class='flex items-center gap-1'>
