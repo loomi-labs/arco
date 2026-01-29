@@ -389,6 +389,12 @@ export class Plan {
      */
     "trial_days"?: number;
 
+    /**
+     * Whether this is a free plan (no payment required).
+     * Free plans have hard storage/repository limits with no overage billing.
+     */
+    "is_free"?: boolean;
+
     /** Creates a new Plan instance. */
     constructor($$source: Partial<Plan> = {}) {
 
