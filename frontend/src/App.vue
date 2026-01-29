@@ -131,7 +131,7 @@ onUnmounted(() => {
 <template>
   <div v-if='isInitialized' class='bg-base-200 w-full min-h-svh flex flex-row'>
     <Sidebar />
-    <div class='flex-1 flex flex-col min-h-screen overflow-x-hidden pt-16 2xl:pt-24 px-4 md:px-6 xl:px-12'>
+    <div class='flex-1 flex flex-col min-h-screen overflow-x-hidden pt-16 2xl:pt-24 px-4 md:px-6 xl:px-12 ml-16 xl:ml-0'>
       <RouterView class='container mx-auto flex-grow text-left' />
     </div>
   </div>
