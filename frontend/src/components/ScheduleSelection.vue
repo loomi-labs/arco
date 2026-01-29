@@ -139,28 +139,28 @@ watch(schedule, (newSchedule) => {
       <div role='tablist' class='tabs tabs-box'>
         <button role='tab'
                 class='tab flex-1'
-                :class='{"tab-active bg-secondary/20": isHourly}'
+                :class='{"tab-active bg-secondary/20 border border-secondary": isHourly}'
                 :disabled='!isScheduleEnabled'
                 @click='setMode(backupschedule.Mode.ModeHourly)'>
           {{ $t("hour") }}
         </button>
         <button role='tab'
                 class='tab flex-1'
-                :class='{"tab-active bg-secondary/20": isDaily}'
+                :class='{"tab-active bg-secondary/20 border border-secondary": isDaily}'
                 :disabled='!isScheduleEnabled'
                 @click='setMode(backupschedule.Mode.ModeDaily)'>
           {{ $t("day") }}
         </button>
         <button role='tab'
                 class='tab flex-1'
-                :class='{"tab-active bg-secondary/20": isWeekly}'
+                :class='{"tab-active bg-secondary/20 border border-secondary": isWeekly}'
                 :disabled='!isScheduleEnabled'
                 @click='setMode(backupschedule.Mode.ModeWeekly)'>
           {{ $t("week") }}
         </button>
         <button role='tab'
                 class='tab flex-1'
-                :class='{"tab-active bg-secondary/20": isMonthly}'
+                :class='{"tab-active bg-secondary/20 border border-secondary": isMonthly}'
                 :disabled='!isScheduleEnabled'
                 @click='setMode(backupschedule.Mode.ModeMonthly)'>
           {{ $t("month") }}

@@ -176,6 +176,10 @@ function ruleToPruningOption(rule: PruningRule) {
 }
 
 function toPruningRule() {
+  // Don't reset values when switching to custom - keep current values
+  if (selectedPruningOption.value?.name === "custom") {
+    return;
+  }
   pruningRule.value.keepHourly = selectedPruningOption.value?.keepHourly ?? 0;
   pruningRule.value.keepDaily = selectedPruningOption.value?.keepDaily ?? 0;
   pruningRule.value.keepWeekly = selectedPruningOption.value?.keepWeekly ?? 0;
@@ -366,7 +370,7 @@ defineExpose({
           v-for='option in pruningOptions'
           :key='option.name'
           class='btn btn-sm'
-          :class='selectedPruningOption?.name === option.name ? "btn-primary" : "btn-outline"'
+          :class='selectedPruningOption?.name === option.name ? "bg-secondary/20 border-secondary" : "btn-outline"'
           :disabled='!pruningRule.isEnabled'
           @click='selectedPruningOption = option; toPruningRule()'>
           {{ option.name.charAt(0).toUpperCase() + option.name.slice(1) }}
@@ -376,16 +380,6 @@ defineExpose({
 
     <!-- Custom fields (shown when Custom is selected) -->
     <div v-if='selectedPruningOption?.name === "custom"' class='flex flex-wrap gap-4 mb-4 p-3 bg-base-200 rounded-lg'>
-      <div class='flex items-center gap-2'>
-        <span class='text-sm'>Hourly</span>
-        <input type='number'
-               class='input input-sm w-14'
-               min='0'
-               max='99'
-               :disabled='!pruningRule.isEnabled'
-               v-model='pruningRule.keepHourly'
-               @change='ruleToPruningOption(pruningRule)' />
-      </div>
       <div class='flex items-center gap-2'>
         <span class='text-sm'>Daily</span>
         <input type='number'
@@ -430,6 +424,7 @@ defineExpose({
 
     <!-- Timeline visualization -->
     <div v-if='pruningRule.isEnabled && timelineData.hasAnyRetention' class='mb-4 p-4 bg-base-200 rounded-lg'>
+      <div class='text-xs text-base-content/60 mb-2'>Preview: Shows which archives will be kept over 1 year</div>
       <!-- Time labels above bar -->
       <div class='relative text-xs text-base-content/60 mb-1'>
         <span>Today</span>
