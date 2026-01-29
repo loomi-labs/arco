@@ -1,7 +1,7 @@
 <script setup lang='ts'>
 import { computed, onUnmounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
-import { ComputerDesktopIcon, GlobeEuropeAfricaIcon, ClockIcon } from '@heroicons/vue/24/outline';
+import { ServerIcon, GlobeEuropeAfricaIcon, ClockIcon } from '@heroicons/vue/24/outline';
 import { CheckCircleIcon, ExclamationTriangleIcon, LockClosedIcon, XCircleIcon } from '@heroicons/vue/24/solid';
 import { Events } from "@wailsio/runtime";
 import ArcoCloudIcon from './common/ArcoCloudIcon.vue';
@@ -48,11 +48,11 @@ const typeLabel = computed(() => {
 
 const typeIcon = computed(() => {
   switch (props.repo.type.type) {
-    case LocationType.LocationTypeLocal: return ComputerDesktopIcon;
+    case LocationType.LocationTypeLocal: return ServerIcon;
     case LocationType.LocationTypeRemote: return GlobeEuropeAfricaIcon;
     case LocationType.LocationTypeArcoCloud: return ArcoCloudIcon;
     case LocationType.$zero:
-    default: return ComputerDesktopIcon;
+    default: return ServerIcon;
   }
 });
 

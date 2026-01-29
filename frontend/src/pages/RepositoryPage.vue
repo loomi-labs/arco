@@ -6,7 +6,7 @@ import {
   ChartPieIcon,
   CheckCircleIcon,
   CircleStackIcon,
-  ComputerDesktopIcon,
+  ServerIcon,
   GlobeEuropeAfricaIcon,
   LockClosedIcon,
   LockOpenIcon
@@ -84,11 +84,11 @@ const isLocalRepo = computed(() => {
 
 const locationTypeIcon = computed(() => {
   switch (repo.value.type.type) {
-    case LocationType.LocationTypeLocal: return ComputerDesktopIcon;
+    case LocationType.LocationTypeLocal: return ServerIcon;
     case LocationType.LocationTypeRemote: return GlobeEuropeAfricaIcon;
     case LocationType.LocationTypeArcoCloud: return ArcoCloudIcon;
     case LocationType.$zero:
-    default: return ComputerDesktopIcon;
+    default: return ServerIcon;
   }
 });
 

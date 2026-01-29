@@ -9,10 +9,11 @@ import {
   Cog6ToothIcon,
   CreditCardIcon,
   PlusIcon,
+  ServerIcon,
   Squares2X2Icon,
   UserCircleIcon
 } from "@heroicons/vue/24/outline";
-import { ComputerDesktopIcon, GlobeEuropeAfricaIcon, Squares2X2Icon as Squares2X2IconSolid } from "@heroicons/vue/24/solid";
+import { GlobeEuropeAfricaIcon, Squares2X2Icon as Squares2X2IconSolid } from "@heroicons/vue/24/solid";
 import ArcoLogo from "./common/ArcoLogo.vue";
 import ArcoFooter from "./common/ArcoFooter.vue";
 import AuthModal from "./AuthModal.vue";
@@ -277,8 +278,8 @@ onUnmounted(() => {
             ]'
             :title='isCollapsed ? repo.name : undefined'
           >
-            <ComputerDesktopIcon v-if='repo.type.type === LocationType.LocationTypeLocal'
-                                 class='size-4 flex-shrink-0' />
+            <ServerIcon v-if='repo.type.type === LocationType.LocationTypeLocal'
+                        class='size-4 flex-shrink-0' />
             <ArcoLogo v-else-if='repo.type.type === LocationType.LocationTypeArcoCloud'
                       svgClass='size-4 flex-shrink-0' />
             <GlobeEuropeAfricaIcon v-else class='size-4 flex-shrink-0' />

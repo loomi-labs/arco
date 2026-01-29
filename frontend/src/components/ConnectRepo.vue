@@ -1,6 +1,6 @@
 <script setup lang='ts'>
 import { ref, useId, useTemplateRef, watch } from "vue";
-import { ComputerDesktopIcon, GlobeEuropeAfricaIcon } from "@heroicons/vue/24/solid";
+import { ServerIcon, GlobeEuropeAfricaIcon } from "@heroicons/vue/24/solid";
 import CreateRemoteRepositoryModal from "./CreateRemoteRepositoryModal.vue";
 import CreateLocalRepositoryModal from "../components/CreateLocalRepositoryModal.vue";
 import CreateArcoCloudModal from "./CreateArcoCloudModal.vue";
@@ -145,7 +145,7 @@ watch(() => props.existingRepos, (newRepos) => {
         :class='getRepoCardClass(repo)'
         @click='connectOrDisconnectRepo(repo)'
       >
-        <ComputerDesktopIcon v-if='repo.type.type === LocationType.LocationTypeLocal' class='size-12' />
+        <ServerIcon v-if='repo.type.type === LocationType.LocationTypeLocal' class='size-12' />
         <ArcoLogo v-else-if='repo.type.type === LocationType.LocationTypeArcoCloud' class='size-12' svgClass='' />
         <GlobeEuropeAfricaIcon v-else class='size-12' />
         {{ repo.name }}

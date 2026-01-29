@@ -1,5 +1,5 @@
 <script setup lang='ts'>
-import { ComputerDesktopIcon, GlobeEuropeAfricaIcon } from "@heroicons/vue/24/solid";
+import { ServerIcon, GlobeEuropeAfricaIcon } from "@heroicons/vue/24/solid";
 import ArcoLogo from "./common/ArcoLogo.vue";
 import { LocationType } from "../../bindings/github.com/loomi-labs/arco/backend/app/repository";
 
@@ -40,8 +40,8 @@ const emitClick = "click";
        class='group flex flex-col ac-card-hover-secondary p-10 w-full min-h-[300px]'
        :class='{ "ac-card-selected-secondary text-secondary": isSelected }'
        @click='emit(emitClick)'>
-    <ComputerDesktopIcon class='size-24 self-center group-hover:text-secondary mb-4'
-                         :class='{"text-secondary": isSelected}' />
+    <ServerIcon class='size-24 self-center group-hover:text-secondary mb-4'
+                :class='{"text-secondary": isSelected}' />
     <p class='text-center text-lg font-semibold mb-2 group-hover:text-secondary'>Local</p>
     <div class='divider'></div>
     <p class='text-sm text-base-content/70 group-hover:text-secondary'>Store your backups on a local drive.</p>
