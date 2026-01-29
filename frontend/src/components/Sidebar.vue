@@ -235,25 +235,6 @@ onUnmounted(() => {
               <component :is='getIcon(profile.icon).html' class='size-4 flex-shrink-0' />
               <span v-if='!isCollapsed' class='truncate'>{{ profile.name }}</span>
             </button>
-
-            <!-- Nested repositories (only when expanded) -->
-            <div v-if='!isCollapsed && profile.repositories.length > 0' class='ml-4 space-y-0.5'>
-              <button
-                v-for='repo in profile.repositories'
-                :key='repo.id'
-                @click='navigateTo(withId(Page.Repository, repo.id.toString()))'
-                :title='"Repository: " + repo.name'
-                :class='[
-                  "w-full flex items-center gap-2 px-3 py-1 rounded-lg text-xs transition-colors cursor-pointer text-left",
-                  isActiveRepo(repo.id)
-                    ? "border-l-2 border-primary pl-2 text-base-content/60"
-                    : "text-base-content/60 hover:bg-base-300 hover:text-base-content"
-                ]'
-              >
-                <span :class='isActiveRepo(repo.id) ? "text-primary" : "text-base-content/40"'>&#8627;</span>
-                <span class='truncate'>{{ repo.name }}</span>
-              </button>
-            </div>
           </div>
 
           <!-- New Backup Profile Button -->
