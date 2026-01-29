@@ -273,7 +273,7 @@ onUnmounted(() => {
               isCollapsed ? "justify-center" : "text-left",
               isActiveRepo(repo.id)
                 ? "bg-primary/20 border-l-4 border-primary"
-                : "text-base-content/60 hover:bg-base-300 hover:text-base-content"
+                : "hover:bg-base-300"
             ]'
             :title='isCollapsed ? repo.name : undefined'
           >
