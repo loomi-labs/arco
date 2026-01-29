@@ -22,7 +22,6 @@ export enum Page {
 // Anchors
 export enum Anchor {
   BackupProfiles = "backup-profiles",
-  Repositories = "repositories",
 }
 
 const routes: RouteRecordRaw[] = [

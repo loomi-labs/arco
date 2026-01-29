@@ -38,7 +38,7 @@ import ArchivesCard from "../components/ArchivesCard.vue";
 import ChangePassphraseModal from "../components/ChangePassphraseModal.vue";
 import ChangePathModal from "../components/ChangePathModal.vue";
 import ConfirmModal from "../components/common/ConfirmModal.vue";
-import { Anchor, Page } from "../router";
+import { Page } from "../router";
 import { ErrorAction, RepositoryStateType } from "../../bindings/github.com/loomi-labs/arco/backend/app/statemachine";
 import { BackupStatus } from "../../bindings/github.com/loomi-labs/arco/backend/app/types";
 
@@ -217,10 +217,7 @@ async function removeRepo() {
   try {
     await repoService.Remove(repoId.value);
     toast.success("Repository removal queued");
-    await router.replace({
-      path: Page.Dashboard,
-      hash: `#${Anchor.Repositories}`
-    });
+    await router.replace(Page.Dashboard);
   } catch (error: unknown) {
     await showAndLogError("Failed to queue repository removal", error);
   }
@@ -230,10 +227,7 @@ async function deleteRepo() {
   try {
     await repoService.Delete(repoId.value);
     toast.success("Repository deleted");
-    await router.replace({
-      path: Page.Dashboard,
-      hash: `#${Anchor.Repositories}`
-    });
+    await router.replace(Page.Dashboard);
   } catch (error: unknown) {
     await showAndLogError("Failed to delete repository", error);
   }

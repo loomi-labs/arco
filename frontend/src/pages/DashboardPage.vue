@@ -9,9 +9,8 @@ import { computed, onMounted, onUnmounted, ref, useId, useTemplateRef } from "vu
 import { showAndLogError } from "../common/logger";
 import BackupProfileCard from "../components/BackupProfileCard.vue";
 import { PlusCircleIcon } from "@heroicons/vue/24/solid";
-import { FolderIcon, CircleStackIcon, InformationCircleIcon } from "@heroicons/vue/24/outline";
+import { FolderIcon, InformationCircleIcon } from "@heroicons/vue/24/outline";
 import { Anchor, Page } from "../router";
-import RepoCardSimple from "../components/RepoCardSimple.vue";
 import BackupConceptsInfoModal from "../components/BackupConceptsInfoModal.vue";
 import EmptyStateCard from "../components/EmptyStateCard.vue";
 import ErrorSection from "../components/ErrorSection.vue";
@@ -21,8 +20,6 @@ import WelcomeModal from "../components/common/WelcomeModal.vue";
 import * as EventHelpers from "../common/events";
 import * as backupProfileService from "../../bindings/github.com/loomi-labs/arco/backend/app/backup_profile/service";
 import type { BackupProfile } from "../../bindings/github.com/loomi-labs/arco/backend/app/backup_profile";
-import * as repoService from "../../bindings/github.com/loomi-labs/arco/backend/app/repository/service";
-import type * as repoModels from "../../bindings/github.com/loomi-labs/arco/backend/app/repository/models";
 import { Events } from "@wailsio/runtime";
 
 /************
@@ -35,19 +32,16 @@ import { Events } from "@wailsio/runtime";
 
 const router = useRouter();
 const backupProfiles = ref<BackupProfile[]>([]);
-const repos = ref<repoModels.Repository[]>([]);
 const backupConceptsInfoModalKey = useId();
 const backupConceptsInfoModal = useTemplateRef<InstanceType<typeof BackupConceptsInfoModal>>(backupConceptsInfoModalKey);
 const welcomeModalKey = useId();
 const welcomeModal = useTemplateRef<InstanceType<typeof WelcomeModal>>(welcomeModalKey);
 
 // Empty state computeds
-const isEmpty = computed(() => backupProfiles.value.length === 0 && repos.value.length === 0);
+const isEmpty = computed(() => backupProfiles.value.length === 0);
 const hasNoProfiles = computed(() => backupProfiles.value.length === 0);
-const hasNoRepos = computed(() => repos.value.length === 0);
 
 const cleanupFunctions: (() => void)[] = [];
-let repoStateCleanups: (() => void)[] = [];
 
 /************
  * Functions
@@ -56,23 +50,8 @@ let repoStateCleanups: (() => void)[] = [];
 async function getData() {
   try {
     backupProfiles.value = (await backupProfileService.GetBackupProfiles()).filter((p): p is BackupProfile => p !== null) ?? [];
-    repos.value = (await repoService.All()).filter((repo): repo is repoModels.Repository => repo !== null);
-    setupRepoStateListeners();
   } catch (error: unknown) {
     await showAndLogError("Failed to get data", error);
-  }
-}
-
-function setupRepoStateListeners() {
-  // Clean up previous listeners
-  repoStateCleanups.forEach((cleanup) => cleanup());
-  repoStateCleanups = [];
-
-  // Set up new listeners for each repo
-  for (const repo of repos.value) {
-    repoStateCleanups.push(
-      Events.On(EventHelpers.repoStateChangedEvent(repo.id), getData)
-    );
   }
 }
 
@@ -98,14 +77,8 @@ cleanupFunctions.push(Events.On(EventHelpers.backupProfileCreatedEvent(), getDat
 cleanupFunctions.push(Events.On(EventHelpers.backupProfileUpdatedEvent(), getData));
 cleanupFunctions.push(Events.On(EventHelpers.backupProfileDeletedEvent(), getData));
 
-// Listen for repository CRUD events
-cleanupFunctions.push(Events.On(EventHelpers.repositoryCreatedEvent(), getData));
-cleanupFunctions.push(Events.On(EventHelpers.repositoryUpdatedEvent(), getData));
-cleanupFunctions.push(Events.On(EventHelpers.repositoryDeletedEvent(), getData));
-
 onUnmounted(() => {
   cleanupFunctions.forEach((cleanup) => cleanup());
-  repoStateCleanups.forEach((cleanup) => cleanup());
 });
 
 </script>
@@ -157,42 +130,6 @@ onUnmounted(() => {
       >
         <PlusCircleIcon class='size-12' />
         <div class='pl-2 text-lg font-semibold'>Add Backup Profile</div>
-      </div>
-    </div>
-
-    <div class='divider pt-10 pb-8'></div>
-
-    <!-- Repositories Section -->
-    <div class='text-left'>
-      <h1 class='text-4xl font-bold text-base-strong pb-2' :id='Anchor.Repositories'>Repositories</h1>
-      <div class='grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-8 pt-4'>
-        <!-- Repository Cards -->
-        <div v-for='repo in repos' :key='repo.id'>
-          <RepoCardSimple :repo='repo' />
-        </div>
-
-        <!-- Empty State Card for Repositories -->
-        <EmptyStateCard
-          v-if='hasNoRepos'
-          title='No Repositories Yet'
-          description='Repositories store your backup archives.'
-          buttonText='Add Your First Repository'
-          @action='router.push(Page.AddRepository)'
-        >
-          <template #icon>
-            <CircleStackIcon class='size-6' />
-          </template>
-        </EmptyStateCard>
-
-        <!-- Add Repository Card (when has repos already) -->
-        <div
-          v-else
-          @click='router.push(Page.AddRepository)'
-          class='flex justify-center items-center h-full w-full ac-card-dotted min-h-46'
-        >
-          <PlusCircleIcon class='size-12' />
-          <div class='pl-2 text-lg font-semibold'>Add Repository</div>
-        </div>
       </div>
     </div>
 
