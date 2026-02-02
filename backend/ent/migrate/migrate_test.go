@@ -792,9 +792,21 @@ func validateMigration(db *sql.DB, preMigrationState *MigrationState) error {
 			return fmt.Errorf("failed to get backup profile ID for schedule %d: %w", schedule.ID, err)
 		}
 
-		if schedule.ID != expected.ID || profileID != expected.ProfileID || string(schedule.Mode) != expected.Mode {
+		// Determine expected mode after migration ('hourly' -> 'minute_interval')
+		expectedMode := expected.Mode
+		if expectedMode == "hourly" {
+			expectedMode = "minute_interval"
+		}
+
+		if schedule.ID != expected.ID || profileID != expected.ProfileID || string(schedule.Mode) != expectedMode {
 			return fmt.Errorf("backup_schedule relationship mismatch at index %d: expected (id=%d, profile=%d, mode=%s), got (id=%d, profile=%d, mode=%s)",
-				i, expected.ID, expected.ProfileID, expected.Mode, schedule.ID, profileID, schedule.Mode)
+				i, expected.ID, expected.ProfileID, expectedMode, schedule.ID, profileID, schedule.Mode)
+		}
+
+		// Validate interval_minutes has default value of 60
+		if schedule.IntervalMinutes != 60 {
+			return fmt.Errorf("backup_schedule %d: interval_minutes should default to 60, got %d",
+				schedule.ID, schedule.IntervalMinutes)
 		}
 	}
 
