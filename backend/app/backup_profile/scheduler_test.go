@@ -14,6 +14,7 @@ import (
 TEST CASES - schedule.go
 
 TestScheduler
+* getNextBackupTime - minute_interval 0min - error
 * getNextBackupTime - minute_interval 60min - from now
 * getNextBackupTime - minute_interval 10min - from now
 * getNextBackupTime - minute_interval 30min - from 2024-01-01 00:00
@@ -75,6 +76,13 @@ func TestScheduler(t *testing.T) {
 		wantTime time.Time
 		wantErr  bool
 	}{
+		{
+			name:     "getNextBackupTime - minute_interval 0min - error",
+			schedule: ent.BackupSchedule{Mode: backupschedule.ModeMinuteInterval, IntervalMinutes: 0},
+			fromTime: now,
+			wantTime: time.Time{},
+			wantErr:  true,
+		},
 		{
 			name:     "getNextBackupTime - minute_interval 60min - from now",
 			schedule: ent.BackupSchedule{Mode: backupschedule.ModeMinuteInterval, IntervalMinutes: 60},

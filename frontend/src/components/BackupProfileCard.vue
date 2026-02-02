@@ -46,7 +46,8 @@ const hasSchedule = computed(() => {
 
 const scheduleMode = computed(() => {
   const mode = props.backup.backupSchedule?.mode;
-  const interval = props.backup.backupSchedule?.intervalMinutes ?? 60;
+  const rawInterval = props.backup.backupSchedule?.intervalMinutes;
+  const interval = rawInterval && rawInterval > 0 ? rawInterval : 60;
   switch (mode) {
     case backupschedule.Mode.ModeMinuteInterval:
       if (interval < 60) return `Every ${interval} min`;

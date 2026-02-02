@@ -187,6 +187,9 @@ func getNextBackupTime(bs *ent.BackupSchedule, fromTime time.Time) (time.Time, e
 	fromTime = fromTime.In(time.UTC)
 	switch bs.Mode {
 	case backupschedule.ModeMinuteInterval:
+		if bs.IntervalMinutes == 0 {
+			return time.Time{}, fmt.Errorf("interval_minutes must be greater than 0")
+		}
 		interval := time.Duration(bs.IntervalMinutes) * time.Minute
 		return fromTime.Add(interval), nil
 	case backupschedule.ModeDaily:
