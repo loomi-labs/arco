@@ -23,7 +23,7 @@ export enum Mode {
      * Mode values.
      */
     ModeDisabled = "disabled",
-    ModeHourly = "hourly",
+    ModeMinuteInterval = "minute_interval",
     ModeDaily = "daily",
     ModeWeekly = "weekly",
     ModeMonthly = "monthly",

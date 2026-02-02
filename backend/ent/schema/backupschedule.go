@@ -26,8 +26,11 @@ func (BackupSchedule) Fields() []ent.Field {
 			StructTag(`json:"id"`),
 		field.Enum("mode").
 			StructTag(`json:"mode"`).
-			Values("disabled", "hourly", "daily", "weekly", "monthly").
+			Values("disabled", "minute_interval", "daily", "weekly", "monthly").
 			Default("disabled"),
+		field.Uint16("interval_minutes").
+			StructTag(`json:"intervalMinutes"`).
+			Default(60),
 
 		// Schedule fields
 		field.Time("daily_at").

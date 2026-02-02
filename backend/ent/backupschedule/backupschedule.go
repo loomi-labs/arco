@@ -21,6 +21,8 @@ const (
 	FieldUpdatedAt = "updated_at"
 	// FieldMode holds the string denoting the mode field in the database.
 	FieldMode = "mode"
+	// FieldIntervalMinutes holds the string denoting the interval_minutes field in the database.
+	FieldIntervalMinutes = "interval_minutes"
 	// FieldDailyAt holds the string denoting the daily_at field in the database.
 	FieldDailyAt = "daily_at"
 	// FieldWeekday holds the string denoting the weekday field in the database.
@@ -56,6 +58,7 @@ var Columns = []string{
 	FieldCreatedAt,
 	FieldUpdatedAt,
 	FieldMode,
+	FieldIntervalMinutes,
 	FieldDailyAt,
 	FieldWeekday,
 	FieldWeeklyAt,
@@ -94,6 +97,8 @@ var (
 	DefaultUpdatedAt func() time.Time
 	// UpdateDefaultUpdatedAt holds the default value on update for the "updated_at" field.
 	UpdateDefaultUpdatedAt func() time.Time
+	// DefaultIntervalMinutes holds the default value on creation for the "interval_minutes" field.
+	DefaultIntervalMinutes uint16
 	// MonthdayValidator is a validator for the "monthday" field. It is called by the builders before save.
 	MonthdayValidator func(uint8) error
 )
@@ -106,11 +111,11 @@ const DefaultMode = ModeDisabled
 
 // Mode values.
 const (
-	ModeDisabled Mode = "disabled"
-	ModeHourly   Mode = "hourly"
-	ModeDaily    Mode = "daily"
-	ModeWeekly   Mode = "weekly"
-	ModeMonthly  Mode = "monthly"
+	ModeDisabled       Mode = "disabled"
+	ModeMinuteInterval Mode = "minute_interval"
+	ModeDaily          Mode = "daily"
+	ModeWeekly         Mode = "weekly"
+	ModeMonthly        Mode = "monthly"
 )
 
 func (m Mode) String() string {
@@ -120,7 +125,7 @@ func (m Mode) String() string {
 // ModeValidator is a validator for the "mode" field enum values. It is called by the builders before save.
 func ModeValidator(m Mode) error {
 	switch m {
-	case ModeDisabled, ModeHourly, ModeDaily, ModeWeekly, ModeMonthly:
+	case ModeDisabled, ModeMinuteInterval, ModeDaily, ModeWeekly, ModeMonthly:
 		return nil
 	default:
 		return fmt.Errorf("backupschedule: invalid enum value for mode field: %q", m)
@@ -176,6 +181,11 @@ func ByUpdatedAt(opts ...sql.OrderTermOption) OrderOption {
 // ByMode orders the results by the mode field.
 func ByMode(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldMode, opts...).ToFunc()
+}
+
+// ByIntervalMinutes orders the results by the interval_minutes field.
+func ByIntervalMinutes(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldIntervalMinutes, opts...).ToFunc()
 }
 
 // ByDailyAt orders the results by the daily_at field.

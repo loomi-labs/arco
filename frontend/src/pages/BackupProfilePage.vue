@@ -101,9 +101,17 @@ const scheduleSectionDetails = computed(() => {
 
   let details = "";
   switch (schedule.mode) {
-    case backupschedule.Mode.ModeHourly:
-      details = "Backs up every hour";
+    case backupschedule.Mode.ModeMinuteInterval: {
+      const interval = schedule.intervalMinutes ?? 60;
+      if (interval < 60) {
+        details = `Backs up every ${interval} minutes`;
+      } else if (interval === 60) {
+        details = "Backs up every hour";
+      } else {
+        details = `Backs up every ${interval / 60} hours`;
+      }
       break;
+    }
     case backupschedule.Mode.ModeDaily:
       details = `Backs up daily at ${format(new Date(schedule.dailyAt), "HH:mm")}`;
       break;

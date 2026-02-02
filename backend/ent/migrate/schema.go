@@ -86,7 +86,8 @@ var (
 		{Name: "id", Type: field.TypeInt, Increment: true},
 		{Name: "created_at", Type: field.TypeTime},
 		{Name: "updated_at", Type: field.TypeTime},
-		{Name: "mode", Type: field.TypeEnum, Enums: []string{"disabled", "hourly", "daily", "weekly", "monthly"}, Default: "disabled"},
+		{Name: "mode", Type: field.TypeEnum, Enums: []string{"disabled", "minute_interval", "daily", "weekly", "monthly"}, Default: "disabled"},
+		{Name: "interval_minutes", Type: field.TypeUint16, Default: 60},
 		{Name: "daily_at", Type: field.TypeTime},
 		{Name: "weekday", Type: field.TypeEnum, Enums: []string{"monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"}},
 		{Name: "weekly_at", Type: field.TypeTime},
@@ -105,7 +106,7 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "backup_schedules_backup_profiles_backup_schedule",
-				Columns:    []*schema.Column{BackupSchedulesColumns[12]},
+				Columns:    []*schema.Column{BackupSchedulesColumns[13]},
 				RefColumns: []*schema.Column{BackupProfilesColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
@@ -114,7 +115,7 @@ var (
 			{
 				Name:    "backupschedule_next_run",
 				Unique:  false,
-				Columns: []*schema.Column{BackupSchedulesColumns[9]},
+				Columns: []*schema.Column{BackupSchedulesColumns[10]},
 			},
 		},
 	}

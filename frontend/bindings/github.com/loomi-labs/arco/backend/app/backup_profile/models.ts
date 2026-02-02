@@ -186,6 +186,7 @@ export class BackupSchedule {
     "createdAt": time$0.Time;
     "updatedAt": time$0.Time;
     "mode": backupschedule$0.Mode;
+    "intervalMinutes": number;
     "dailyAt": time$0.Time;
     "weekday": backupschedule$0.Weekday;
     "weeklyAt": time$0.Time;
@@ -208,6 +209,9 @@ export class BackupSchedule {
         }
         if (!("mode" in $$source)) {
             this["mode"] = backupschedule$0.Mode.$zero;
+        }
+        if (!("intervalMinutes" in $$source)) {
+            this["intervalMinutes"] = 0;
         }
         if (!("dailyAt" in $$source)) {
             this["dailyAt"] = null;

@@ -191,12 +191,13 @@ func (s *Service) NewBackupProfile(ctx context.Context) (*BackupProfile, error) 
 	// We only care about the hour, minute, second and nanosecond (in local time for display purpose)
 	firstDayOfMonthAtNine := time.Date(time.Now().Year(), 1, 1, 9, 0, 0, 0, time.Local)
 	schedule := &BackupSchedule{
-		Mode:      backupschedule.ModeHourly,
-		DailyAt:   firstDayOfMonthAtNine,
-		Weekday:   backupschedule.WeekdayMonday,
-		WeeklyAt:  firstDayOfMonthAtNine,
-		Monthday:  1,
-		MonthlyAt: firstDayOfMonthAtNine,
+		Mode:            backupschedule.ModeMinuteInterval,
+		IntervalMinutes: 60,
+		DailyAt:         firstDayOfMonthAtNine,
+		Weekday:         backupschedule.WeekdayMonday,
+		WeeklyAt:        firstDayOfMonthAtNine,
+		Monthday:        1,
+		MonthlyAt:       firstDayOfMonthAtNine,
 	}
 
 	pruningRule := &PruningRule{
@@ -585,6 +586,9 @@ func (s *Service) SelectDirectory(data SelectDirectoryData) (string, error) {
 func applyScheduleDefaultsEnt(schedule *ent.BackupSchedule) {
 	defaultTime := time.Date(time.Now().Year(), 1, 1, 9, 0, 0, 0, time.Local)
 
+	if schedule.IntervalMinutes == 0 {
+		schedule.IntervalMinutes = 60
+	}
 	if schedule.Weekday == "" {
 		schedule.Weekday = backupschedule.WeekdayMonday
 	}
@@ -636,6 +640,7 @@ func (s *Service) SaveBackupSchedule(ctx context.Context, backupProfileId int, s
 			Update().
 			Where(backupschedule.HasBackupProfileWith(backupprofile.ID(backupProfileId))).
 			SetMode(entSchedule.Mode).
+			SetIntervalMinutes(entSchedule.IntervalMinutes).
 			SetDailyAt(entSchedule.DailyAt).
 			SetWeeklyAt(entSchedule.WeeklyAt).
 			SetWeekday(entSchedule.Weekday).
@@ -648,6 +653,7 @@ func (s *Service) SaveBackupSchedule(ctx context.Context, backupProfileId int, s
 	return s.db.BackupSchedule.
 		Create().
 		SetMode(entSchedule.Mode).
+		SetIntervalMinutes(entSchedule.IntervalMinutes).
 		SetDailyAt(entSchedule.DailyAt).
 		SetWeeklyAt(entSchedule.WeeklyAt).
 		SetWeekday(entSchedule.Weekday).
@@ -780,18 +786,19 @@ type RepositorySummary struct {
 
 // BackupSchedule is a standalone view of ent.BackupSchedule without back-edges
 type BackupSchedule struct {
-	ID            int                    `json:"id"`
-	CreatedAt     time.Time              `json:"createdAt"`
-	UpdatedAt     time.Time              `json:"updatedAt"`
-	Mode          backupschedule.Mode    `json:"mode"`
-	DailyAt       time.Time              `json:"dailyAt"`
-	Weekday       backupschedule.Weekday `json:"weekday"`
-	WeeklyAt      time.Time              `json:"weeklyAt"`
-	Monthday      uint8                  `json:"monthday"`
-	MonthlyAt     time.Time              `json:"monthlyAt"`
-	NextRun       time.Time              `json:"nextRun"`
-	LastRun       *time.Time             `json:"lastRun"`
-	LastRunStatus *string                `json:"lastRunStatus"`
+	ID              int                    `json:"id"`
+	CreatedAt       time.Time              `json:"createdAt"`
+	UpdatedAt       time.Time              `json:"updatedAt"`
+	Mode            backupschedule.Mode    `json:"mode"`
+	IntervalMinutes uint16                 `json:"intervalMinutes"`
+	DailyAt         time.Time              `json:"dailyAt"`
+	Weekday         backupschedule.Weekday `json:"weekday"`
+	WeeklyAt        time.Time              `json:"weeklyAt"`
+	Monthday        uint8                  `json:"monthday"`
+	MonthlyAt       time.Time              `json:"monthlyAt"`
+	NextRun         time.Time              `json:"nextRun"`
+	LastRun         *time.Time             `json:"lastRun"`
+	LastRunStatus   *string                `json:"lastRunStatus"`
 }
 
 // PruningRule is a standalone view of ent.PruningRule without back-edges
@@ -845,18 +852,19 @@ func toBackupSchedule(es *ent.BackupSchedule) *BackupSchedule {
 		return nil
 	}
 	return &BackupSchedule{
-		ID:            es.ID,
-		CreatedAt:     es.CreatedAt,
-		UpdatedAt:     es.UpdatedAt,
-		Mode:          es.Mode,
-		DailyAt:       es.DailyAt,
-		Weekday:       es.Weekday,
-		WeeklyAt:      es.WeeklyAt,
-		Monthday:      es.Monthday,
-		MonthlyAt:     es.MonthlyAt,
-		NextRun:       es.NextRun,
-		LastRun:       es.LastRun,
-		LastRunStatus: es.LastRunStatus,
+		ID:              es.ID,
+		CreatedAt:       es.CreatedAt,
+		UpdatedAt:       es.UpdatedAt,
+		Mode:            es.Mode,
+		IntervalMinutes: es.IntervalMinutes,
+		DailyAt:         es.DailyAt,
+		Weekday:         es.Weekday,
+		WeeklyAt:        es.WeeklyAt,
+		Monthday:        es.Monthday,
+		MonthlyAt:       es.MonthlyAt,
+		NextRun:         es.NextRun,
+		LastRun:         es.LastRun,
+		LastRunStatus:   es.LastRunStatus,
 	}
 }
 
@@ -1026,18 +1034,19 @@ func (s *BackupSchedule) ToEnt() *ent.BackupSchedule {
 		return nil
 	}
 	return &ent.BackupSchedule{
-		ID:            s.ID,
-		CreatedAt:     s.CreatedAt,
-		UpdatedAt:     s.UpdatedAt,
-		Mode:          s.Mode,
-		DailyAt:       s.DailyAt,
-		Weekday:       s.Weekday,
-		WeeklyAt:      s.WeeklyAt,
-		Monthday:      s.Monthday,
-		MonthlyAt:     s.MonthlyAt,
-		NextRun:       s.NextRun,
-		LastRun:       s.LastRun,
-		LastRunStatus: s.LastRunStatus,
+		ID:              s.ID,
+		CreatedAt:       s.CreatedAt,
+		UpdatedAt:       s.UpdatedAt,
+		Mode:            s.Mode,
+		IntervalMinutes: s.IntervalMinutes,
+		DailyAt:         s.DailyAt,
+		Weekday:         s.Weekday,
+		WeeklyAt:        s.WeeklyAt,
+		Monthday:        s.Monthday,
+		MonthlyAt:       s.MonthlyAt,
+		NextRun:         s.NextRun,
+		LastRun:         s.LastRun,
+		LastRunStatus:   s.LastRunStatus,
 	}
 }
 

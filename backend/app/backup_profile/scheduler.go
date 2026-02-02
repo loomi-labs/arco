@@ -186,8 +186,12 @@ func getNextBackupTime(bs *ent.BackupSchedule, fromTime time.Time) (time.Time, e
 	// Make sure we are working with UTC time (we don't care about the timezone)
 	fromTime = fromTime.In(time.UTC)
 	switch bs.Mode {
-	case backupschedule.ModeHourly:
-		return fromTime.Truncate(time.Hour).Add(time.Hour), nil
+	case backupschedule.ModeMinuteInterval:
+		if bs.IntervalMinutes == 0 {
+			return time.Time{}, fmt.Errorf("interval_minutes must be greater than 0")
+		}
+		interval := time.Duration(bs.IntervalMinutes) * time.Minute
+		return fromTime.Add(interval), nil
 	case backupschedule.ModeDaily:
 		dailyAt := bs.DailyAt.In(time.UTC)
 		// Calculate the wanted duration from the beginning of the day

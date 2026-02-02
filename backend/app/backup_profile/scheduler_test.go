@@ -14,9 +14,10 @@ import (
 TEST CASES - schedule.go
 
 TestScheduler
-* getNextBackupTime - hourly - from now
-* getNextBackupTime - hourly - from 2024-01-01 at 00:59
-* getNextBackupTime - hourly - from 2024-01-01 at 01:00
+* getNextBackupTime - minute_interval 0min - error
+* getNextBackupTime - minute_interval 60min - from now
+* getNextBackupTime - minute_interval 10min - from now
+* getNextBackupTime - minute_interval 30min - from 2024-01-01 00:00
 * getNextBackupTime daily at 10:15 - from today at 9:00
 * getNextBackupTime daily at 10:15 - from today at 11:00
 * getNextBackupTime daily at 10:30 - from 2024-01-01 00:00
@@ -76,24 +77,31 @@ func TestScheduler(t *testing.T) {
 		wantErr  bool
 	}{
 		{
-			name:     "getNextBackupTime - hourly - from now",
-			schedule: ent.BackupSchedule{Mode: backupschedule.ModeHourly},
+			name:     "getNextBackupTime - minute_interval 0min - error",
+			schedule: ent.BackupSchedule{Mode: backupschedule.ModeMinuteInterval, IntervalMinutes: 0},
 			fromTime: now,
-			wantTime: now.Add(time.Hour).Truncate(time.Hour),
+			wantTime: time.Time{},
+			wantErr:  true,
+		},
+		{
+			name:     "getNextBackupTime - minute_interval 60min - from now",
+			schedule: ent.BackupSchedule{Mode: backupschedule.ModeMinuteInterval, IntervalMinutes: 60},
+			fromTime: now,
+			wantTime: now.Add(time.Hour),
 			wantErr:  false,
 		},
 		{
-			name:     "getNextBackupTime - hourly - from 2024-01-01 at 00:59",
-			schedule: ent.BackupSchedule{Mode: backupschedule.ModeHourly},
-			fromTime: firstOfJanuary2024.Add(time.Minute * 59),
-			wantTime: parseX("2024-01-01 01:00:00"),
+			name:     "getNextBackupTime - minute_interval 10min - from now",
+			schedule: ent.BackupSchedule{Mode: backupschedule.ModeMinuteInterval, IntervalMinutes: 10},
+			fromTime: now,
+			wantTime: now.Add(10 * time.Minute),
 			wantErr:  false,
 		},
 		{
-			name:     "getNextBackupTime - hourly - from 2024-01-01 at 01:00",
-			schedule: ent.BackupSchedule{Mode: backupschedule.ModeHourly},
-			fromTime: firstOfJanuary2024.Add(time.Hour),
-			wantTime: parseX("2024-01-01 02:00:00"),
+			name:     "getNextBackupTime - minute_interval 30min - from 2024-01-01 00:00",
+			schedule: ent.BackupSchedule{Mode: backupschedule.ModeMinuteInterval, IntervalMinutes: 30},
+			fromTime: firstOfJanuary2024,
+			wantTime: parseX("2024-01-01 00:30:00"),
 			wantErr:  false,
 		},
 		{

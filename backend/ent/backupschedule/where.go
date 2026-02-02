@@ -65,6 +65,11 @@ func UpdatedAt(v time.Time) predicate.BackupSchedule {
 	return predicate.BackupSchedule(sql.FieldEQ(FieldUpdatedAt, v))
 }
 
+// IntervalMinutes applies equality check predicate on the "interval_minutes" field. It's identical to IntervalMinutesEQ.
+func IntervalMinutes(v uint16) predicate.BackupSchedule {
+	return predicate.BackupSchedule(sql.FieldEQ(FieldIntervalMinutes, v))
+}
+
 // DailyAt applies equality check predicate on the "daily_at" field. It's identical to DailyAtEQ.
 func DailyAt(v time.Time) predicate.BackupSchedule {
 	return predicate.BackupSchedule(sql.FieldEQ(FieldDailyAt, v))
@@ -198,6 +203,46 @@ func ModeIn(vs ...Mode) predicate.BackupSchedule {
 // ModeNotIn applies the NotIn predicate on the "mode" field.
 func ModeNotIn(vs ...Mode) predicate.BackupSchedule {
 	return predicate.BackupSchedule(sql.FieldNotIn(FieldMode, vs...))
+}
+
+// IntervalMinutesEQ applies the EQ predicate on the "interval_minutes" field.
+func IntervalMinutesEQ(v uint16) predicate.BackupSchedule {
+	return predicate.BackupSchedule(sql.FieldEQ(FieldIntervalMinutes, v))
+}
+
+// IntervalMinutesNEQ applies the NEQ predicate on the "interval_minutes" field.
+func IntervalMinutesNEQ(v uint16) predicate.BackupSchedule {
+	return predicate.BackupSchedule(sql.FieldNEQ(FieldIntervalMinutes, v))
+}
+
+// IntervalMinutesIn applies the In predicate on the "interval_minutes" field.
+func IntervalMinutesIn(vs ...uint16) predicate.BackupSchedule {
+	return predicate.BackupSchedule(sql.FieldIn(FieldIntervalMinutes, vs...))
+}
+
+// IntervalMinutesNotIn applies the NotIn predicate on the "interval_minutes" field.
+func IntervalMinutesNotIn(vs ...uint16) predicate.BackupSchedule {
+	return predicate.BackupSchedule(sql.FieldNotIn(FieldIntervalMinutes, vs...))
+}
+
+// IntervalMinutesGT applies the GT predicate on the "interval_minutes" field.
+func IntervalMinutesGT(v uint16) predicate.BackupSchedule {
+	return predicate.BackupSchedule(sql.FieldGT(FieldIntervalMinutes, v))
+}
+
+// IntervalMinutesGTE applies the GTE predicate on the "interval_minutes" field.
+func IntervalMinutesGTE(v uint16) predicate.BackupSchedule {
+	return predicate.BackupSchedule(sql.FieldGTE(FieldIntervalMinutes, v))
+}
+
+// IntervalMinutesLT applies the LT predicate on the "interval_minutes" field.
+func IntervalMinutesLT(v uint16) predicate.BackupSchedule {
+	return predicate.BackupSchedule(sql.FieldLT(FieldIntervalMinutes, v))
+}
+
+// IntervalMinutesLTE applies the LTE predicate on the "interval_minutes" field.
+func IntervalMinutesLTE(v uint16) predicate.BackupSchedule {
+	return predicate.BackupSchedule(sql.FieldLTE(FieldIntervalMinutes, v))
 }
 
 // DailyAtEQ applies the EQ predicate on the "daily_at" field.

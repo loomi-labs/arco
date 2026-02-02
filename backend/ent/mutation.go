@@ -2983,6 +2983,8 @@ type BackupScheduleMutation struct {
 	created_at            *time.Time
 	updated_at            *time.Time
 	mode                  *backupschedule.Mode
+	interval_minutes      *uint16
+	addinterval_minutes   *int16
 	daily_at              *time.Time
 	weekday               *backupschedule.Weekday
 	weekly_at             *time.Time
@@ -3210,6 +3212,62 @@ func (m *BackupScheduleMutation) OldMode(ctx context.Context) (v backupschedule.
 // ResetMode resets all changes to the "mode" field.
 func (m *BackupScheduleMutation) ResetMode() {
 	m.mode = nil
+}
+
+// SetIntervalMinutes sets the "interval_minutes" field.
+func (m *BackupScheduleMutation) SetIntervalMinutes(u uint16) {
+	m.interval_minutes = &u
+	m.addinterval_minutes = nil
+}
+
+// IntervalMinutes returns the value of the "interval_minutes" field in the mutation.
+func (m *BackupScheduleMutation) IntervalMinutes() (r uint16, exists bool) {
+	v := m.interval_minutes
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldIntervalMinutes returns the old "interval_minutes" field's value of the BackupSchedule entity.
+// If the BackupSchedule object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *BackupScheduleMutation) OldIntervalMinutes(ctx context.Context) (v uint16, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldIntervalMinutes is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldIntervalMinutes requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldIntervalMinutes: %w", err)
+	}
+	return oldValue.IntervalMinutes, nil
+}
+
+// AddIntervalMinutes adds u to the "interval_minutes" field.
+func (m *BackupScheduleMutation) AddIntervalMinutes(u int16) {
+	if m.addinterval_minutes != nil {
+		*m.addinterval_minutes += u
+	} else {
+		m.addinterval_minutes = &u
+	}
+}
+
+// AddedIntervalMinutes returns the value that was added to the "interval_minutes" field in this mutation.
+func (m *BackupScheduleMutation) AddedIntervalMinutes() (r int16, exists bool) {
+	v := m.addinterval_minutes
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetIntervalMinutes resets all changes to the "interval_minutes" field.
+func (m *BackupScheduleMutation) ResetIntervalMinutes() {
+	m.interval_minutes = nil
+	m.addinterval_minutes = nil
 }
 
 // SetDailyAt sets the "daily_at" field.
@@ -3632,7 +3690,7 @@ func (m *BackupScheduleMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *BackupScheduleMutation) Fields() []string {
-	fields := make([]string, 0, 11)
+	fields := make([]string, 0, 12)
 	if m.created_at != nil {
 		fields = append(fields, backupschedule.FieldCreatedAt)
 	}
@@ -3641,6 +3699,9 @@ func (m *BackupScheduleMutation) Fields() []string {
 	}
 	if m.mode != nil {
 		fields = append(fields, backupschedule.FieldMode)
+	}
+	if m.interval_minutes != nil {
+		fields = append(fields, backupschedule.FieldIntervalMinutes)
 	}
 	if m.daily_at != nil {
 		fields = append(fields, backupschedule.FieldDailyAt)
@@ -3680,6 +3741,8 @@ func (m *BackupScheduleMutation) Field(name string) (ent.Value, bool) {
 		return m.UpdatedAt()
 	case backupschedule.FieldMode:
 		return m.Mode()
+	case backupschedule.FieldIntervalMinutes:
+		return m.IntervalMinutes()
 	case backupschedule.FieldDailyAt:
 		return m.DailyAt()
 	case backupschedule.FieldWeekday:
@@ -3711,6 +3774,8 @@ func (m *BackupScheduleMutation) OldField(ctx context.Context, name string) (ent
 		return m.OldUpdatedAt(ctx)
 	case backupschedule.FieldMode:
 		return m.OldMode(ctx)
+	case backupschedule.FieldIntervalMinutes:
+		return m.OldIntervalMinutes(ctx)
 	case backupschedule.FieldDailyAt:
 		return m.OldDailyAt(ctx)
 	case backupschedule.FieldWeekday:
@@ -3756,6 +3821,13 @@ func (m *BackupScheduleMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetMode(v)
+		return nil
+	case backupschedule.FieldIntervalMinutes:
+		v, ok := value.(uint16)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetIntervalMinutes(v)
 		return nil
 	case backupschedule.FieldDailyAt:
 		v, ok := value.(time.Time)
@@ -3821,6 +3893,9 @@ func (m *BackupScheduleMutation) SetField(name string, value ent.Value) error {
 // this mutation.
 func (m *BackupScheduleMutation) AddedFields() []string {
 	var fields []string
+	if m.addinterval_minutes != nil {
+		fields = append(fields, backupschedule.FieldIntervalMinutes)
+	}
 	if m.addmonthday != nil {
 		fields = append(fields, backupschedule.FieldMonthday)
 	}
@@ -3832,6 +3907,8 @@ func (m *BackupScheduleMutation) AddedFields() []string {
 // was not set, or was not defined in the schema.
 func (m *BackupScheduleMutation) AddedField(name string) (ent.Value, bool) {
 	switch name {
+	case backupschedule.FieldIntervalMinutes:
+		return m.AddedIntervalMinutes()
 	case backupschedule.FieldMonthday:
 		return m.AddedMonthday()
 	}
@@ -3843,6 +3920,13 @@ func (m *BackupScheduleMutation) AddedField(name string) (ent.Value, bool) {
 // type.
 func (m *BackupScheduleMutation) AddField(name string, value ent.Value) error {
 	switch name {
+	case backupschedule.FieldIntervalMinutes:
+		v, ok := value.(int16)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddIntervalMinutes(v)
+		return nil
 	case backupschedule.FieldMonthday:
 		v, ok := value.(int8)
 		if !ok {
@@ -3906,6 +3990,9 @@ func (m *BackupScheduleMutation) ResetField(name string) error {
 		return nil
 	case backupschedule.FieldMode:
 		m.ResetMode()
+		return nil
+	case backupschedule.FieldIntervalMinutes:
+		m.ResetIntervalMinutes()
 		return nil
 	case backupschedule.FieldDailyAt:
 		m.ResetDailyAt()

@@ -466,6 +466,11 @@ export class BackupSchedule {
     "mode": backupschedule$0.Mode;
 
     /**
+     * IntervalMinutes holds the value of the "interval_minutes" field.
+     */
+    "intervalMinutes": number;
+
+    /**
      * DailyAt holds the value of the "daily_at" field.
      */
     "dailyAt": time$0.Time;
@@ -525,6 +530,9 @@ export class BackupSchedule {
         if (!("mode" in $$source)) {
             this["mode"] = backupschedule$0.Mode.$zero;
         }
+        if (!("intervalMinutes" in $$source)) {
+            this["intervalMinutes"] = 0;
+        }
         if (!("dailyAt" in $$source)) {
             this["dailyAt"] = null;
         }
@@ -560,10 +568,10 @@ export class BackupSchedule {
      * Creates a new BackupSchedule instance from a string or object.
      */
     static createFrom($$source: any = {}): BackupSchedule {
-        const $$createField12_0 = $$createType18;
+        const $$createField13_0 = $$createType18;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("edges" in $$parsedSource) {
-            $$parsedSource["edges"] = $$createField12_0($$parsedSource["edges"]);
+            $$parsedSource["edges"] = $$createField13_0($$parsedSource["edges"]);
         }
         return new BackupSchedule($$parsedSource as Partial<BackupSchedule>);
     }

@@ -63,6 +63,20 @@ func (_c *BackupScheduleCreate) SetNillableMode(v *backupschedule.Mode) *BackupS
 	return _c
 }
 
+// SetIntervalMinutes sets the "interval_minutes" field.
+func (_c *BackupScheduleCreate) SetIntervalMinutes(v uint16) *BackupScheduleCreate {
+	_c.mutation.SetIntervalMinutes(v)
+	return _c
+}
+
+// SetNillableIntervalMinutes sets the "interval_minutes" field if the given value is not nil.
+func (_c *BackupScheduleCreate) SetNillableIntervalMinutes(v *uint16) *BackupScheduleCreate {
+	if v != nil {
+		_c.SetIntervalMinutes(*v)
+	}
+	return _c
+}
+
 // SetDailyAt sets the "daily_at" field.
 func (_c *BackupScheduleCreate) SetDailyAt(v time.Time) *BackupScheduleCreate {
 	_c.mutation.SetDailyAt(v)
@@ -199,6 +213,10 @@ func (_c *BackupScheduleCreate) defaults() {
 		v := backupschedule.DefaultMode
 		_c.mutation.SetMode(v)
 	}
+	if _, ok := _c.mutation.IntervalMinutes(); !ok {
+		v := backupschedule.DefaultIntervalMinutes
+		_c.mutation.SetIntervalMinutes(v)
+	}
 }
 
 // check runs all checks and user-defined validators on the builder.
@@ -216,6 +234,9 @@ func (_c *BackupScheduleCreate) check() error {
 		if err := backupschedule.ModeValidator(v); err != nil {
 			return &ValidationError{Name: "mode", err: fmt.Errorf(`ent: validator failed for field "BackupSchedule.mode": %w`, err)}
 		}
+	}
+	if _, ok := _c.mutation.IntervalMinutes(); !ok {
+		return &ValidationError{Name: "interval_minutes", err: errors.New(`ent: missing required field "BackupSchedule.interval_minutes"`)}
 	}
 	if _, ok := _c.mutation.DailyAt(); !ok {
 		return &ValidationError{Name: "daily_at", err: errors.New(`ent: missing required field "BackupSchedule.daily_at"`)}
@@ -288,6 +309,10 @@ func (_c *BackupScheduleCreate) createSpec() (*BackupSchedule, *sqlgraph.CreateS
 	if value, ok := _c.mutation.Mode(); ok {
 		_spec.SetField(backupschedule.FieldMode, field.TypeEnum, value)
 		_node.Mode = value
+	}
+	if value, ok := _c.mutation.IntervalMinutes(); ok {
+		_spec.SetField(backupschedule.FieldIntervalMinutes, field.TypeUint16, value)
+		_node.IntervalMinutes = value
 	}
 	if value, ok := _c.mutation.DailyAt(); ok {
 		_spec.SetField(backupschedule.FieldDailyAt, field.TypeTime, value)
