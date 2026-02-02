@@ -50,6 +50,27 @@ func (_u *BackupScheduleUpdate) SetNillableMode(v *backupschedule.Mode) *BackupS
 	return _u
 }
 
+// SetIntervalMinutes sets the "interval_minutes" field.
+func (_u *BackupScheduleUpdate) SetIntervalMinutes(v uint16) *BackupScheduleUpdate {
+	_u.mutation.ResetIntervalMinutes()
+	_u.mutation.SetIntervalMinutes(v)
+	return _u
+}
+
+// SetNillableIntervalMinutes sets the "interval_minutes" field if the given value is not nil.
+func (_u *BackupScheduleUpdate) SetNillableIntervalMinutes(v *uint16) *BackupScheduleUpdate {
+	if v != nil {
+		_u.SetIntervalMinutes(*v)
+	}
+	return _u
+}
+
+// AddIntervalMinutes adds value to the "interval_minutes" field.
+func (_u *BackupScheduleUpdate) AddIntervalMinutes(v int16) *BackupScheduleUpdate {
+	_u.mutation.AddIntervalMinutes(v)
+	return _u
+}
+
 // SetDailyAt sets the "daily_at" field.
 func (_u *BackupScheduleUpdate) SetDailyAt(v time.Time) *BackupScheduleUpdate {
 	_u.mutation.SetDailyAt(v)
@@ -292,6 +313,12 @@ func (_u *BackupScheduleUpdate) sqlSave(ctx context.Context) (_node int, err err
 	if value, ok := _u.mutation.Mode(); ok {
 		_spec.SetField(backupschedule.FieldMode, field.TypeEnum, value)
 	}
+	if value, ok := _u.mutation.IntervalMinutes(); ok {
+		_spec.SetField(backupschedule.FieldIntervalMinutes, field.TypeUint16, value)
+	}
+	if value, ok := _u.mutation.AddedIntervalMinutes(); ok {
+		_spec.AddField(backupschedule.FieldIntervalMinutes, field.TypeUint16, value)
+	}
 	if value, ok := _u.mutation.DailyAt(); ok {
 		_spec.SetField(backupschedule.FieldDailyAt, field.TypeTime, value)
 	}
@@ -396,6 +423,27 @@ func (_u *BackupScheduleUpdateOne) SetNillableMode(v *backupschedule.Mode) *Back
 	if v != nil {
 		_u.SetMode(*v)
 	}
+	return _u
+}
+
+// SetIntervalMinutes sets the "interval_minutes" field.
+func (_u *BackupScheduleUpdateOne) SetIntervalMinutes(v uint16) *BackupScheduleUpdateOne {
+	_u.mutation.ResetIntervalMinutes()
+	_u.mutation.SetIntervalMinutes(v)
+	return _u
+}
+
+// SetNillableIntervalMinutes sets the "interval_minutes" field if the given value is not nil.
+func (_u *BackupScheduleUpdateOne) SetNillableIntervalMinutes(v *uint16) *BackupScheduleUpdateOne {
+	if v != nil {
+		_u.SetIntervalMinutes(*v)
+	}
+	return _u
+}
+
+// AddIntervalMinutes adds value to the "interval_minutes" field.
+func (_u *BackupScheduleUpdateOne) AddIntervalMinutes(v int16) *BackupScheduleUpdateOne {
+	_u.mutation.AddIntervalMinutes(v)
 	return _u
 }
 
@@ -670,6 +718,12 @@ func (_u *BackupScheduleUpdateOne) sqlSave(ctx context.Context) (_node *BackupSc
 	}
 	if value, ok := _u.mutation.Mode(); ok {
 		_spec.SetField(backupschedule.FieldMode, field.TypeEnum, value)
+	}
+	if value, ok := _u.mutation.IntervalMinutes(); ok {
+		_spec.SetField(backupschedule.FieldIntervalMinutes, field.TypeUint16, value)
+	}
+	if value, ok := _u.mutation.AddedIntervalMinutes(); ok {
+		_spec.AddField(backupschedule.FieldIntervalMinutes, field.TypeUint16, value)
 	}
 	if value, ok := _u.mutation.DailyAt(); ok {
 		_spec.SetField(backupschedule.FieldDailyAt, field.TypeTime, value)

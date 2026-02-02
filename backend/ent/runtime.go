@@ -154,8 +154,12 @@ func init() {
 	backupschedule.DefaultUpdatedAt = backupscheduleDescUpdatedAt.Default.(func() time.Time)
 	// backupschedule.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
 	backupschedule.UpdateDefaultUpdatedAt = backupscheduleDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// backupscheduleDescIntervalMinutes is the schema descriptor for interval_minutes field.
+	backupscheduleDescIntervalMinutes := backupscheduleFields[2].Descriptor()
+	// backupschedule.DefaultIntervalMinutes holds the default value on creation for the interval_minutes field.
+	backupschedule.DefaultIntervalMinutes = backupscheduleDescIntervalMinutes.Default.(uint16)
 	// backupscheduleDescMonthday is the schema descriptor for monthday field.
-	backupscheduleDescMonthday := backupscheduleFields[5].Descriptor()
+	backupscheduleDescMonthday := backupscheduleFields[6].Descriptor()
 	// backupschedule.MonthdayValidator is a validator for the "monthday" field. It is called by the builders before save.
 	backupschedule.MonthdayValidator = backupscheduleDescMonthday.Validators[0].(func(uint8) error)
 	cloudrepositoryMixin := schema.CloudRepository{}.Mixin()

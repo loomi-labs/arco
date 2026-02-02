@@ -8,7 +8,6 @@
   "schedule": "Schedule",
   "run_periodic_backups": "Run periodic backups",
   "every": "Every",
-  "hour": "Hour",
   "day": "Day",
   "week": "Week",
   "month": "Month",

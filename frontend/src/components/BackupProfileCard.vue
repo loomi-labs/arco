@@ -46,9 +46,11 @@ const hasSchedule = computed(() => {
 
 const scheduleMode = computed(() => {
   const mode = props.backup.backupSchedule?.mode;
+  const interval = props.backup.backupSchedule?.intervalMinutes ?? 60;
   switch (mode) {
-    case backupschedule.Mode.ModeHourly:
-      return "Hourly";
+    case backupschedule.Mode.ModeMinuteInterval:
+      if (interval < 60) return `Every ${interval} min`;
+      return interval === 60 ? "Hourly" : `Every ${interval / 60} hours`;
     case backupschedule.Mode.ModeDaily:
       return "Daily";
     case backupschedule.Mode.ModeWeekly:

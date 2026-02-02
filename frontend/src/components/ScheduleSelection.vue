@@ -18,6 +18,9 @@ interface Emits {
   (event: "update:schedule", schedule: BackupSchedule): void;
 }
 
+// Discrete interval steps: 10 min to 12 hours
+const intervalSteps = [10, 15, 20, 30, 45, 60, 120, 180, 240, 360, 480, 720];
+
 /************
  * Variables
  ************/
@@ -31,10 +34,22 @@ const originalSchedule = ref<BackupSchedule>(structuredClone(toRaw(props.schedul
 
 // Mode computed properties
 const isScheduleEnabled = computed(() => schedule.value.mode !== backupschedule.Mode.ModeDisabled);
-const isHourly = computed(() => schedule.value.mode === backupschedule.Mode.ModeHourly);
+const isMinuteInterval = computed(() => schedule.value.mode === backupschedule.Mode.ModeMinuteInterval);
 const isDaily = computed(() => schedule.value.mode === backupschedule.Mode.ModeDaily);
 const isWeekly = computed(() => schedule.value.mode === backupschedule.Mode.ModeWeekly);
 const isMonthly = computed(() => schedule.value.mode === backupschedule.Mode.ModeMonthly);
+
+// Interval computed property
+const selectedInterval = computed({
+  get: () => schedule.value.intervalMinutes || 60,
+  set: (val: number) => { schedule.value.intervalMinutes = val; }
+});
+
+// Slider step index - maps slider position to intervalSteps array
+const currentStepIndex = computed(() => {
+  const idx = intervalSteps.indexOf(selectedInterval.value);
+  return idx >= 0 ? idx : intervalSteps.indexOf(60); // Default to 60 if not found
+});
 
 // Filter out $zero from weekday enum
 const validWeekdays = computed(() =>
@@ -72,10 +87,25 @@ const selectedMonthday = computed({
  * Functions
  ************/
 
+function formatIntervalShort(minutes: number): string {
+  if (minutes < 60) return `${minutes} Min`;
+  const hours = minutes / 60;
+  return hours === 1 ? 'Hour' : `${hours} Hours`;
+}
+
+function onSliderChange(event: Event) {
+  const target = event.target as HTMLInputElement;
+  const stepIndex = parseInt(target.value, 10);
+  selectedInterval.value = intervalSteps[stepIndex];
+}
+
 function setMode(mode: backupschedule.Mode) {
   schedule.value.mode = mode;
 
   // Ensure defaults when switching to modes that need them
+  if (mode === backupschedule.Mode.ModeMinuteInterval && !schedule.value.intervalMinutes) {
+    schedule.value.intervalMinutes = 60;
+  }
   if (mode === backupschedule.Mode.ModeDaily && !schedule.value.dailyAt) {
     setTime((d) => schedule.value.dailyAt = d, "09:00");
   }
@@ -97,12 +127,13 @@ function toggleScheduleEnabled() {
   if (isScheduleEnabled.value) {
     schedule.value.mode = backupschedule.Mode.ModeDisabled;
   } else {
-    schedule.value.mode = backupschedule.Mode.ModeHourly;
+    schedule.value.mode = backupschedule.Mode.ModeMinuteInterval;
   }
 }
 
 function isScheduleEqual(s1: BackupSchedule, s2: BackupSchedule): boolean {
   return s1.mode === s2.mode &&
+    s1.intervalMinutes === s2.intervalMinutes &&
     isEqual(s1.dailyAt, s2.dailyAt) &&
     isEqual(s1.weeklyAt, s2.weeklyAt) &&
     s1.weekday === s2.weekday &&
@@ -139,10 +170,10 @@ watch(schedule, (newSchedule) => {
       <div role='tablist' class='tabs tabs-box'>
         <button role='tab'
                 class='tab flex-1'
-                :class='{"tab-active bg-secondary/20 border border-secondary": isHourly}'
+                :class='{"tab-active bg-secondary/20 border border-secondary": isMinuteInterval}'
                 :disabled='!isScheduleEnabled'
-                @click='setMode(backupschedule.Mode.ModeHourly)'>
-          {{ $t("hour") }}
+                @click='setMode(backupschedule.Mode.ModeMinuteInterval)'>
+          {{ formatIntervalShort(selectedInterval) }}
         </button>
         <button role='tab'
                 class='tab flex-1'
@@ -169,9 +200,19 @@ watch(schedule, (newSchedule) => {
 
       <!-- Tab content -->
       <div class='p-4 border border-base-300 rounded-b-lg border-t-0'>
-        <!-- Hourly -->
-        <div v-if='isHourly' class='text-base-content/70'>
-          Backup will run every hour
+        <!-- Minute Interval -->
+        <div v-if='isMinuteInterval' class='flex flex-col gap-3'>
+          <input type='range'
+                 class='range range-secondary w-full'
+                 :min='0'
+                 :max='intervalSteps.length - 1'
+                 :value='currentStepIndex'
+                 :disabled='!isScheduleEnabled'
+                 @input='onSliderChange' />
+          <div class='flex justify-between text-xs text-base-content/50'>
+            <span>10 min</span>
+            <span>12 hours</span>
+          </div>
         </div>
 
         <!-- Daily -->

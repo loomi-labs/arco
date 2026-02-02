@@ -183,7 +183,7 @@ func TestBackupProfileService_SaveBackupSchedule(t *testing.T) {
 		},
 		{
 			name:     "SaveBackupSchedule with hourly schedule",
-			schedule: BackupSchedule{Mode: backupschedule.ModeHourly},
+			schedule: BackupSchedule{Mode: backupschedule.ModeMinuteInterval},
 			wantErr:  false,
 		},
 		{
@@ -213,17 +213,17 @@ func TestBackupProfileService_SaveBackupSchedule(t *testing.T) {
 		},
 		{
 			name:     "SaveBackupSchedule with hourly and daily schedule",
-			schedule: BackupSchedule{Mode: backupschedule.ModeHourly, DailyAt: now},
+			schedule: BackupSchedule{Mode: backupschedule.ModeMinuteInterval, DailyAt: now},
 			wantErr:  false,
 		},
 		{
 			name:     "SaveBackupSchedule with hourly and weekly schedule",
-			schedule: BackupSchedule{Mode: backupschedule.ModeHourly, Weekday: backupschedule.WeekdayMonday, WeeklyAt: now},
+			schedule: BackupSchedule{Mode: backupschedule.ModeMinuteInterval, Weekday: backupschedule.WeekdayMonday, WeeklyAt: now},
 			wantErr:  false,
 		},
 		{
 			name:     "SaveBackupSchedule with hourly and monthly schedule",
-			schedule: BackupSchedule{Mode: backupschedule.ModeHourly, Monthday: []uint8{1}[0], MonthlyAt: now},
+			schedule: BackupSchedule{Mode: backupschedule.ModeMinuteInterval, Monthday: []uint8{1}[0], MonthlyAt: now},
 			wantErr:  false,
 		},
 		{

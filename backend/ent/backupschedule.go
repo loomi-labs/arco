@@ -24,6 +24,8 @@ type BackupSchedule struct {
 	UpdatedAt time.Time `json:"updatedAt"`
 	// Mode holds the value of the "mode" field.
 	Mode backupschedule.Mode `json:"mode"`
+	// IntervalMinutes holds the value of the "interval_minutes" field.
+	IntervalMinutes uint16 `json:"intervalMinutes"`
 	// DailyAt holds the value of the "daily_at" field.
 	DailyAt time.Time `json:"dailyAt"`
 	// Weekday holds the value of the "weekday" field.
@@ -72,7 +74,7 @@ func (*BackupSchedule) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case backupschedule.FieldID, backupschedule.FieldMonthday:
+		case backupschedule.FieldID, backupschedule.FieldIntervalMinutes, backupschedule.FieldMonthday:
 			values[i] = new(sql.NullInt64)
 		case backupschedule.FieldMode, backupschedule.FieldWeekday, backupschedule.FieldLastRunStatus:
 			values[i] = new(sql.NullString)
@@ -118,6 +120,12 @@ func (_m *BackupSchedule) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field mode", values[i])
 			} else if value.Valid {
 				_m.Mode = backupschedule.Mode(value.String)
+			}
+		case backupschedule.FieldIntervalMinutes:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field interval_minutes", values[i])
+			} else if value.Valid {
+				_m.IntervalMinutes = uint16(value.Int64)
 			}
 		case backupschedule.FieldDailyAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
@@ -225,6 +233,9 @@ func (_m *BackupSchedule) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("mode=")
 	builder.WriteString(fmt.Sprintf("%v", _m.Mode))
+	builder.WriteString(", ")
+	builder.WriteString("interval_minutes=")
+	builder.WriteString(fmt.Sprintf("%v", _m.IntervalMinutes))
 	builder.WriteString(", ")
 	builder.WriteString("daily_at=")
 	builder.WriteString(_m.DailyAt.Format(time.ANSIC))
