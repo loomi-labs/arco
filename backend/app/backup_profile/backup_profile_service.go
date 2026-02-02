@@ -191,12 +191,13 @@ func (s *Service) NewBackupProfile(ctx context.Context) (*BackupProfile, error) 
 	// We only care about the hour, minute, second and nanosecond (in local time for display purpose)
 	firstDayOfMonthAtNine := time.Date(time.Now().Year(), 1, 1, 9, 0, 0, 0, time.Local)
 	schedule := &BackupSchedule{
-		Mode:      backupschedule.ModeMinuteInterval,
-		DailyAt:   firstDayOfMonthAtNine,
-		Weekday:   backupschedule.WeekdayMonday,
-		WeeklyAt:  firstDayOfMonthAtNine,
-		Monthday:  1,
-		MonthlyAt: firstDayOfMonthAtNine,
+		Mode:            backupschedule.ModeMinuteInterval,
+		IntervalMinutes: 60,
+		DailyAt:         firstDayOfMonthAtNine,
+		Weekday:         backupschedule.WeekdayMonday,
+		WeeklyAt:        firstDayOfMonthAtNine,
+		Monthday:        1,
+		MonthlyAt:       firstDayOfMonthAtNine,
 	}
 
 	pruningRule := &PruningRule{
