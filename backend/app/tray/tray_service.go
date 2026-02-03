@@ -67,12 +67,17 @@ func (s *Service) BuildMenu() {
 	profiles, err := s.backupProfileService.GetBackupProfiles(app.Context())
 	if err != nil {
 		s.log.Errorf("Failed to get backup profiles for tray menu: %v", err)
-	} else if len(profiles) > 0 {
+	} else {
 		header := menu.Add("Backup Profiles")
 		header.SetEnabled(false)
 
-		for _, profile := range profiles {
-			s.addProfileSubmenu(menu, profile)
+		if len(profiles) == 0 {
+			empty := menu.Add("No profiles configured")
+			empty.SetEnabled(false)
+		} else {
+			for _, profile := range profiles {
+				s.addProfileSubmenu(menu, profile)
+			}
 		}
 
 		menu.AddSeparator()
@@ -117,5 +122,10 @@ func (s *Service) openFolder(path string) {
 	cmd := exec.Command(openCmd, path)
 	if err := cmd.Start(); err != nil {
 		s.log.Errorf("Error opening folder %s: %v", path, err)
+		return
 	}
+	// Reap child process to prevent zombies
+	go func() {
+		_ = cmd.Wait()
+	}()
 }
