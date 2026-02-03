@@ -67,14 +67,15 @@ func (s *Service) BuildMenu() {
 	profiles, err := s.backupProfileService.GetBackupProfiles(app.Context())
 	if err != nil {
 		s.log.Errorf("Failed to get backup profiles for tray menu: %v", err)
-	} else {
+	} else if len(profiles) > 0 {
+		header := menu.Add("Backup Profiles")
+		header.SetEnabled(false)
+
 		for _, profile := range profiles {
 			s.addProfileSubmenu(menu, profile)
 		}
 
-		if len(profiles) > 0 {
-			menu.AddSeparator()
-		}
+		menu.AddSeparator()
 	}
 
 	// Quit
