@@ -233,51 +233,6 @@ func initConfig(configDir string, icons *types.Icons, migrations fs.FS, autoUpda
 	}, nil
 }
 
-func showOrCreateMainWindow(config *types.Config, arco *app.App) {
-	// Show dock icon when opening a window on macOS
-	platform.ShowDockIcon()
-
-	wailsApp := application.Get()
-	window, ok := wailsApp.Window.GetByName(types.WindowTitle)
-	if ok {
-		window.Show()
-		window.Focus()
-		return
-	}
-
-	newWindow := wailsApp.Window.NewWithOptions(application.WebviewWindowOptions{
-		Name:   types.WindowTitle,
-		Title:  types.WindowTitle,
-		Width:  1440,
-		Height: 900,
-		Mac: application.MacWindow{
-			InvisibleTitleBarHeight: 50,
-			Backdrop:                application.MacBackdropTranslucent,
-			TitleBar:                application.MacTitleBarHiddenInset,
-		},
-		Linux: application.LinuxWindow{
-			Icon: config.Icons.AppIconLight,
-		},
-		BackgroundColour: application.NewRGB(27, 38, 54),
-		URL:              "/",
-		StartState:       application.WindowStateNormal,
-		MaxWidth:         3840,
-		MaxHeight:        3840,
-	})
-
-	// Handle window closing - check for unsaved changes first
-	newWindow.RegisterHook(events.Common.WindowClosing, func(event *application.WindowEvent) {
-		if arco.IsDirty() {
-			// Cancel the close and emit event to frontend
-			event.Cancel()
-			wailsApp.Event.Emit(types.EventWindowCloseRequestedString())
-		} else {
-			// No unsaved changes, proceed with close
-			platform.HideDockIcon()
-		}
-	})
-}
-
 func startApp(log *zap.SugaredLogger, config *types.Config, assets fs.FS, startHidden bool, uniqueRunId string) {
 	arco := app.NewApp(log, config, &types.RuntimeEventEmitter{})
 
@@ -302,7 +257,7 @@ func startApp(log *zap.SugaredLogger, config *types.Config, assets fs.FS, startH
 			UniqueID: uniqueRunId,
 			OnSecondInstanceLaunch: func(data application.SecondInstanceData) {
 				log.Debug("Wake up %s", app.Name)
-				showOrCreateMainWindow(config, arco)
+				arco.ShowOrCreateMainWindow()
 			},
 		},
 		Assets: application.AssetOptions{
@@ -322,36 +277,21 @@ func startApp(log *zap.SugaredLogger, config *types.Config, assets fs.FS, startH
 	})
 
 	if !startHidden {
-		showOrCreateMainWindow(config, arco)
+		arco.ShowOrCreateMainWindow()
+	}
+
+	systray := wailsApp.SystemTray.New()
+	systray.SetMenu(wailsApp.NewMenu())
+	if platform.IsMacOS() {
+		systray.SetTemplateIcon(config.Icons.DarwinMenubarIcon)
+	} else {
+		systray.SetDarkModeIcon(config.Icons.AppIconDark)
+		systray.SetIcon(config.Icons.AppIconLight)
 	}
 
 	wailsApp.Event.OnApplicationEvent(events.Common.ApplicationStarted, func(event *application.ApplicationEvent) {
-		arco.Startup(application.Get().Context())
+		arco.Startup(application.Get().Context(), systray)
 	})
-
-	systray := wailsApp.SystemTray.New()
-	if platform.IsMacOS() {
-		// Support for template icons on macOS
-		systray.SetTemplateIcon(config.Icons.DarwinMenubarIcon)
-	} else {
-		// Support for light/dark mode icons
-		systray.SetDarkModeIcon(config.Icons.AppIconDark)
-		systray.SetIcon(config.Icons.AppIconLight)
-		systray.SetLabel(app.Name)
-	}
-
-	// Add menu
-	menu := wailsApp.NewMenu()
-	menu.Add("Open").OnClick(func(_ *application.Context) {
-		log.Debugf("Opening %s", app.Name)
-		showOrCreateMainWindow(config, arco)
-	})
-	menu.Add("Quit").OnClick(func(_ *application.Context) {
-		log.Debugf("Quitting %s", app.Name)
-		arco.SetQuit()
-		wailsApp.Quit()
-	})
-	systray.SetMenu(menu)
 
 	// Run the application. This blocks until the application has been exited.
 	err := wailsApp.Run()
