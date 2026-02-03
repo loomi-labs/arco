@@ -27,15 +27,18 @@ import (
 	"github.com/loomi-labs/arco/backend/app/repository"
 	appstate "github.com/loomi-labs/arco/backend/app/state"
 	"github.com/loomi-labs/arco/backend/app/subscription"
+	"github.com/loomi-labs/arco/backend/app/tray"
 	"github.com/loomi-labs/arco/backend/app/types"
 	"github.com/loomi-labs/arco/backend/app/user"
 	"github.com/loomi-labs/arco/backend/borg"
 	"github.com/loomi-labs/arco/backend/ent"
 	"github.com/loomi-labs/arco/backend/platform"
 	"github.com/loomi-labs/arco/backend/util"
+	"github.com/negrel/assert"
 	"github.com/pressly/goose/v3"
 	"github.com/teamwork/reload"
 	"github.com/wailsapp/wails/v3/pkg/application"
+	"github.com/wailsapp/wails/v3/pkg/events"
 	"go.uber.org/zap"
 )
 
@@ -54,6 +57,9 @@ type App struct {
 	eventEmitter             types.EventEmitter
 	shouldQuit               bool
 
+	// Tray
+	systray *application.SystemTray
+
 	// Startup
 	ctx                  context.Context
 	cancel               context.CancelFunc
@@ -67,6 +73,7 @@ type App struct {
 	repositoryService    *repository.ServiceInternal
 	backupProfileService *backup_profile.ServiceInternal
 	notificationService  *notification.Service
+	trayService          *tray.Service
 }
 
 func NewApp(
@@ -94,6 +101,7 @@ func NewApp(
 		repositoryService:        repository.NewService(log, config),
 		backupProfileService:     backup_profile.NewService(log, state, config),
 		notificationService:      notification.NewService(log),
+		trayService:              tray.NewService(log),
 	}
 }
 
@@ -133,13 +141,63 @@ func (a *App) NotificationService() *notification.Service {
 	return a.notificationService
 }
 
+// ShowOrCreateMainWindow shows an existing main window or creates a new one
+func (a *App) ShowOrCreateMainWindow() {
+	platform.ShowDockIcon()
+
+	wailsApp := application.Get()
+	window, ok := wailsApp.Window.GetByName(types.WindowTitle)
+	if ok {
+		window.Show()
+		window.Focus()
+		return
+	}
+
+	newWindow := wailsApp.Window.NewWithOptions(application.WebviewWindowOptions{
+		Name:   types.WindowTitle,
+		Title:  types.WindowTitle,
+		Width:  1440,
+		Height: 900,
+		Mac: application.MacWindow{
+			InvisibleTitleBarHeight: 50,
+			Backdrop:                application.MacBackdropTranslucent,
+			TitleBar:                application.MacTitleBarHiddenInset,
+		},
+		Linux: application.LinuxWindow{
+			Icon: a.config.Icons.AppIconLight,
+		},
+		BackgroundColour: application.NewRGB(27, 38, 54),
+		URL:              "/",
+		StartState:       application.WindowStateNormal,
+		MaxWidth:         3840,
+		MaxHeight:        3840,
+	})
+
+	newWindow.RegisterHook(events.Common.WindowClosing, func(event *application.WindowEvent) {
+		if a.IsDirty() {
+			event.Cancel()
+			wailsApp.Event.Emit(types.EventWindowCloseRequestedString())
+		} else {
+			platform.HideDockIcon()
+		}
+	})
+}
+
+// Quit signals the app to quit and exits the application
+func (a *App) Quit() {
+	a.log.Debugf("Quitting %s", Name)
+	a.SetQuit()
+	application.Get().Quit()
+}
+
 // IsDirty returns true if any page has unsaved changes
 func (a *App) IsDirty() bool {
 	return a.state.IsDirty()
 }
 
-func (a *App) Startup(ctx context.Context) {
+func (a *App) Startup(ctx context.Context, systray *application.SystemTray) {
 	a.log.Infof("Running Arco version %s", a.config.Version.String())
+	a.systray = systray
 	a.ctx, a.cancel = context.WithCancel(ctx)
 
 	if a.config.CheckForUpdates {
@@ -229,6 +287,9 @@ func (a *App) Startup(ctx context.Context) {
 	// Initialize backup profile service with repository service dependency
 	a.backupProfileService.Init(a.ctx, a.db, a.eventEmitter, a.backupScheduleChangedCh, a.pruningScheduleChangedCh, a.repositoryService)
 
+	// Initialize tray service with app as controller for window/quit operations
+	a.trayService.Init(a.backupProfileService.Service, a.repositoryService.Service, a, a.systray)
+
 	// Ensure Borg binary is installed
 	if err := a.ensureBorgBinary(); err != nil {
 		a.state.SetStartupStatus(a.ctx, a.state.GetStartupState().Status, err)
@@ -259,6 +320,11 @@ func (a *App) Startup(ctx context.Context) {
 	go a.backupProfileService.StartPruneScheduleChangeListener()
 	a.backupScheduleChangedCh <- struct{}{}  // Trigger initial backup schedule check
 	a.pruningScheduleChangedCh <- struct{}{} // Trigger initial pruning schedule check
+
+	// Setup tray menu
+	assert.NotNil(a.systray)
+	a.trayService.BuildMenu()
+	a.trayService.SubscribeToEvents()
 
 	// Set the app as ready
 	a.state.SetStartupStatus(a.ctx, appstate.StartupStatusReady, nil)
