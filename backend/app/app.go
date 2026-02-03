@@ -288,7 +288,7 @@ func (a *App) Startup(ctx context.Context, systray *application.SystemTray) {
 	a.backupProfileService.Init(a.ctx, a.db, a.eventEmitter, a.backupScheduleChangedCh, a.pruningScheduleChangedCh, a.repositoryService)
 
 	// Initialize tray service with app as controller for window/quit operations
-	a.trayService.Init(a.backupProfileService.Service, a.repositoryService.Service, a, a.systray)
+	a.trayService.Init(a.backupProfileService.Service, a, a.systray)
 
 	// Ensure Borg binary is installed
 	if err := a.ensureBorgBinary(); err != nil {
@@ -324,7 +324,6 @@ func (a *App) Startup(ctx context.Context, systray *application.SystemTray) {
 	// Setup tray menu
 	assert.NotNil(a.systray)
 	a.trayService.BuildMenu()
-	a.trayService.SubscribeToEvents()
 
 	// Set the app as ready
 	a.state.SetStartupStatus(a.ctx, appstate.StartupStatusReady, nil)
