@@ -170,9 +170,7 @@ func (e Env) AsList() []string {
 	if e.deleteConfirmation {
 		env = append(env, "BORG_DELETE_I_KNOW_WHAT_I_AM_DOING=YES")
 	}
-	if e.relocatedRepoAccess {
-		env = append(env, "BORG_RELOCATED_REPO_ACCESS_IS_OK=yes")
-	}
+	env = append(env, "BORG_RELOCATED_REPO_ACCESS_IS_OK=yes")
 	return env
 }
 
