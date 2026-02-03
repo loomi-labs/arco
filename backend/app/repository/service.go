@@ -2609,7 +2609,7 @@ func (s *Service) testRepoConnection(ctx context.Context, path, password string)
 		IsBorgRepo:      false,
 	}
 
-	_, status := s.borgClient.Info(ctx, path, password, false)
+	_, status := s.borgClient.Info(ctx, path, password, true)
 	if status == nil {
 		result.Success = true
 		result.IsPasswordValid = true
