@@ -34,7 +34,6 @@ import (
 	"github.com/loomi-labs/arco/backend/ent"
 	"github.com/loomi-labs/arco/backend/platform"
 	"github.com/loomi-labs/arco/backend/util"
-	"github.com/negrel/assert"
 	"github.com/pressly/goose/v3"
 	"github.com/teamwork/reload"
 	"github.com/wailsapp/wails/v3/pkg/application"
@@ -56,9 +55,6 @@ type App struct {
 	pruningScheduleChangedCh chan struct{}
 	eventEmitter             types.EventEmitter
 	shouldQuit               bool
-
-	// Tray
-	systray *application.SystemTray
 
 	// Startup
 	ctx                  context.Context
@@ -197,7 +193,6 @@ func (a *App) IsDirty() bool {
 
 func (a *App) Startup(ctx context.Context, systray *application.SystemTray) {
 	a.log.Infof("Running Arco version %s", a.config.Version.String())
-	a.systray = systray
 	a.ctx, a.cancel = context.WithCancel(ctx)
 
 	if a.config.CheckForUpdates {
@@ -288,7 +283,7 @@ func (a *App) Startup(ctx context.Context, systray *application.SystemTray) {
 	a.backupProfileService.Init(a.ctx, a.db, a.eventEmitter, a.backupScheduleChangedCh, a.pruningScheduleChangedCh, a.repositoryService)
 
 	// Initialize tray service with app as controller for window/quit operations
-	a.trayService.Init(a.backupProfileService.Service, a, a.systray)
+	a.trayService.Init(a.backupProfileService.Service, a, systray)
 
 	// Ensure Borg binary is installed
 	if err := a.ensureBorgBinary(); err != nil {
@@ -322,7 +317,6 @@ func (a *App) Startup(ctx context.Context, systray *application.SystemTray) {
 	a.pruningScheduleChangedCh <- struct{}{} // Trigger initial pruning schedule check
 
 	// Setup tray menu
-	assert.NotNil(a.systray)
 	a.trayService.BuildMenu()
 
 	// Set the app as ready

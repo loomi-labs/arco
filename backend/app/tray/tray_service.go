@@ -24,9 +24,9 @@ type AppController interface {
 // Service manages the system tray menu
 type Service struct {
 	log                  *zap.SugaredLogger
-	systray              *application.SystemTray
 	backupProfileService BackupProfileServiceInterface
 	appController        AppController
+	systray              *application.SystemTray
 }
 
 // NewService creates a new tray service
@@ -50,9 +50,10 @@ func (s *Service) getApp() *application.App {
 	return application.Get()
 }
 
-// BuildMenu creates the full tray menu from current state
+// BuildMenu creates and sets the tray menu
 func (s *Service) BuildMenu() {
 	app := s.getApp()
+
 	menu := app.NewMenu()
 
 	// Open main window
@@ -81,6 +82,7 @@ func (s *Service) BuildMenu() {
 		s.appController.Quit()
 	})
 
+	// Update existing systray with the new menu
 	s.systray.SetMenu(menu)
 }
 

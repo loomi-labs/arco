@@ -281,26 +281,13 @@ func startApp(log *zap.SugaredLogger, config *types.Config, assets fs.FS, startH
 	}
 
 	systray := wailsApp.SystemTray.New()
+	systray.SetMenu(wailsApp.NewMenu())
 	if platform.IsMacOS() {
-		// Support for template icons on macOS
 		systray.SetTemplateIcon(config.Icons.DarwinMenubarIcon)
 	} else {
-		// Support for light/dark mode icons
 		systray.SetDarkModeIcon(config.Icons.AppIconDark)
 		systray.SetIcon(config.Icons.AppIconLight)
-		systray.SetLabel(app.Name)
 	}
-
-	// Set initial simple menu
-	initialMenu := wailsApp.NewMenu()
-	initialMenu.Add("Open").OnClick(func(_ *application.Context) {
-		log.Debugf("Opening %s", app.Name)
-		arco.ShowOrCreateMainWindow()
-	})
-	initialMenu.Add("Quit").OnClick(func(_ *application.Context) {
-		arco.Quit()
-	})
-	systray.SetMenu(initialMenu)
 
 	wailsApp.Event.OnApplicationEvent(events.Common.ApplicationStarted, func(event *application.ApplicationEvent) {
 		arco.Startup(application.Get().Context(), systray)
