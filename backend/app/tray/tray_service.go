@@ -71,7 +71,6 @@ func (s *Service) getApp() *application.App {
 // BuildMenu creates the full tray menu from current state
 func (s *Service) BuildMenu() {
 	app := s.getApp()
-	ctx := app.Context()
 	menu := app.NewMenu()
 
 	// Open main window
@@ -81,13 +80,13 @@ func (s *Service) BuildMenu() {
 
 	menu.AddSeparator()
 
-	// Add backup profiles
-	profiles, err := s.backupProfileService.GetBackupProfiles(ctx)
+	// Add backup profiles (use fresh context for menu build, not for handlers)
+	profiles, err := s.backupProfileService.GetBackupProfiles(app.Context())
 	if err != nil {
 		s.log.Errorf("Failed to get backup profiles for tray menu: %v", err)
 	} else {
 		for _, profile := range profiles {
-			s.addProfileSubmenu(ctx, menu, profile)
+			s.addProfileSubmenu(menu, profile)
 		}
 
 		if len(profiles) > 0 {
@@ -104,7 +103,7 @@ func (s *Service) BuildMenu() {
 }
 
 // addProfileSubmenu adds a submenu for a backup profile
-func (s *Service) addProfileSubmenu(ctx context.Context, menu *application.Menu, profile *backup_profile.BackupProfile) {
+func (s *Service) addProfileSubmenu(menu *application.Menu, profile *backup_profile.BackupProfile) {
 	submenu := menu.AddSubmenu(profile.Name)
 
 	// Source Folders header
@@ -123,7 +122,8 @@ func (s *Service) addProfileSubmenu(ctx context.Context, menu *application.Menu,
 		submenu.AddSeparator()
 	}
 
-	// Check if actions are available
+	// Check if actions are available (use fresh context for menu build)
+	ctx := s.getApp().Context()
 	canBackup := s.canStartBackup(ctx, profile)
 	canBrowse := s.canBrowseBackup(ctx, profile)
 
@@ -132,7 +132,8 @@ func (s *Service) addProfileSubmenu(ctx context.Context, menu *application.Menu,
 	runBackupItem := submenu.Add("Run Backup Now")
 	if canBackup {
 		runBackupItem.OnClick(func(_ *application.Context) {
-			s.handleRunBackupNow(ctx, profileCopy)
+			// Get fresh context at click time, not stale context from menu build
+			s.handleRunBackupNow(s.getApp().Context(), profileCopy)
 		})
 	} else {
 		runBackupItem.SetEnabled(false)
@@ -142,7 +143,8 @@ func (s *Service) addProfileSubmenu(ctx context.Context, menu *application.Menu,
 	browseItem := submenu.Add("Browse Latest Backup")
 	if canBrowse {
 		browseItem.OnClick(func(_ *application.Context) {
-			s.handleBrowseLatestBackup(ctx, profileCopy)
+			// Get fresh context at click time, not stale context from menu build
+			s.handleBrowseLatestBackup(s.getApp().Context(), profileCopy)
 		})
 	} else {
 		browseItem.SetEnabled(false)
