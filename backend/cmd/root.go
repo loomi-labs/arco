@@ -281,7 +281,8 @@ func startApp(log *zap.SugaredLogger, config *types.Config, assets fs.FS, startH
 	}
 
 	systray := wailsApp.SystemTray.New()
-	systray.SetMenu(wailsApp.NewMenu())
+	trayMenu := wailsApp.NewMenu()
+	systray.SetMenu(trayMenu)
 	if platform.IsMacOS() {
 		systray.SetTemplateIcon(config.Icons.DarwinMenubarIcon)
 	} else {
@@ -290,7 +291,7 @@ func startApp(log *zap.SugaredLogger, config *types.Config, assets fs.FS, startH
 	}
 
 	wailsApp.Event.OnApplicationEvent(events.Common.ApplicationStarted, func(event *application.ApplicationEvent) {
-		arco.Startup(application.Get().Context(), systray)
+		arco.Startup(application.Get().Context(), systray, trayMenu)
 	})
 
 	// Run the application. This blocks until the application has been exited.
