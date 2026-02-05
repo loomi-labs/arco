@@ -27,6 +27,7 @@ type Service struct {
 	backupProfileService BackupProfileServiceInterface
 	appController        AppController
 	systray              *application.SystemTray
+	menu                 *application.Menu
 }
 
 // NewService creates a new tray service
@@ -39,10 +40,12 @@ func (s *Service) Init(
 	backupProfileService BackupProfileServiceInterface,
 	appController AppController,
 	systray *application.SystemTray,
+	menu *application.Menu,
 ) {
 	s.backupProfileService = backupProfileService
 	s.appController = appController
 	s.systray = systray
+	s.menu = menu
 }
 
 // getApp returns the Wails application instance
@@ -50,46 +53,49 @@ func (s *Service) getApp() *application.App {
 	return application.Get()
 }
 
-// BuildMenu creates and sets the tray menu
+// BuildMenu populates the tray menu with items.
+// We modify the menu in-place and call Update() instead of using SetMenu(),
+// because SetMenu() after run does not update the native NSMenu on macOS.
 func (s *Service) BuildMenu() {
 	app := s.getApp()
 
-	menu := app.NewMenu()
+	// Clear existing items and rebuild in-place
+	s.menu.Clear()
 
 	// Open main window
-	menu.Add("Open").OnClick(func(_ *application.Context) {
+	s.menu.Add("Open").OnClick(func(_ *application.Context) {
 		s.appController.ShowOrCreateMainWindow()
 	})
 
-	menu.AddSeparator()
+	s.menu.AddSeparator()
 
 	// Add backup profiles
 	profiles, err := s.backupProfileService.GetBackupProfiles(app.Context())
 	if err != nil {
 		s.log.Errorf("Failed to get backup profiles for tray menu: %v", err)
 	} else {
-		header := menu.Add("Backup Profiles")
+		header := s.menu.Add("Backup Profiles")
 		header.SetEnabled(false)
 
 		if len(profiles) == 0 {
-			empty := menu.Add("No profiles configured")
+			empty := s.menu.Add("No profiles configured")
 			empty.SetEnabled(false)
 		} else {
 			for _, profile := range profiles {
-				s.addProfileSubmenu(menu, profile)
+				s.addProfileSubmenu(s.menu, profile)
 			}
 		}
 
-		menu.AddSeparator()
+		s.menu.AddSeparator()
 	}
 
 	// Quit
-	menu.Add("Quit").OnClick(func(_ *application.Context) {
+	s.menu.Add("Quit").OnClick(func(_ *application.Context) {
 		s.appController.Quit()
 	})
 
-	// Update existing systray with the new menu
-	s.systray.SetMenu(menu)
+	// Rebuild the native menu in-place so the existing nsMenu pointer stays valid
+	s.menu.Update()
 }
 
 // addProfileSubmenu adds a submenu for a backup profile

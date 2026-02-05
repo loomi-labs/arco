@@ -191,7 +191,7 @@ func (a *App) IsDirty() bool {
 	return a.state.IsDirty()
 }
 
-func (a *App) Startup(ctx context.Context, systray *application.SystemTray) {
+func (a *App) Startup(ctx context.Context, systray *application.SystemTray, trayMenu *application.Menu) {
 	a.log.Infof("Running Arco version %s", a.config.Version.String())
 	a.ctx, a.cancel = context.WithCancel(ctx)
 
@@ -283,7 +283,7 @@ func (a *App) Startup(ctx context.Context, systray *application.SystemTray) {
 	a.backupProfileService.Init(a.ctx, a.db, a.eventEmitter, a.backupScheduleChangedCh, a.pruningScheduleChangedCh, a.repositoryService)
 
 	// Initialize tray service with app as controller for window/quit operations
-	a.trayService.Init(a.backupProfileService.Service, a, systray)
+	a.trayService.Init(a.backupProfileService.Service, a, systray, trayMenu)
 
 	// Ensure Borg binary is installed
 	if err := a.ensureBorgBinary(); err != nil {
