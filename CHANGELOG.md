@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.21.1](https://github.com/loomi-labs/arco/compare/v0.21.0...v0.21.1) (2026-02-05)
+
+
+### Bug Fixes
+
+* macos systray ([#275](https://github.com/loomi-labs/arco/issues/275)) ([8813135](https://github.com/loomi-labs/arco/commit/8813135750f8f4a67774f42f35a724be525f7cc5))
+
 ## [0.21.0](https://github.com/loomi-labs/arco/compare/v0.20.0...v0.21.0) (2026-02-03)
 
 
