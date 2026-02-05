@@ -282,6 +282,12 @@ func startApp(log *zap.SugaredLogger, config *types.Config, assets fs.FS, startH
 
 	systray := wailsApp.SystemTray.New()
 	trayMenu := wailsApp.NewMenu()
+	trayMenu.Add("Open").OnClick(func(_ *application.Context) {
+		arco.ShowOrCreateMainWindow()
+	})
+	trayMenu.Add("Quit").OnClick(func(_ *application.Context) {
+		arco.Quit()
+	})
 	systray.SetMenu(trayMenu)
 	if platform.IsMacOS() {
 		systray.SetTemplateIcon(config.Icons.DarwinMenubarIcon)
