@@ -310,6 +310,11 @@ func (a *App) Startup(ctx context.Context, systray *application.SystemTray, tray
 	// Start ArcoCloud sync listener
 	go a.startArcoCloudSyncListener()
 
+	// Start daily auto-update checker
+	if a.config.CheckForUpdates && !types.EnvVarDevelopment.Bool() {
+		go a.startAutoUpdateChecker()
+	}
+
 	// Schedule backups
 	go a.backupProfileService.StartScheduleChangeListener()
 	go a.backupProfileService.StartPruneScheduleChangeListener()
@@ -364,6 +369,60 @@ func (a *App) startArcoCloudSyncListener() {
 			syncArcoCloudData()
 		}
 	})
+}
+
+// startAutoUpdateChecker periodically checks for a new release and restarts the app to apply it.
+// The existing Startup() → updateArco() flow handles the actual download and install on restart.
+func (a *App) startAutoUpdateChecker() {
+	a.log.Debug("Starting auto-update checker")
+
+	const checkInterval = 24 * time.Hour
+
+	for {
+		select {
+		case <-a.ctx.Done():
+			a.log.Debug("Auto-update checker stopped")
+			return
+		case <-time.After(checkInterval):
+			a.log.Debug("Running scheduled update check")
+
+			client := github.NewClient(nil)
+			release, err := a.getLatestRelease(client)
+			if err != nil {
+				a.log.Errorf("Auto-update check failed: %v", err)
+				continue
+			}
+
+			releaseVersion, err := semver.NewVersion(release.GetTagName())
+			if err != nil {
+				a.log.Errorf("Auto-update: failed to parse release version: %v", err)
+				continue
+			}
+
+			if releaseVersion.LessThanEqual(a.config.Version) {
+				a.log.Debug("Auto-update: no new version available")
+				continue
+			}
+
+			a.log.Infof("Auto-update: new version %s available, waiting for idle before restart", releaseVersion.String())
+
+			const retryInterval = 1 * time.Minute
+			for {
+				if a.repositoryService.GetHeavyOperationCount() == 0 {
+					a.log.Info("Auto-update: no heavy operations running, restarting")
+					reload.Exec()
+					return
+				}
+				a.log.Debug("Auto-update: heavy operations still running, retrying after interval")
+				select {
+				case <-a.ctx.Done():
+					a.log.Debug("Auto-update checker stopped while waiting for idle")
+					return
+				case <-time.After(retryInterval):
+				}
+			}
+		}
+	}
 }
 
 func (a *App) updateArco() (bool, error) {

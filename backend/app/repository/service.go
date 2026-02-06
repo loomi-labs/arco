@@ -92,6 +92,11 @@ func (si *ServiceInternal) Init(ctx context.Context, db *ent.Client, eventEmitte
 	si.initMountStates(ctx)
 }
 
+// GetHeavyOperationCount returns the number of active heavy operations (backups, prunes, deletes)
+func (si *ServiceInternal) GetHeavyOperationCount() int {
+	return si.queueManager.GetHeavyOperationCount()
+}
+
 // initMountStates initializes the mount states of all repositories and archives at startup
 // This method is called during app startup and restores mount states if things are mounted
 func (si *ServiceInternal) initMountStates(ctx context.Context) {
