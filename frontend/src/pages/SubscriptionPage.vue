@@ -869,12 +869,12 @@ onMounted(async () => {
                     <span class='text-sm text-base-content/70'>Overage Price</span>
                     <span class='text-sm text-right'>
                       <template v-if='subscription?.plan?.is_free'>Hard limit</template>
-                      <template v-else>${{ ((subscription?.plan?.overage_cents_per_gb ?? 0) / 100).toFixed(2) }} per GB over {{ subscription?.plan?.storage_gb ?? 0 }}GB</template>
+                      <template v-else>${{ ((subscription?.plan?.overage_cents_per_gb ?? 0) / 100).toFixed(3) }} per GB over {{ subscription?.plan?.storage_gb ?? 0 }}GB</template>
                     </span>
                     <span class='text-center' :class='isSwitchUpgrade ? "text-success" : "text-warning"'>→</span>
                     <span :class='["text-sm font-medium", isSwitchUpgrade ? "text-success" : "text-warning"]'>
                       <template v-if='selectedSwitchPlanDetails.is_free'>Hard limit</template>
-                      <template v-else>${{ ((selectedSwitchPlanDetails.overage_cents_per_gb ?? 0) / 100).toFixed(2) }} per GB over {{ selectedSwitchPlanDetails.storage_gb ?? 0 }}GB</template>
+                      <template v-else>${{ ((selectedSwitchPlanDetails.overage_cents_per_gb ?? 0) / 100).toFixed(3) }} per GB over {{ selectedSwitchPlanDetails.storage_gb ?? 0 }}GB</template>
                     </span>
                     <!-- Repositories -->
                     <span class='text-sm text-base-content/70'>Repositories</span>

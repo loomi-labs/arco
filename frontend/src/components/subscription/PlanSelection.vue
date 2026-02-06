@@ -73,7 +73,7 @@ function getMonthlyPrice(plan: SubscriptionPlan) {
 
 function getOveragePrice(plan: SubscriptionPlan) {
   if (plan.overage_cents_per_gb == null || plan.overage_cents_per_gb === 0) return null;
-  return (plan.overage_cents_per_gb / 100).toFixed(2);
+  return (plan.overage_cents_per_gb / 100).toFixed(3);
 }
 
 function subscribeToPlan() {
