@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.22.0](https://github.com/loomi-labs/arco/compare/v0.21.1...v0.22.0) (2026-02-06)
+
+
+### Features
+
+* **update:** add daily auto-update checker that waits for idle before restart ([#279](https://github.com/loomi-labs/arco/issues/279)) ([57e29b7](https://github.com/loomi-labs/arco/commit/57e29b74aec899f524e7e38dc9176e40e89d303a))
+
+
+### Bug Fixes
+
+* **subscription:** display overage price with 3 decimal places ([#277](https://github.com/loomi-labs/arco/issues/277)) ([f7f8746](https://github.com/loomi-labs/arco/commit/f7f87461d7b7aad3f99e4305ef9bd328153aaddb))
+
 ## [0.21.1](https://github.com/loomi-labs/arco/compare/v0.21.0...v0.21.1) (2026-02-05)
 
 
