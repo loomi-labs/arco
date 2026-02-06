@@ -1,5 +1,25 @@
 # Changelog
 
+## [0.21.1](https://github.com/loomi-labs/arco/compare/v0.21.0...v0.21.1) (2026-02-05)
+
+
+### Bug Fixes
+
+* macos systray ([#275](https://github.com/loomi-labs/arco/issues/275)) ([8813135](https://github.com/loomi-labs/arco/commit/8813135750f8f4a67774f42f35a724be525f7cc5))
+
+## [0.21.0](https://github.com/loomi-labs/arco/compare/v0.20.0...v0.21.0) (2026-02-03)
+
+
+### Features
+
+* **schedule:** add flexible minute interval for backup schedules ([#271](https://github.com/loomi-labs/arco/issues/271)) ([a7a4c1d](https://github.com/loomi-labs/arco/commit/a7a4c1d57f31ec17d30e500eb0d87f94738fcf0e))
+* **tray:** add backup profiles to systemtray ([#273](https://github.com/loomi-labs/arco/issues/273)) ([da9e9f9](https://github.com/loomi-labs/arco/commit/da9e9f9fa842000084317bf428c7046f2eda19d8))
+
+
+### Bug Fixes
+
+* **borg:** allow relocated repositories when testing connection ([#274](https://github.com/loomi-labs/arco/issues/274)) ([4ea0586](https://github.com/loomi-labs/arco/commit/4ea0586ddd607226e2782e4be7771c639ebd3ed6))
+
 ## [0.20.0](https://github.com/loomi-labs/arco/compare/v0.19.2...v0.20.0) (2026-01-29)
 
 
