@@ -72,14 +72,16 @@ func (s *Service) GetNotifications(ctx context.Context) []types.Notification {
 }
 
 type Env struct {
-	Debug     bool   `json:"debug"`
-	StartPage string `json:"startPage"`
+	Debug       bool   `json:"debug"`
+	Development bool   `json:"development"`
+	StartPage   string `json:"startPage"`
 }
 
 func (s *Service) GetEnvVars(ctx context.Context) Env {
 	return Env{
-		Debug:     types.EnvVarDebug.Bool(),
-		StartPage: types.EnvVarStartPage.String(),
+		Debug:       types.EnvVarDebug.Bool(),
+		Development: types.EnvVarDevelopment.Bool(),
+		StartPage:   types.EnvVarStartPage.String(),
 	}
 }
 
@@ -210,6 +212,12 @@ func (s *Service) SetDirtyPage(ctx context.Context, pageName string) {
 // ClearDirtyPage clears the dirty page state
 func (s *Service) ClearDirtyPage(ctx context.Context) {
 	s.state.ClearDirtyPage()
+}
+
+// RestartApp restarts the application by spawning a new process and exiting the current one.
+func (s *Service) RestartApp(ctx context.Context) {
+	s.log.Info("Restarting app")
+	platform.RestartSelf()
 }
 
 // CloseWindow closes the application window

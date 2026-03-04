@@ -23,7 +23,6 @@ require (
 	github.com/prometheus/procfs v0.19.2
 	github.com/spf13/cobra v1.10.1
 	github.com/stretchr/testify v1.11.1
-	github.com/teamwork/reload v1.4.2
 	github.com/testcontainers/testcontainers-go v0.38.0
 	github.com/wailsapp/wails/v3 v3.0.0-alpha.61
 	go.uber.org/mock v0.6.0

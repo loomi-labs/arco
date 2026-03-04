@@ -40,12 +40,16 @@ export class AppInfo {
 
 export class Env {
     "debug": boolean;
+    "development": boolean;
     "startPage": string;
 
     /** Creates a new Env instance. */
     constructor($$source: Partial<Env> = {}) {
         if (!("debug" in $$source)) {
             this["debug"] = false;
+        }
+        if (!("development" in $$source)) {
+            this["development"] = false;
         }
         if (!("startPage" in $$source)) {
             this["startPage"] = "";

@@ -108,6 +108,13 @@ export function LogDebug(message: string): $CancellablePromise<void> {
     return $Call.ByID(4236536126, message);
 }
 
+/**
+ * RestartApp restarts the application by spawning a new process and exiting the current one.
+ */
+export function RestartApp(): $CancellablePromise<void> {
+    return $Call.ByID(1549879149);
+}
+
 export function SaveSettings(settings: ent$0.Settings | null): $CancellablePromise<void> {
     return $Call.ByID(2503273855, settings);
 }
