@@ -11,10 +11,10 @@ import (
 // and then exits the current process. The delay ensures the old process has time
 // to exit and release resources (e.g., single-instance lock) before the new
 // process initializes.
-func RestartSelf() {
+func RestartSelf() error {
 	execPath, err := os.Executable()
 	if err != nil {
-		panic(fmt.Sprintf("cannot restart: %v", err))
+		return fmt.Errorf("cannot restart: resolve executable: %w", err)
 	}
 
 	// Build args, stripping any existing --restart-delay to prevent accumulation
@@ -43,8 +43,9 @@ func RestartSelf() {
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	if err := cmd.Start(); err != nil {
-		panic(fmt.Sprintf("cannot restart: %v", err))
+		return fmt.Errorf("cannot restart: start child process: %w", err)
 	}
 
 	os.Exit(0)
+	return nil // unreachable
 }

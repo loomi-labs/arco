@@ -8,6 +8,7 @@ import (
 	"github.com/loomi-labs/arco/backend/app/types"
 	"github.com/loomi-labs/arco/backend/ent"
 	"github.com/loomi-labs/arco/backend/platform"
+	"github.com/pkg/errors"
 	"github.com/wailsapp/wails/v3/pkg/application"
 	"go.uber.org/zap"
 )
@@ -215,9 +216,18 @@ func (s *Service) ClearDirtyPage(ctx context.Context) {
 }
 
 // RestartApp restarts the application by spawning a new process and exiting the current one.
-func (s *Service) RestartApp(ctx context.Context) {
+// Only available in development mode.
+func (s *Service) RestartApp(ctx context.Context) error {
+	if !types.EnvVarDevelopment.Bool() {
+		s.log.Warn("RestartApp ignored: development mode is disabled")
+		return errors.New("Restarting the app is only allowed in developer mode")
+	}
 	s.log.Info("Restarting app")
-	platform.RestartSelf()
+	if err := platform.RestartSelf(); err != nil {
+		s.log.Errorf("Failed to restart: %v", err)
+		return err
+	}
+	return nil
 }
 
 // CloseWindow closes the application window

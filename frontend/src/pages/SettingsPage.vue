@@ -75,6 +75,15 @@ async function loadSettings() {
   }
 }
 
+async function loadEnvVars() {
+  try {
+    const env = await userService.GetEnvVars();
+    isDev.value = env.development;
+  } catch (error: unknown) {
+    await logError("Failed to load environment flags", error);
+  }
+}
+
 async function saveSettings() {
   if (!settings.value) return;
 
@@ -130,8 +139,7 @@ function restartApp() {
 
 onMounted(async () => {
   await loadSettings();
-  const env = await userService.GetEnvVars();
-  isDev.value = env.development;
+  await loadEnvVars();
 });
 
 </script>
