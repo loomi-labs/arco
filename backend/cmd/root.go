@@ -372,6 +372,15 @@ var rootCmd = &cobra.Command{
 			log.Infof("using unique run id: %s", uniqueRunId)
 		}
 
+		restartDelay, err := cmd.Flags().GetDuration(restartDelayFlag)
+		if err != nil {
+			return fmt.Errorf("failed to get restart-delay flag: %w", err)
+		}
+		if restartDelay > 0 {
+			log.Infof("restart delay: waiting %s before starting", restartDelay)
+			time.Sleep(restartDelay)
+		}
+
 		startApp(log, config, assets, startHidden, uniqueRunId)
 		return nil
 	},
@@ -396,6 +405,7 @@ const hiddenFlag = "hidden"
 const uniqueRunIdFlag = "unique-run-id"
 const autoUpdateFlag = "auto-update"
 const versionFlag = "version"
+const restartDelayFlag = "restart-delay"
 
 func init() {
 	rootCmd.PersistentFlags().StringP(configFlag, "c", "", "config path (default is $HOME/.config/arco/)")
@@ -403,4 +413,5 @@ func init() {
 	rootCmd.PersistentFlags().String(uniqueRunIdFlag, "", "unique run id. Only one instance of Arco can run with the same id")
 	rootCmd.PersistentFlags().Bool(autoUpdateFlag, true, "enable auto update (default is true)")
 	rootCmd.PersistentFlags().BoolP(versionFlag, "v", false, "print version information and exit")
+	rootCmd.PersistentFlags().Duration(restartDelayFlag, 0, "delay before starting (used internally for restarts)")
 }

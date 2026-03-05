@@ -35,6 +35,7 @@ const isSaving = ref(false);
 const errorMessage = ref<string | undefined>(undefined);
 
 const isDark = useTheme();
+const isDev = ref(false);
 
 // Theme selection
 const selectedTheme = ref<Theme>(Theme.ThemeSystem);
@@ -71,6 +72,15 @@ async function loadSettings() {
     await logError("Failed to load settings", error);
   } finally {
     isLoading.value = false;
+  }
+}
+
+async function loadEnvVars() {
+  try {
+    const env = await userService.GetEnvVars();
+    isDev.value = env.development;
+  } catch (error: unknown) {
+    await logError("Failed to load environment flags", error);
   }
 }
 
@@ -119,12 +129,17 @@ async function applyTheme(theme: Theme, saveToBackend: boolean = true) {
   }
 }
 
+function restartApp() {
+  userService.RestartApp();
+}
+
 /************
  * Lifecycle
  ************/
 
 onMounted(async () => {
   await loadSettings();
+  await loadEnvVars();
 });
 
 </script>
@@ -303,6 +318,19 @@ onMounted(async () => {
                   class='toggle toggle-secondary'
                   :disabled='isSaving'
                 />
+              </div>
+
+              <!-- Dev-only: Restart App -->
+              <div v-if='isDev' class='flex items-center justify-between py-3 px-4 bg-base-100 rounded-lg'>
+                <div class='flex-1'>
+                  <p class='font-medium'>Restart App</p>
+                  <p class='text-sm text-base-content/70 mt-1'>
+                    Restart the application (dev only)
+                  </p>
+                </div>
+                <button class='btn btn-sm btn-outline' @click='restartApp'>
+                  Restart
+                </button>
               </div>
             </div>
           </div>

@@ -35,7 +35,6 @@ import (
 	"github.com/loomi-labs/arco/backend/platform"
 	"github.com/loomi-labs/arco/backend/util"
 	"github.com/pressly/goose/v3"
-	"github.com/teamwork/reload"
 	"github.com/wailsapp/wails/v3/pkg/application"
 	"github.com/wailsapp/wails/v3/pkg/events"
 	"go.uber.org/zap"
@@ -210,7 +209,10 @@ func (a *App) Startup(ctx context.Context, systray *application.SystemTray, tray
 
 			// Sleep for a few seconds to allow the frontend to show the update message
 			time.Sleep(3 * time.Second)
-			reload.Exec()
+			if err := platform.RestartSelf(); err != nil {
+				a.log.Errorf("Failed to restart: %v", err)
+				os.Exit(1)
+			}
 			return
 		}
 	}
@@ -410,7 +412,10 @@ func (a *App) startAutoUpdateChecker() {
 			for {
 				if a.repositoryService.GetHeavyOperationCount() == 0 {
 					a.log.Info("Auto-update: no heavy operations running, restarting")
-					reload.Exec()
+					if err := platform.RestartSelf(); err != nil {
+						a.log.Errorf("Failed to restart: %v", err)
+						os.Exit(1)
+					}
 					return
 				}
 				a.log.Debug("Auto-update: heavy operations still running, retrying after interval")

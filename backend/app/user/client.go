@@ -8,6 +8,7 @@ import (
 	"github.com/loomi-labs/arco/backend/app/types"
 	"github.com/loomi-labs/arco/backend/ent"
 	"github.com/loomi-labs/arco/backend/platform"
+	"github.com/pkg/errors"
 	"github.com/wailsapp/wails/v3/pkg/application"
 	"go.uber.org/zap"
 )
@@ -72,14 +73,16 @@ func (s *Service) GetNotifications(ctx context.Context) []types.Notification {
 }
 
 type Env struct {
-	Debug     bool   `json:"debug"`
-	StartPage string `json:"startPage"`
+	Debug       bool   `json:"debug"`
+	Development bool   `json:"development"`
+	StartPage   string `json:"startPage"`
 }
 
 func (s *Service) GetEnvVars(ctx context.Context) Env {
 	return Env{
-		Debug:     types.EnvVarDebug.Bool(),
-		StartPage: types.EnvVarStartPage.String(),
+		Debug:       types.EnvVarDebug.Bool(),
+		Development: types.EnvVarDevelopment.Bool(),
+		StartPage:   types.EnvVarStartPage.String(),
 	}
 }
 
@@ -210,6 +213,21 @@ func (s *Service) SetDirtyPage(ctx context.Context, pageName string) {
 // ClearDirtyPage clears the dirty page state
 func (s *Service) ClearDirtyPage(ctx context.Context) {
 	s.state.ClearDirtyPage()
+}
+
+// RestartApp restarts the application by spawning a new process and exiting the current one.
+// Only available in development mode.
+func (s *Service) RestartApp(ctx context.Context) error {
+	if !types.EnvVarDevelopment.Bool() {
+		s.log.Warn("RestartApp ignored: development mode is disabled")
+		return errors.New("Restarting the app is only allowed in developer mode")
+	}
+	s.log.Info("Restarting app")
+	if err := platform.RestartSelf(); err != nil {
+		s.log.Errorf("Failed to restart: %v", err)
+		return err
+	}
+	return nil
 }
 
 // CloseWindow closes the application window
