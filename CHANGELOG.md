@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.22.1](https://github.com/loomi-labs/arco/compare/v0.22.0...v0.22.1) (2026-03-05)
+
+
+### Bug Fixes
+
+* **restart:** replace syscall.Exec with spawn+exit to preserve macOS systray ([#280](https://github.com/loomi-labs/arco/issues/280)) ([1520da4](https://github.com/loomi-labs/arco/commit/1520da475b01f680da96d0159a730639003071a9))
+
 ## [0.22.0](https://github.com/loomi-labs/arco/compare/v0.21.1...v0.22.0) (2026-02-06)
 
 
