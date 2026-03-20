@@ -9,9 +9,7 @@ import {
   diffYears,
   format,
   isBefore,
-  offset,
-  parse,
-  removeOffset
+  parse
 } from "@formkit/tempo";
 
 
@@ -95,28 +93,17 @@ export function setTime(setValFn: (date: Date) => void, value: string): string {
 /**
  * isInPast checks if a Date object is in the past.
  * @param date The date to check
- * @param ignoreTz If true, the timezone offset is ignored
  */
-export function isInPast(date: Date, ignoreTz = false): boolean {
-  const now = new Date();
-  if (!ignoreTz) {
-    const offsetToUTC = offset(now);
-    date = removeOffset(date, offsetToUTC);
-  }
-  return isBefore(date, now);
+export function isInPast(date: Date): boolean {
+  return isBefore(date, new Date());
 }
 
 /**
  * toRelativeTimeString converts a Date object to a human-readable string that is relative to the current time.
  * @param date The date to convert
- * @param ignoreTz If true, the timezone offset is ignored
  */
-export function toRelativeTimeString(date: Date, ignoreTz = false): string {
+export function toRelativeTimeString(date: Date): string {
   const now = new Date();
-  if (!ignoreTz) {
-    const offsetToUTC = offset(now);
-    date = removeOffset(date, offsetToUTC);
-  }
 
   if (isBefore(date, now)) {
     return toPastString(date, now);
@@ -215,14 +202,8 @@ function toPastString(date: Date, now: Date): string {
 /**
  * toLongDateString converts a Date object to a human-readable string with a long date format.
  * @param date The date to convert
- * @param ignoreTz Whether to ignore timezone offset (default: false)
  */
-export function toLongDateString(date: Date, ignoreTz = false): string {
-  if (!ignoreTz) {
-    const now = new Date();
-    const offsetToUTC = offset(now);
-    date = removeOffset(date, offsetToUTC);
-  }
+export function toLongDateString(date: Date): string {
   return format(date, { date: "long", time: "short" });
 }
 

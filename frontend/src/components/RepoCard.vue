@@ -58,7 +58,6 @@ backupId.repositoryId = props.repoId;
 const lastArchive = ref<ent.Archive | undefined>(undefined);
 
 const backupState = ref<statemachine.Backup>(statemachine.Backup.createFrom());
-const totalSize = ref<string>("-");
 const sizeOnDisk = ref<string>("-");
 const buttonStatus = ref<repoModels.BackupButtonStatus | undefined>(undefined);
 
@@ -79,7 +78,6 @@ async function getRepo() {
   try {
     repo.value = await repoService.Get(props.repoId) ?? repoModels.Repository.createFrom();
     if (repo.value) {
-      totalSize.value = toHumanReadableSize(repo.value.totalSize);
       sizeOnDisk.value = toHumanReadableSize(repo.value.sizeOnDisk);
     }
 

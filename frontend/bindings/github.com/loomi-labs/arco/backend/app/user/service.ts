@@ -110,6 +110,7 @@ export function LogDebug(message: string): $CancellablePromise<void> {
 
 /**
  * RestartApp restarts the application by spawning a new process and exiting the current one.
+ * Only available in development mode.
  */
 export function RestartApp(): $CancellablePromise<void> {
     return $Call.ByID(1549879149);

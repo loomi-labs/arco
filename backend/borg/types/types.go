@@ -43,7 +43,7 @@ func (st *StringTime) UnmarshalJSON(b []byte) error {
 	}
 
 	if timestamp != nil {
-		t, err := time.Parse("2006-01-02T15:04:05.000000", *timestamp)
+		t, err := time.ParseInLocation("2006-01-02T15:04:05.000000", *timestamp, time.Local)
 		if err != nil {
 			return err
 		}

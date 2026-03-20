@@ -275,17 +275,10 @@ func (s *Service) entityToRepository(ctx context.Context, repoEntity *ent.Reposi
 	archives := repoEntity.Edges.Archives
 	archiveCount := len(archives)
 
-	// Calculate storage used from repository statistics
+	// Calculate storage statistics
 	sizeOnDisk := int64(repoEntity.StatsUniqueCsize)  // Compressed & deduplicated storage (actual disk usage)
-	totalSize := int64(repoEntity.StatsTotalSize)     // Total uncompressed size across all archives
 	uniqueSize := int64(repoEntity.StatsUniqueSize)   // Deduplicated uncompressed size
 	uniqueCsize := int64(repoEntity.StatsUniqueCsize) // Deduplicated compressed size
-
-	// Calculate deduplication ratio (totalSize / uniqueSize)
-	dedupRatio := 0.0
-	if uniqueSize > 0 {
-		dedupRatio = float64(totalSize) / float64(uniqueSize)
-	}
 
 	// Calculate compression ratio (uniqueSize / uniqueCsize)
 	compressionRatio := 0.0
@@ -293,31 +286,30 @@ func (s *Service) entityToRepository(ctx context.Context, repoEntity *ent.Reposi
 		compressionRatio = float64(uniqueSize) / float64(uniqueCsize)
 	}
 
-	// Calculate overall space savings percentage ((totalSize - uniqueCsize) / totalSize * 100)
-	spaceSavingsPercent := 0.0
-	if totalSize > 0 {
-		spaceSavingsPercent = ((float64(totalSize) - float64(uniqueCsize)) / float64(totalSize)) * 100
+	// Get oldest backup timestamp from archives (ordered descending by CreatedAt)
+	var oldestBackup *time.Time
+	if archiveCount > 0 {
+		t := archives[archiveCount-1].CreatedAt
+		oldestBackup = &t
 	}
 
 	return &Repository{
-		ID:                  repoEntity.ID,
-		Name:                repoEntity.Name,
-		URL:                 repoEntity.URL,
-		Type:                ToLocationUnion(repoType),
-		State:               statemachine.ToRepositoryStateUnion(currentState),
-		ArchiveCount:        archiveCount,
-		LastBackup:          s.getLastBackup(ctx, repoEntity.ID),
-		LastAttempt:         s.getLastAttempt(ctx, repoEntity.ID),
-		LastQuickCheckAt:    repoEntity.LastQuickCheckAt,
-		QuickCheckError:     repoEntity.QuickCheckError,
-		LastFullCheckAt:     repoEntity.LastFullCheckAt,
-		FullCheckError:      repoEntity.FullCheckError,
-		SizeOnDisk:          sizeOnDisk,
-		TotalSize:           totalSize,
-		DeduplicationRatio:  dedupRatio,
-		CompressionRatio:    compressionRatio,
-		SpaceSavingsPercent: spaceSavingsPercent,
-		HasPassword:         s.keyring.HasRepositoryPassword(repoEntity.ID),
+		ID:               repoEntity.ID,
+		Name:             repoEntity.Name,
+		URL:              repoEntity.URL,
+		Type:             ToLocationUnion(repoType),
+		State:            statemachine.ToRepositoryStateUnion(currentState),
+		ArchiveCount:     archiveCount,
+		LastBackup:       s.getLastBackup(ctx, repoEntity.ID),
+		LastAttempt:      s.getLastAttempt(ctx, repoEntity.ID),
+		LastQuickCheckAt: repoEntity.LastQuickCheckAt,
+		QuickCheckError:  repoEntity.QuickCheckError,
+		LastFullCheckAt:  repoEntity.LastFullCheckAt,
+		FullCheckError:   repoEntity.FullCheckError,
+		SizeOnDisk:       sizeOnDisk,
+		CompressionRatio: compressionRatio,
+		OldestBackup:     oldestBackup,
+		HasPassword:      s.keyring.HasRepositoryPassword(repoEntity.ID),
 	}
 }
 

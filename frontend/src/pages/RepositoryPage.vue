@@ -5,7 +5,7 @@ import {
   ArrowTrendingUpIcon,
   ChartPieIcon,
   CheckCircleIcon,
-  CircleStackIcon,
+  ClockIcon,
   ServerIcon,
   GlobeEuropeAfricaIcon,
   LockClosedIcon,
@@ -51,11 +51,8 @@ const repoId = computed(() => {
 });
 const loading = ref(true);
 
-const totalSize = ref<string>("-");
 const sizeOnDisk = ref<string>("-");
-const deduplicationRatio = ref<string>("-");
 const compressionRatio = ref<string>("-");
-const spaceSavings = ref<string>("-");
 const lastArchive = ref<ent.Archive | undefined>(undefined);
 const deletableBackupProfiles = ref<ent.BackupProfile[]>([]);
 const confirmDeleteInput = ref<string>("");
@@ -138,7 +135,6 @@ const [name, nameAttrs] = defineField("name", { validateOnBlur: false });
 
 // Static tooltips
 const sizeOnDiskTooltip = "How much space your backups actually use on the hard drive";
-const totalSizeTooltip = "The original size of all backed up data before deduplication and compression";
 
 /************
  * Functions
@@ -160,24 +156,12 @@ async function getRepo() {
     repo.value = (await repoService.Get(repoId.value)) ?? Repository.createFrom();
     name.value = repo.value.name;
 
-    totalSize.value = toHumanReadableSize(repo.value.totalSize);
     sizeOnDisk.value = toHumanReadableSize(repo.value.sizeOnDisk);
-
-    // Format deduplication ratio - round first, then check if > 1.0 to avoid showing "1.0x"
-    const dedupRounded = parseFloat(repo.value.deduplicationRatio.toFixed(1));
-    deduplicationRatio.value = dedupRounded > 1.0
-      ? `${dedupRounded.toFixed(1)}x`
-      : "-";
 
     // Format compression ratio - round first, then check if > 1.0 to avoid showing "1.0x"
     const compRounded = parseFloat(repo.value.compressionRatio.toFixed(1));
     compressionRatio.value = compRounded > 1.0
       ? `${compRounded.toFixed(1)}x`
-      : "-";
-
-    // Format space savings (e.g., "82%")
-    spaceSavings.value = repo.value.spaceSavingsPercent > 0
-      ? `${repo.value.spaceSavingsPercent.toFixed(0)}%`
       : "-";
 
     deletableBackupProfiles.value = (await repoService.GetBackupProfilesThatHaveOnlyRepo(repoId.value)).filter((r) => r !== null) ?? [];
@@ -454,17 +438,6 @@ onUnmounted(() => {
         <div class='card-body'>
           <h3 class='card-title text-lg'>Overview</h3>
           <div class='flex flex-col gap-3'>
-            <!-- Archives Row (static) -->
-            <div class='border border-base-300 rounded-lg p-3 flex items-center gap-3'>
-              <svg xmlns='http://www.w3.org/2000/svg' class='h-5 w-5 opacity-50 shrink-0' fill='none'
-                   viewBox='0 0 24 24' stroke='currentColor'>
-                <path stroke-linecap='round' stroke-linejoin='round' stroke-width='2'
-                      d='M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4' />
-              </svg>
-              <span class='flex-1 text-sm opacity-70'>Archives</span>
-              <span class='font-bold'>{{ repo.archiveCount }}</span>
-            </div>
-
             <!-- Backups Row (healthcheck style with two stats) -->
             <div class='border border-base-300 rounded-lg p-3 flex items-center gap-3'>
               <svg xmlns='http://www.w3.org/2000/svg' class='h-5 w-5 opacity-50 shrink-0' fill='none'
@@ -480,7 +453,7 @@ onUnmounted(() => {
                     <span v-if='lastArchive'
                           :class='toCreationTimeTooltip(lastArchive.createdAt)'
                           :data-tip='toLongDateString(lastArchive.createdAt)'>
-                      <span class='font-medium ml-1'>{{ toRelativeTimeString(lastArchive.createdAt, true) }}</span>
+                      <span class='font-medium ml-1'>{{ toRelativeTimeString(lastArchive.createdAt) }}</span>
                     </span>
                     <span v-else class='opacity-50 ml-1'>Never</span>
                   </span>
@@ -488,7 +461,7 @@ onUnmounted(() => {
                     <span class='opacity-50'>Last Attempt:</span>
                     <span class='tooltip tooltip-top tooltip-error'
                           :data-tip='toLongDateString(repo.lastAttempt.timestamp)'>
-                      <span class='font-medium ml-1 text-error'>{{ toRelativeTimeString(repo.lastAttempt.timestamp, true) }} (failed)</span>
+                      <span class='font-medium ml-1 text-error'>{{ toRelativeTimeString(repo.lastAttempt.timestamp) }} (failed)</span>
                     </span>
                   </span>
                 </div>
@@ -540,7 +513,7 @@ onUnmounted(() => {
                     <span v-if='repo.lastQuickCheckAt'
                           :class='toCreationTimeTooltip(repo.lastQuickCheckAt)'
                           :data-tip='toLongDateString(repo.lastQuickCheckAt)'>
-                      <span class='font-medium ml-1'>{{ toRelativeTimeString(repo.lastQuickCheckAt, true) }}</span>
+                      <span class='font-medium ml-1'>{{ toRelativeTimeString(repo.lastQuickCheckAt) }}</span>
                     </span>
                     <span v-else class='opacity-50 ml-1'>Never</span>
                     <CheckCircleIcon v-if='repo.lastQuickCheckAt && (!repo.quickCheckError || repo.quickCheckError.length === 0)'
@@ -551,7 +524,7 @@ onUnmounted(() => {
                     <span v-if='repo.lastFullCheckAt'
                           :class='toCreationTimeTooltip(repo.lastFullCheckAt)'
                           :data-tip='toLongDateString(repo.lastFullCheckAt)'>
-                      <span class='font-medium ml-1'>{{ toRelativeTimeString(repo.lastFullCheckAt, true) }}</span>
+                      <span class='font-medium ml-1'>{{ toRelativeTimeString(repo.lastFullCheckAt) }}</span>
                     </span>
                     <span v-else class='opacity-50 ml-1'>Never</span>
                   </span>
@@ -589,11 +562,22 @@ onUnmounted(() => {
         </div>
       </div>
 
-      <!-- Storage Card -->
+      <!-- Statistics Card -->
       <div class='card bg-base-100 shadow-xl'>
         <div class='card-body'>
-          <h3 class='card-title text-lg'>Storage Statistics</h3>
+          <h3 class='card-title text-lg'>Statistics</h3>
           <div class='flex flex-col gap-3'>
+            <!-- Archives -->
+            <div class='border border-base-300 rounded-lg p-3 flex items-center gap-3'>
+              <svg xmlns='http://www.w3.org/2000/svg' class='h-5 w-5 opacity-50 shrink-0' fill='none'
+                   viewBox='0 0 24 24' stroke='currentColor'>
+                <path stroke-linecap='round' stroke-linejoin='round' stroke-width='2'
+                      d='M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4' />
+              </svg>
+              <span class='flex-1 text-sm opacity-70'>Archives</span>
+              <span class='font-bold'>{{ repo.archiveCount }}</span>
+            </div>
+
             <!-- Size on Disk -->
             <div class='tooltip cursor-help' :data-tip='sizeOnDiskTooltip'>
               <div
@@ -604,36 +588,25 @@ onUnmounted(() => {
               </div>
             </div>
 
-            <!-- Total Size -->
-            <div class='tooltip cursor-help' :data-tip='totalSizeTooltip'>
-              <div
-                class='border border-base-300 rounded-lg p-3 flex items-center gap-3 hover:border-base-content/30 transition-all'>
-                <CircleStackIcon class='h-5 w-5 opacity-50 shrink-0' />
-                <span class='flex-1 text-sm opacity-70'>Total Size</span>
-                <span class='font-bold'>{{ totalSize }}</span>
+            <!-- Compression -->
+            <div class='tooltip cursor-help' :data-tip="compressionRatio !== '-' ? 'Without compression, your backups would use ' + compressionRatio + ' as much disk space' : 'No compression applied'">
+              <div class='border border-base-300 rounded-lg p-3 flex items-center gap-3 hover:border-base-content/30 transition-all'>
+                <ArrowTrendingUpIcon class='h-5 w-5 opacity-50 shrink-0' />
+                <span class='flex-1 text-sm opacity-70'>Compression</span>
+                <span class='font-bold'>{{ compressionRatio }}</span>
               </div>
             </div>
 
-            <!-- Single compact line for savings -->
-            <div class='tooltip cursor-help'>
-              <div class='tooltip-content text-left px-4 py-2'>
-                <p class='font-semibold mb-2'>Saving {{ spaceSavings }} of storage</p>
-                <p class='text-xs font-medium'>Deduplication ({{ deduplicationRatio }})</p>
-                <p class='text-xs opacity-70 mb-1'>Without removing duplicates, you'd need {{ deduplicationRatio }} more
-                  space</p>
-                <p v-if="compressionRatio !== '-'" class='text-xs font-medium'>Compression ({{ compressionRatio }})</p>
-                <p v-if="compressionRatio !== '-'" class='text-xs opacity-70'>Without compression, files would take
-                  {{ compressionRatio }} more space</p>
-                <p v-else class='text-xs font-medium'>Compression: Not enabled for this repository</p>
-              </div>
-              <div
-                class='border border-base-300 rounded-lg p-3 flex items-center gap-3 hover:border-base-content/30 transition-all'>
-                <ArrowTrendingUpIcon class='h-5 w-5 opacity-50 shrink-0' />
-                <span class='flex-1 text-sm opacity-70'>Storage Efficiency ({{
-                    deduplicationRatio
-                  }} deduplication, {{ compressionRatio }} compression)</span>
-                <span class='font-bold'>{{ spaceSavings }}</span>
-              </div>
+            <!-- Oldest Backup -->
+            <div class='border border-base-300 rounded-lg p-3 flex items-center gap-3'>
+              <ClockIcon class='h-5 w-5 opacity-50 shrink-0' />
+              <span class='flex-1 text-sm opacity-70'>Oldest Backup</span>
+              <span v-if='repo.oldestBackup'
+                    :class='toCreationTimeTooltip(repo.oldestBackup)'
+                    :data-tip='toLongDateString(repo.oldestBackup)'>
+                <span class='font-bold'>{{ toRelativeTimeString(repo.oldestBackup) }}</span>
+              </span>
+              <span v-else class='font-bold'>-</span>
             </div>
           </div>
         </div>
