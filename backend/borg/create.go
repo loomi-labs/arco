@@ -225,37 +225,32 @@ func countFiles(cmd *gocmd.Cmd, fileCountChan chan int) {
 }
 
 // buildCompressionFlag builds the --compression flag for borg based on mode and level.
+// Always uses borg's auto prefix (auto,ALGO[,LEVEL]) which tests if compression
+// actually helps before applying it, avoiding wasted CPU on incompressible data.
 // Returns empty string if compression is disabled (none or empty mode).
 func buildCompressionFlag(mode backupprofile.CompressionMode, level *int) string {
-	// No compression
 	if mode == backupprofile.CompressionModeNone || mode == "" {
 		return ""
 	}
 
-	// lz4 doesn't support levels
+	var algo string
 	if mode == backupprofile.CompressionModeLz4 {
-		return "--compression=lz4"
+		algo = "lz4"
+	} else if level != nil {
+		algo = fmt.Sprintf("%s,%d", string(mode), *level)
+	} else {
+		switch mode {
+		case backupprofile.CompressionModeZstd:
+			algo = "zstd,3"
+		case backupprofile.CompressionModeZlib:
+			algo = "zlib,6"
+		case backupprofile.CompressionModeLzma:
+			algo = "lzma,6"
+		case backupprofile.CompressionModeNone, backupprofile.CompressionModeLz4:
+			// Unreachable: handled by early returns above
+			algo = string(mode)
+		}
 	}
 
-	// Algorithms with levels (zstd, zlib, lzma)
-	if level != nil {
-		return fmt.Sprintf("--compression=%s,%d", string(mode), *level)
-	}
-
-	// Default levels if not specified
-	switch mode {
-	case backupprofile.CompressionModeZstd:
-		return "--compression=zstd,3"
-	case backupprofile.CompressionModeZlib:
-		return "--compression=zlib,6"
-	case backupprofile.CompressionModeLzma:
-		return "--compression=lzma,6"
-	case backupprofile.CompressionModeNone:
-		return ""
-	case backupprofile.CompressionModeLz4:
-		return "--compression=lz4"
-	}
-
-	// Fallback: just use the algorithm name
-	return fmt.Sprintf("--compression=%s", string(mode))
+	return fmt.Sprintf("--compression=auto,%s", algo)
 }

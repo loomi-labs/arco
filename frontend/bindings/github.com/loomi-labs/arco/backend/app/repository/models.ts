@@ -1039,24 +1039,14 @@ export class Repository {
     "sizeOnDisk": number;
 
     /**
-     * Total uncompressed size across all archives
-     */
-    "totalSize": number;
-
-    /**
-     * How much deduplication saved (totalSize / uniqueSize)
-     */
-    "deduplicationRatio": number;
-
-    /**
      * How much compression saved (uniqueSize / uniqueCsize)
      */
     "compressionRatio": number;
 
     /**
-     * Overall space savings percentage
+     * Timestamp of the oldest archive
      */
-    "spaceSavingsPercent": number;
+    "oldestBackup"?: time$0.Time | null;
 
     /**
      * Security
@@ -1087,17 +1077,8 @@ export class Repository {
         if (!("sizeOnDisk" in $$source)) {
             this["sizeOnDisk"] = 0;
         }
-        if (!("totalSize" in $$source)) {
-            this["totalSize"] = 0;
-        }
-        if (!("deduplicationRatio" in $$source)) {
-            this["deduplicationRatio"] = 0;
-        }
         if (!("compressionRatio" in $$source)) {
             this["compressionRatio"] = 0;
-        }
-        if (!("spaceSavingsPercent" in $$source)) {
-            this["spaceSavingsPercent"] = 0;
         }
         if (!("hasPassword" in $$source)) {
             this["hasPassword"] = false;
@@ -1182,24 +1163,14 @@ export class RepositoryWithQueue {
     "sizeOnDisk": number;
 
     /**
-     * Total uncompressed size across all archives
-     */
-    "totalSize": number;
-
-    /**
-     * How much deduplication saved (totalSize / uniqueSize)
-     */
-    "deduplicationRatio": number;
-
-    /**
      * How much compression saved (uniqueSize / uniqueCsize)
      */
     "compressionRatio": number;
 
     /**
-     * Overall space savings percentage
+     * Timestamp of the oldest archive
      */
-    "spaceSavingsPercent": number;
+    "oldestBackup"?: time$0.Time | null;
 
     /**
      * Security
@@ -1232,17 +1203,8 @@ export class RepositoryWithQueue {
         if (!("sizeOnDisk" in $$source)) {
             this["sizeOnDisk"] = 0;
         }
-        if (!("totalSize" in $$source)) {
-            this["totalSize"] = 0;
-        }
-        if (!("deduplicationRatio" in $$source)) {
-            this["deduplicationRatio"] = 0;
-        }
         if (!("compressionRatio" in $$source)) {
             this["compressionRatio"] = 0;
-        }
-        if (!("spaceSavingsPercent" in $$source)) {
-            this["spaceSavingsPercent"] = 0;
         }
         if (!("hasPassword" in $$source)) {
             this["hasPassword"] = false;
@@ -1264,8 +1226,8 @@ export class RepositoryWithQueue {
         const $$createField7_0 = $$createType44;
         const $$createField9_0 = $$createType45;
         const $$createField11_0 = $$createType45;
-        const $$createField18_0 = $$createType48;
-        const $$createField19_0 = $$createType47;
+        const $$createField16_0 = $$createType48;
+        const $$createField17_0 = $$createType47;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("type" in $$parsedSource) {
             $$parsedSource["type"] = $$createField3_0($$parsedSource["type"]);
@@ -1286,10 +1248,10 @@ export class RepositoryWithQueue {
             $$parsedSource["fullCheckError"] = $$createField11_0($$parsedSource["fullCheckError"]);
         }
         if ("queuedOperations" in $$parsedSource) {
-            $$parsedSource["queuedOperations"] = $$createField18_0($$parsedSource["queuedOperations"]);
+            $$parsedSource["queuedOperations"] = $$createField16_0($$parsedSource["queuedOperations"]);
         }
         if ("activeOperation" in $$parsedSource) {
-            $$parsedSource["activeOperation"] = $$createField19_0($$parsedSource["activeOperation"]);
+            $$parsedSource["activeOperation"] = $$createField17_0($$parsedSource["activeOperation"]);
         }
         return new RepositoryWithQueue($$parsedSource as Partial<RepositoryWithQueue>);
     }

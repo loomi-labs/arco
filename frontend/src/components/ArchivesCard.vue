@@ -641,11 +641,11 @@ function getPruningText(archiveId: number) {
   const pruningDate = pruningDates.value.dates.find(
     (p) => p.archiveId === archiveId
   )?.date;
-  if (!pruningDate || isInPast(pruningDate, true)) {
+  if (!pruningDate || isInPast(pruningDate)) {
     return "This archive will be deleted";
   }
 
-  return `This archive will be deleted ${toRelativeTimeString(pruningDate, true)}`;
+  return `This archive will be deleted ${toRelativeTimeString(pruningDate)}`;
 }
 
 async function rename(archive: ArchiveWithPendingChanges, name?: string) {
