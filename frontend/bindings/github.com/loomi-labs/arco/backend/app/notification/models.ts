@@ -13,8 +13,8 @@ import * as time$0 from "../../../../../../time/models.js";
  * ErrorCounts holds error counts per entity
  */
 export class ErrorCounts {
-    "byRepository": { [_: `${number}`]: number };
-    "byBackupProfile": { [_: `${number}`]: number };
+    "byRepository": { [_ in `${number}`]?: number };
+    "byBackupProfile": { [_ in `${number}`]?: number };
 
     /** Creates a new ErrorCounts instance. */
     constructor($$source: Partial<ErrorCounts> = {}) {
