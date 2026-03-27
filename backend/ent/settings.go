@@ -33,7 +33,9 @@ type Settings struct {
 	MacfuseWarningDismissed bool `json:"macfuseWarningDismissed"`
 	// FullDiskAccessWarningDismissed holds the value of the "full_disk_access_warning_dismissed" field.
 	FullDiskAccessWarningDismissed bool `json:"fullDiskAccessWarningDismissed"`
-	selectValues                   sql.SelectValues
+	// FeedbackLastPromptedAt holds the value of the "feedback_last_prompted_at" field.
+	FeedbackLastPromptedAt *time.Time `json:"feedbackLastPromptedAt"`
+	selectValues           sql.SelectValues
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -47,7 +49,7 @@ func (*Settings) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullInt64)
 		case settings.FieldTheme:
 			values[i] = new(sql.NullString)
-		case settings.FieldCreatedAt, settings.FieldUpdatedAt:
+		case settings.FieldCreatedAt, settings.FieldUpdatedAt, settings.FieldFeedbackLastPromptedAt:
 			values[i] = new(sql.NullTime)
 		default:
 			values[i] = new(sql.UnknownType)
@@ -118,6 +120,13 @@ func (_m *Settings) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.FullDiskAccessWarningDismissed = value.Bool
 			}
+		case settings.FieldFeedbackLastPromptedAt:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field feedback_last_prompted_at", values[i])
+			} else if value.Valid {
+				_m.FeedbackLastPromptedAt = new(time.Time)
+				*_m.FeedbackLastPromptedAt = value.Time
+			}
 		default:
 			_m.selectValues.Set(columns[i], values[i])
 		}
@@ -177,6 +186,11 @@ func (_m *Settings) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("full_disk_access_warning_dismissed=")
 	builder.WriteString(fmt.Sprintf("%v", _m.FullDiskAccessWarningDismissed))
+	builder.WriteString(", ")
+	if v := _m.FeedbackLastPromptedAt; v != nil {
+		builder.WriteString("feedback_last_prompted_at=")
+		builder.WriteString(v.Format(time.ANSIC))
+	}
 	builder.WriteByte(')')
 	return builder.String()
 }

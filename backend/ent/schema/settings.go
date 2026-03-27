@@ -38,6 +38,10 @@ func (Settings) Fields() []ent.Field {
 		field.Bool("full_disk_access_warning_dismissed").
 			StructTag(`json:"fullDiskAccessWarningDismissed"`).
 			Default(false),
+		field.Time("feedback_last_prompted_at").
+			StructTag(`json:"feedbackLastPromptedAt"`).
+			Optional().
+			Nillable(),
 	}
 }
 

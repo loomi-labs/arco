@@ -20,6 +20,7 @@ import (
 	"github.com/loomi-labs/arco/backend/api/v1/arcov1connect"
 	"github.com/loomi-labs/arco/backend/app/auth"
 	"github.com/loomi-labs/arco/backend/app/backup_profile"
+	"github.com/loomi-labs/arco/backend/app/feedback"
 	"github.com/loomi-labs/arco/backend/app/keyring"
 	"github.com/loomi-labs/arco/backend/app/legal"
 	"github.com/loomi-labs/arco/backend/app/notification"
@@ -67,6 +68,7 @@ type App struct {
 	subscriptionService  *subscription.ServiceInternal
 	repositoryService    *repository.ServiceInternal
 	backupProfileService *backup_profile.ServiceInternal
+	feedbackService      *feedback.ServiceInternal
 	notificationService  *notification.Service
 	trayService          *tray.Service
 }
@@ -95,6 +97,7 @@ func NewApp(
 		subscriptionService:      subscription.NewService(log, state),
 		repositoryService:        repository.NewService(log, config),
 		backupProfileService:     backup_profile.NewService(log, state, config),
+		feedbackService:          feedback.NewService(log, state),
 		notificationService:      notification.NewService(log),
 		trayService:              tray.NewService(log),
 	}
@@ -130,6 +133,10 @@ func (a *App) SubscriptionService() *subscription.Service {
 
 func (a *App) Keyring() *keyring.Service {
 	return a.keyring
+}
+
+func (a *App) FeedbackService() *feedback.Service {
+	return a.feedbackService.Service
 }
 
 func (a *App) NotificationService() *notification.Service {
@@ -268,6 +275,13 @@ func (a *App) Startup(ctx context.Context, systray *application.SystemTray, tray
 		connect.WithInterceptors(jwtInterceptor.UnaryInterceptor()),
 	)
 
+	// Create feedback RPC client (uses JWT interceptor for optional user identification)
+	feedbackRPCClient := arcov1connect.NewFeedbackServiceClient(
+		httpClient,
+		a.config.CloudRPCURL,
+		connect.WithInterceptors(jwtInterceptor.UnaryInterceptor()),
+	)
+
 	// Initialize services with database and authenticated RPC clients
 	a.userService.Init(a.db, a.eventEmitter)
 	a.notificationService.Init(a.db, a.eventEmitter)
@@ -275,6 +289,7 @@ func (a *App) Startup(ctx context.Context, systray *application.SystemTray, tray
 	a.planService.Init(a.db, planRPCClient)
 	a.legalService.Init(a.db, legalRPCClient)
 	a.subscriptionService.Init(a.db, subscriptionRPCClient)
+	a.feedbackService.Init(a.db, feedbackRPCClient)
 
 	cloudRepositoryService := repository.NewCloudRepositoryClient(a.log, a.state, a.config)
 	cloudRepositoryService.Init(a.db, cloudRepositoryRPCClient)

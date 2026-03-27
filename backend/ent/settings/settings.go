@@ -30,6 +30,8 @@ const (
 	FieldMacfuseWarningDismissed = "macfuse_warning_dismissed"
 	// FieldFullDiskAccessWarningDismissed holds the string denoting the full_disk_access_warning_dismissed field in the database.
 	FieldFullDiskAccessWarningDismissed = "full_disk_access_warning_dismissed"
+	// FieldFeedbackLastPromptedAt holds the string denoting the feedback_last_prompted_at field in the database.
+	FieldFeedbackLastPromptedAt = "feedback_last_prompted_at"
 	// Table holds the table name of the settings in the database.
 	Table = "settings"
 )
@@ -45,6 +47,7 @@ var Columns = []string{
 	FieldDisableShadows,
 	FieldMacfuseWarningDismissed,
 	FieldFullDiskAccessWarningDismissed,
+	FieldFeedbackLastPromptedAt,
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -149,4 +152,9 @@ func ByMacfuseWarningDismissed(opts ...sql.OrderTermOption) OrderOption {
 // ByFullDiskAccessWarningDismissed orders the results by the full_disk_access_warning_dismissed field.
 func ByFullDiskAccessWarningDismissed(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldFullDiskAccessWarningDismissed, opts...).ToFunc()
+}
+
+// ByFeedbackLastPromptedAt orders the results by the feedback_last_prompted_at field.
+func ByFeedbackLastPromptedAt(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldFeedbackLastPromptedAt, opts...).ToFunc()
 }

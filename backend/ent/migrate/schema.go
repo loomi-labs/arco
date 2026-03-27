@@ -242,6 +242,7 @@ var (
 		{Name: "disable_shadows", Type: field.TypeBool, Default: false},
 		{Name: "macfuse_warning_dismissed", Type: field.TypeBool, Default: false},
 		{Name: "full_disk_access_warning_dismissed", Type: field.TypeBool, Default: false},
+		{Name: "feedback_last_prompted_at", Type: field.TypeTime, Nullable: true},
 	}
 	// SettingsTable holds the schema information for the "settings" table.
 	SettingsTable = &schema.Table{

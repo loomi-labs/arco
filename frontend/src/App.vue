@@ -1,16 +1,18 @@
 <script lang='ts' setup>
 
 import { useToast } from "vue-toastification";
-import { showAndLogError } from "./common/logger";
+import { logError, showAndLogError } from "./common/logger";
 import { useRouter } from "vue-router";
 import { Page } from "./router";
 import Sidebar from "./components/Sidebar.vue";
+import FeedbackModal from "./components/FeedbackModal.vue";
 import { computed, onUnmounted, ref, watch } from "vue";
 import * as userService from "../bindings/github.com/loomi-labs/arco/backend/app/user/service";
 import * as state from "../bindings/github.com/loomi-labs/arco/backend/app/state";
 import * as types from "../bindings/github.com/loomi-labs/arco/backend/app/types";
 import { Events } from "@wailsio/runtime";
 import { initializeFeatureFlags } from "./common/featureFlags";
+import * as feedbackService from "../bindings/github.com/loomi-labs/arco/backend/app/feedback/service";
 import { useSubscriptionNotifications } from "./common/subscription";
 import { initializeTheme } from "./common/theme";
 import { initializeExpertMode, useExpertMode } from "./common/expertMode";
@@ -26,6 +28,7 @@ const router = useRouter();
 const toast = useToast();
 const cleanupFunctions: (() => void)[] = [];
 const startupState = ref<state.StartupState>(state.StartupState.createFrom());
+const feedbackPopupModal = ref<InstanceType<typeof FeedbackModal>>();
 const isInitialized = computed(() => startupState.value.status === state.StartupStatus.StartupStatusReady);
 
 /************
@@ -76,6 +79,25 @@ async function getStartupState() {
   }
 }
 
+async function checkFeedbackPopup() {
+  try {
+    const shouldShow = await feedbackService.ShouldShowFeedbackPopup();
+    if (shouldShow) {
+      feedbackPopupModal.value?.showModal();
+    }
+  } catch (error: unknown) {
+    await logError("Failed to check feedback popup visibility", error);
+  }
+}
+
+async function onFeedbackPopupClose() {
+  try {
+    await feedbackService.MarkFeedbackPrompted();
+  } catch (error: unknown) {
+    await logError("Failed to mark feedback popup as prompted", error);
+  }
+}
+
 // Convert strings like 'initializingDatabase' to 'Initializing database'
 function toTitleCase(str: string | undefined): string {
   if (!str) {
@@ -113,6 +135,7 @@ watch(isInitialized, async (initialized) => {
     await initializeReducedMotion();
 
     await goToNextPage();
+    await checkFeedbackPopup();
   }
 }, { once: true });
 
@@ -134,6 +157,7 @@ onUnmounted(() => {
     <div class='flex-1 flex flex-col min-h-screen overflow-x-hidden pt-16 2xl:pt-24 px-4 md:px-6 xl:px-12 ml-16 xl:ml-0'>
       <RouterView class='container mx-auto flex-grow text-left' />
     </div>
+    <FeedbackModal ref='feedbackPopupModal' :is-popup='true' @close='onFeedbackPopupClose' />
   </div>
   <div v-else class='bg-base-200 min-w-svw min-h-svh'>
     <div class='container mx-auto flex items-center justify-center h-svh'>
