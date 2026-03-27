@@ -1528,6 +1528,11 @@ export class Settings {
      */
     "fullDiskAccessWarningDismissed": boolean;
 
+    /**
+     * FeedbackLastPromptedAt holds the value of the "feedback_last_prompted_at" field.
+     */
+    "feedbackLastPromptedAt": time$0.Time | null;
+
     /** Creates a new Settings instance. */
     constructor($$source: Partial<Settings> = {}) {
         if (!("createdAt" in $$source)) {
@@ -1550,6 +1555,9 @@ export class Settings {
         }
         if (!("fullDiskAccessWarningDismissed" in $$source)) {
             this["fullDiskAccessWarningDismissed"] = false;
+        }
+        if (!("feedbackLastPromptedAt" in $$source)) {
+            this["feedbackLastPromptedAt"] = null;
         }
 
         Object.assign(this, $$source);

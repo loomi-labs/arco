@@ -1,0 +1,82 @@
+syntax = "proto3";
+
+package api.v1;
+
+import "buf/validate/validate.proto";
+
+option go_package = "github.com/loomi-labs/arco/backend/api/v1;arcov1";
+
+// FeedbackCategory classifies the type of user feedback.
+//
+// Used to categorize feedback submissions for prioritization and routing.
+enum FeedbackCategory {
+  // Unspecified category, should not be used in submissions.
+  FEEDBACK_CATEGORY_UNSPECIFIED = 0;
+
+  // Bug report indicating something is broken or not working as expected.
+  FEEDBACK_CATEGORY_BUG = 1;
+
+  // Feature request suggesting new functionality or improvements.
+  FEEDBACK_CATEGORY_FEATURE_REQUEST = 2;
+
+  // General feedback that does not fit into other categories.
+  FEEDBACK_CATEGORY_GENERAL = 3;
+}
+
+// FeedbackService handles user feedback collection from the desktop application.
+//
+// This service is publicly accessible with optional authentication.
+// If the user is authenticated, their identity is automatically associated
+// with the feedback. Unauthenticated users can optionally provide an email.
+service FeedbackService {
+  // SubmitFeedback sends user feedback to the cloud for storage.
+  //
+  // Authentication:
+  //   Public endpoint. If auth context is present, the submitting user is
+  //   associated automatically.
+  //
+  // Rate limits:
+  //   Subject to public API rate limiting (IP and global).
+  //
+  // Behavior:
+  //   Persists the submission and sends an admin email notification when
+  //   configured. Requires at least a rating or message to be provided;
+  //   returns INVALID_ARGUMENT otherwise.
+  //
+  // Client context:
+  //   App version and OS information are included by the desktop client
+  //   for debugging context.
+  rpc SubmitFeedback(SubmitFeedbackRequest) returns (SubmitFeedbackResponse) {}
+}
+
+// SubmitFeedbackRequest contains the user's feedback submission.
+//
+// The category field is required. Rating (1-5 stars), message, and email are optional.
+// At least a rating or message must be provided; the server returns INVALID_ARGUMENT otherwise.
+message SubmitFeedbackRequest {
+  // Category of the feedback (bug, feature request, or general).
+  FeedbackCategory category = 1 [(buf.validate.field).enum = {
+    defined_only: true,
+    not_in: [0]
+  }];
+
+  // Optional star rating from 1 to 5. Zero means no rating provided.
+  int32 rating = 2 [(buf.validate.field).int32 = {gte: 0, lte: 5}];
+
+  // Optional free-text feedback message from the user.
+  string message = 3;
+
+  // Optional contact email for unauthenticated users.
+  string email = 4;
+
+  // Version of the desktop application that submitted the feedback.
+  string app_version = 5;
+
+  // Operating system information (e.g., "linux", "darwin", "windows").
+  string os_info = 6;
+}
+
+// SubmitFeedbackResponse is returned after feedback is successfully stored.
+//
+// An empty response indicates the feedback was accepted.
+message SubmitFeedbackResponse {}

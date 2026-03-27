@@ -89,6 +89,11 @@ func FullDiskAccessWarningDismissed(v bool) predicate.Settings {
 	return predicate.Settings(sql.FieldEQ(FieldFullDiskAccessWarningDismissed, v))
 }
 
+// FeedbackLastPromptedAt applies equality check predicate on the "feedback_last_prompted_at" field. It's identical to FeedbackLastPromptedAtEQ.
+func FeedbackLastPromptedAt(v time.Time) predicate.Settings {
+	return predicate.Settings(sql.FieldEQ(FieldFeedbackLastPromptedAt, v))
+}
+
 // CreatedAtEQ applies the EQ predicate on the "created_at" field.
 func CreatedAtEQ(v time.Time) predicate.Settings {
 	return predicate.Settings(sql.FieldEQ(FieldCreatedAt, v))
@@ -237,6 +242,56 @@ func FullDiskAccessWarningDismissedEQ(v bool) predicate.Settings {
 // FullDiskAccessWarningDismissedNEQ applies the NEQ predicate on the "full_disk_access_warning_dismissed" field.
 func FullDiskAccessWarningDismissedNEQ(v bool) predicate.Settings {
 	return predicate.Settings(sql.FieldNEQ(FieldFullDiskAccessWarningDismissed, v))
+}
+
+// FeedbackLastPromptedAtEQ applies the EQ predicate on the "feedback_last_prompted_at" field.
+func FeedbackLastPromptedAtEQ(v time.Time) predicate.Settings {
+	return predicate.Settings(sql.FieldEQ(FieldFeedbackLastPromptedAt, v))
+}
+
+// FeedbackLastPromptedAtNEQ applies the NEQ predicate on the "feedback_last_prompted_at" field.
+func FeedbackLastPromptedAtNEQ(v time.Time) predicate.Settings {
+	return predicate.Settings(sql.FieldNEQ(FieldFeedbackLastPromptedAt, v))
+}
+
+// FeedbackLastPromptedAtIn applies the In predicate on the "feedback_last_prompted_at" field.
+func FeedbackLastPromptedAtIn(vs ...time.Time) predicate.Settings {
+	return predicate.Settings(sql.FieldIn(FieldFeedbackLastPromptedAt, vs...))
+}
+
+// FeedbackLastPromptedAtNotIn applies the NotIn predicate on the "feedback_last_prompted_at" field.
+func FeedbackLastPromptedAtNotIn(vs ...time.Time) predicate.Settings {
+	return predicate.Settings(sql.FieldNotIn(FieldFeedbackLastPromptedAt, vs...))
+}
+
+// FeedbackLastPromptedAtGT applies the GT predicate on the "feedback_last_prompted_at" field.
+func FeedbackLastPromptedAtGT(v time.Time) predicate.Settings {
+	return predicate.Settings(sql.FieldGT(FieldFeedbackLastPromptedAt, v))
+}
+
+// FeedbackLastPromptedAtGTE applies the GTE predicate on the "feedback_last_prompted_at" field.
+func FeedbackLastPromptedAtGTE(v time.Time) predicate.Settings {
+	return predicate.Settings(sql.FieldGTE(FieldFeedbackLastPromptedAt, v))
+}
+
+// FeedbackLastPromptedAtLT applies the LT predicate on the "feedback_last_prompted_at" field.
+func FeedbackLastPromptedAtLT(v time.Time) predicate.Settings {
+	return predicate.Settings(sql.FieldLT(FieldFeedbackLastPromptedAt, v))
+}
+
+// FeedbackLastPromptedAtLTE applies the LTE predicate on the "feedback_last_prompted_at" field.
+func FeedbackLastPromptedAtLTE(v time.Time) predicate.Settings {
+	return predicate.Settings(sql.FieldLTE(FieldFeedbackLastPromptedAt, v))
+}
+
+// FeedbackLastPromptedAtIsNil applies the IsNil predicate on the "feedback_last_prompted_at" field.
+func FeedbackLastPromptedAtIsNil() predicate.Settings {
+	return predicate.Settings(sql.FieldIsNull(FieldFeedbackLastPromptedAt))
+}
+
+// FeedbackLastPromptedAtNotNil applies the NotNil predicate on the "feedback_last_prompted_at" field.
+func FeedbackLastPromptedAtNotNil() predicate.Settings {
+	return predicate.Settings(sql.FieldNotNull(FieldFeedbackLastPromptedAt))
 }
 
 // And groups predicates with the AND operator between them.

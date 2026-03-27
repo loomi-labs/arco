@@ -4,6 +4,7 @@ import { computed, onUnmounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { Page, withId } from "../router";
 import {
+  ChatBubbleBottomCenterTextIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
   Cog6ToothIcon,
@@ -17,6 +18,7 @@ import { GlobeEuropeAfricaIcon, Squares2X2Icon as Squares2X2IconSolid } from "@h
 import ArcoLogo from "./common/ArcoLogo.vue";
 import ArcoFooter from "./common/ArcoFooter.vue";
 import AuthModal from "./AuthModal.vue";
+import FeedbackModal from "./FeedbackModal.vue";
 import { useBreakpoints } from "@vueuse/core";
 import { useAuth } from "../common/auth";
 import { showAndLogError } from "../common/logger";
@@ -55,6 +57,7 @@ const breakpoints = useBreakpoints({
 const isDesktop = breakpoints.greaterOrEqual("xl");
 
 const authModal = ref<InstanceType<typeof AuthModal>>();
+const feedbackModal = ref<InstanceType<typeof FeedbackModal>>();
 const cleanupFunctions: (() => void)[] = [];
 
 /************
@@ -63,6 +66,10 @@ const cleanupFunctions: (() => void)[] = [];
 
 function showAuthModal() {
   authModal.value?.showModal();
+}
+
+function showFeedbackModal() {
+  feedbackModal.value?.showModal();
 }
 
 function onAuthenticated() {
@@ -341,6 +348,19 @@ onUnmounted(() => {
         <span v-if='!isCollapsed'>Settings</span>
       </button>
 
+      <!-- Send Feedback -->
+      <button
+        @click='showFeedbackModal'
+        :class='[
+          "w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-base-300 transition-colors cursor-pointer",
+          isCollapsed ? "justify-center" : ""
+        ]'
+        :title='isCollapsed ? "Send Feedback" : undefined'
+      >
+        <ChatBubbleBottomCenterTextIcon class='size-5 flex-shrink-0' />
+        <span v-if='!isCollapsed'>Send Feedback</span>
+      </button>
+
       <!-- User Email Display (only show if authenticated) -->
       <template v-if='isAuthenticated'>
         <div :class='["flex items-center gap-3 px-3 py-2 rounded-lg bg-base-200", isCollapsed ? "justify-center" : ""]'
@@ -374,6 +394,9 @@ onUnmounted(() => {
 
   <!-- Auth Modal -->
   <AuthModal ref='authModal' @authenticated='onAuthenticated' />
+
+  <!-- Feedback Modal -->
+  <FeedbackModal ref='feedbackModal' />
 </template>
 
 <style scoped>

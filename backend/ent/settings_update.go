@@ -119,6 +119,26 @@ func (_u *SettingsUpdate) SetNillableFullDiskAccessWarningDismissed(v *bool) *Se
 	return _u
 }
 
+// SetFeedbackLastPromptedAt sets the "feedback_last_prompted_at" field.
+func (_u *SettingsUpdate) SetFeedbackLastPromptedAt(v time.Time) *SettingsUpdate {
+	_u.mutation.SetFeedbackLastPromptedAt(v)
+	return _u
+}
+
+// SetNillableFeedbackLastPromptedAt sets the "feedback_last_prompted_at" field if the given value is not nil.
+func (_u *SettingsUpdate) SetNillableFeedbackLastPromptedAt(v *time.Time) *SettingsUpdate {
+	if v != nil {
+		_u.SetFeedbackLastPromptedAt(*v)
+	}
+	return _u
+}
+
+// ClearFeedbackLastPromptedAt clears the value of the "feedback_last_prompted_at" field.
+func (_u *SettingsUpdate) ClearFeedbackLastPromptedAt() *SettingsUpdate {
+	_u.mutation.ClearFeedbackLastPromptedAt()
+	return _u
+}
+
 // Mutation returns the SettingsMutation object of the builder.
 func (_u *SettingsUpdate) Mutation() *SettingsMutation {
 	return _u.mutation
@@ -208,6 +228,12 @@ func (_u *SettingsUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if value, ok := _u.mutation.FullDiskAccessWarningDismissed(); ok {
 		_spec.SetField(settings.FieldFullDiskAccessWarningDismissed, field.TypeBool, value)
+	}
+	if value, ok := _u.mutation.FeedbackLastPromptedAt(); ok {
+		_spec.SetField(settings.FieldFeedbackLastPromptedAt, field.TypeTime, value)
+	}
+	if _u.mutation.FeedbackLastPromptedAtCleared() {
+		_spec.ClearField(settings.FieldFeedbackLastPromptedAt, field.TypeTime)
 	}
 	_spec.AddModifiers(_u.modifiers...)
 	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
@@ -318,6 +344,26 @@ func (_u *SettingsUpdateOne) SetNillableFullDiskAccessWarningDismissed(v *bool) 
 	if v != nil {
 		_u.SetFullDiskAccessWarningDismissed(*v)
 	}
+	return _u
+}
+
+// SetFeedbackLastPromptedAt sets the "feedback_last_prompted_at" field.
+func (_u *SettingsUpdateOne) SetFeedbackLastPromptedAt(v time.Time) *SettingsUpdateOne {
+	_u.mutation.SetFeedbackLastPromptedAt(v)
+	return _u
+}
+
+// SetNillableFeedbackLastPromptedAt sets the "feedback_last_prompted_at" field if the given value is not nil.
+func (_u *SettingsUpdateOne) SetNillableFeedbackLastPromptedAt(v *time.Time) *SettingsUpdateOne {
+	if v != nil {
+		_u.SetFeedbackLastPromptedAt(*v)
+	}
+	return _u
+}
+
+// ClearFeedbackLastPromptedAt clears the value of the "feedback_last_prompted_at" field.
+func (_u *SettingsUpdateOne) ClearFeedbackLastPromptedAt() *SettingsUpdateOne {
+	_u.mutation.ClearFeedbackLastPromptedAt()
 	return _u
 }
 
@@ -440,6 +486,12 @@ func (_u *SettingsUpdateOne) sqlSave(ctx context.Context) (_node *Settings, err 
 	}
 	if value, ok := _u.mutation.FullDiskAccessWarningDismissed(); ok {
 		_spec.SetField(settings.FieldFullDiskAccessWarningDismissed, field.TypeBool, value)
+	}
+	if value, ok := _u.mutation.FeedbackLastPromptedAt(); ok {
+		_spec.SetField(settings.FieldFeedbackLastPromptedAt, field.TypeTime, value)
+	}
+	if _u.mutation.FeedbackLastPromptedAtCleared() {
+		_spec.ClearField(settings.FieldFeedbackLastPromptedAt, field.TypeTime)
 	}
 	_spec.AddModifiers(_u.modifiers...)
 	_node = &Settings{config: _u.config}

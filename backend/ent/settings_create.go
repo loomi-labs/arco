@@ -132,6 +132,20 @@ func (_c *SettingsCreate) SetNillableFullDiskAccessWarningDismissed(v *bool) *Se
 	return _c
 }
 
+// SetFeedbackLastPromptedAt sets the "feedback_last_prompted_at" field.
+func (_c *SettingsCreate) SetFeedbackLastPromptedAt(v time.Time) *SettingsCreate {
+	_c.mutation.SetFeedbackLastPromptedAt(v)
+	return _c
+}
+
+// SetNillableFeedbackLastPromptedAt sets the "feedback_last_prompted_at" field if the given value is not nil.
+func (_c *SettingsCreate) SetNillableFeedbackLastPromptedAt(v *time.Time) *SettingsCreate {
+	if v != nil {
+		_c.SetFeedbackLastPromptedAt(*v)
+	}
+	return _c
+}
+
 // Mutation returns the SettingsMutation object of the builder.
 func (_c *SettingsCreate) Mutation() *SettingsMutation {
 	return _c.mutation
@@ -289,6 +303,10 @@ func (_c *SettingsCreate) createSpec() (*Settings, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.FullDiskAccessWarningDismissed(); ok {
 		_spec.SetField(settings.FieldFullDiskAccessWarningDismissed, field.TypeBool, value)
 		_node.FullDiskAccessWarningDismissed = value
+	}
+	if value, ok := _c.mutation.FeedbackLastPromptedAt(); ok {
+		_spec.SetField(settings.FieldFeedbackLastPromptedAt, field.TypeTime, value)
+		_node.FeedbackLastPromptedAt = &value
 	}
 	return _node, _spec
 }

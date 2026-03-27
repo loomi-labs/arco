@@ -8485,6 +8485,7 @@ type SettingsMutation struct {
 	disable_shadows                    *bool
 	macfuse_warning_dismissed          *bool
 	full_disk_access_warning_dismissed *bool
+	feedback_last_prompted_at          *time.Time
 	clearedFields                      map[string]struct{}
 	done                               bool
 	oldValue                           func(context.Context) (*Settings, error)
@@ -8877,6 +8878,55 @@ func (m *SettingsMutation) ResetFullDiskAccessWarningDismissed() {
 	m.full_disk_access_warning_dismissed = nil
 }
 
+// SetFeedbackLastPromptedAt sets the "feedback_last_prompted_at" field.
+func (m *SettingsMutation) SetFeedbackLastPromptedAt(t time.Time) {
+	m.feedback_last_prompted_at = &t
+}
+
+// FeedbackLastPromptedAt returns the value of the "feedback_last_prompted_at" field in the mutation.
+func (m *SettingsMutation) FeedbackLastPromptedAt() (r time.Time, exists bool) {
+	v := m.feedback_last_prompted_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldFeedbackLastPromptedAt returns the old "feedback_last_prompted_at" field's value of the Settings entity.
+// If the Settings object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SettingsMutation) OldFeedbackLastPromptedAt(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldFeedbackLastPromptedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldFeedbackLastPromptedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldFeedbackLastPromptedAt: %w", err)
+	}
+	return oldValue.FeedbackLastPromptedAt, nil
+}
+
+// ClearFeedbackLastPromptedAt clears the value of the "feedback_last_prompted_at" field.
+func (m *SettingsMutation) ClearFeedbackLastPromptedAt() {
+	m.feedback_last_prompted_at = nil
+	m.clearedFields[settings.FieldFeedbackLastPromptedAt] = struct{}{}
+}
+
+// FeedbackLastPromptedAtCleared returns if the "feedback_last_prompted_at" field was cleared in this mutation.
+func (m *SettingsMutation) FeedbackLastPromptedAtCleared() bool {
+	_, ok := m.clearedFields[settings.FieldFeedbackLastPromptedAt]
+	return ok
+}
+
+// ResetFeedbackLastPromptedAt resets all changes to the "feedback_last_prompted_at" field.
+func (m *SettingsMutation) ResetFeedbackLastPromptedAt() {
+	m.feedback_last_prompted_at = nil
+	delete(m.clearedFields, settings.FieldFeedbackLastPromptedAt)
+}
+
 // Where appends a list predicates to the SettingsMutation builder.
 func (m *SettingsMutation) Where(ps ...predicate.Settings) {
 	m.predicates = append(m.predicates, ps...)
@@ -8911,7 +8961,7 @@ func (m *SettingsMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *SettingsMutation) Fields() []string {
-	fields := make([]string, 0, 8)
+	fields := make([]string, 0, 9)
 	if m.created_at != nil {
 		fields = append(fields, settings.FieldCreatedAt)
 	}
@@ -8935,6 +8985,9 @@ func (m *SettingsMutation) Fields() []string {
 	}
 	if m.full_disk_access_warning_dismissed != nil {
 		fields = append(fields, settings.FieldFullDiskAccessWarningDismissed)
+	}
+	if m.feedback_last_prompted_at != nil {
+		fields = append(fields, settings.FieldFeedbackLastPromptedAt)
 	}
 	return fields
 }
@@ -8960,6 +9013,8 @@ func (m *SettingsMutation) Field(name string) (ent.Value, bool) {
 		return m.MacfuseWarningDismissed()
 	case settings.FieldFullDiskAccessWarningDismissed:
 		return m.FullDiskAccessWarningDismissed()
+	case settings.FieldFeedbackLastPromptedAt:
+		return m.FeedbackLastPromptedAt()
 	}
 	return nil, false
 }
@@ -8985,6 +9040,8 @@ func (m *SettingsMutation) OldField(ctx context.Context, name string) (ent.Value
 		return m.OldMacfuseWarningDismissed(ctx)
 	case settings.FieldFullDiskAccessWarningDismissed:
 		return m.OldFullDiskAccessWarningDismissed(ctx)
+	case settings.FieldFeedbackLastPromptedAt:
+		return m.OldFeedbackLastPromptedAt(ctx)
 	}
 	return nil, fmt.Errorf("unknown Settings field %s", name)
 }
@@ -9050,6 +9107,13 @@ func (m *SettingsMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetFullDiskAccessWarningDismissed(v)
 		return nil
+	case settings.FieldFeedbackLastPromptedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetFeedbackLastPromptedAt(v)
+		return nil
 	}
 	return fmt.Errorf("unknown Settings field %s", name)
 }
@@ -9079,7 +9143,11 @@ func (m *SettingsMutation) AddField(name string, value ent.Value) error {
 // ClearedFields returns all nullable fields that were cleared during this
 // mutation.
 func (m *SettingsMutation) ClearedFields() []string {
-	return nil
+	var fields []string
+	if m.FieldCleared(settings.FieldFeedbackLastPromptedAt) {
+		fields = append(fields, settings.FieldFeedbackLastPromptedAt)
+	}
+	return fields
 }
 
 // FieldCleared returns a boolean indicating if a field with the given name was
@@ -9092,6 +9160,11 @@ func (m *SettingsMutation) FieldCleared(name string) bool {
 // ClearField clears the value of the field with the given name. It returns an
 // error if the field is not defined in the schema.
 func (m *SettingsMutation) ClearField(name string) error {
+	switch name {
+	case settings.FieldFeedbackLastPromptedAt:
+		m.ClearFeedbackLastPromptedAt()
+		return nil
+	}
 	return fmt.Errorf("unknown Settings nullable field %s", name)
 }
 
@@ -9122,6 +9195,9 @@ func (m *SettingsMutation) ResetField(name string) error {
 		return nil
 	case settings.FieldFullDiskAccessWarningDismissed:
 		m.ResetFullDiskAccessWarningDismissed()
+		return nil
+	case settings.FieldFeedbackLastPromptedAt:
+		m.ResetFeedbackLastPromptedAt()
 		return nil
 	}
 	return fmt.Errorf("unknown Settings field %s", name)
