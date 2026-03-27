@@ -829,7 +829,7 @@ onMounted(async () => {
                             <div class='flex flex-col gap-1'>
                               <span class='font-medium'>{{ plan.name }}</span>
                               <span class='text-xs text-base-content/70'>
-                                {{ plan.storage_gb ?? 0 }} GB storage • {{ (plan.allowed_repositories ?? 0) === 0 ? 'Unlimited' : plan.allowed_repositories }} storage locations
+                                {{ plan.storage_gb ?? 0 }} GB storage • {{ (plan.allowed_repositories ?? 0) === 0 ? 'Unlimited' : plan.allowed_repositories }} {{ (plan.allowed_repositories ?? 0) === 1 ? 'storage location' : 'storage locations' }}
                               </span>
                               <span class='text-xs text-base-content/70'>
                                 <template v-if='plan.is_free'>Free</template>
