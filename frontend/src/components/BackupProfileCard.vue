@@ -278,10 +278,10 @@ onUnmounted(() => {
       </div>
     </div>
 
-    <!-- Footer: Repositories -->
+    <!-- Footer: Storage Locations -->
     <div class='px-4 py-3 bg-base-200 rounded-b-lg text-sm'>
       <div class='flex items-center gap-2'>
-        <span class='text-base-content/60'>Repositories:</span>
+        <span class='text-base-content/60'>Storage Locations:</span>
         <div class='flex flex-wrap gap-1'>
           <span v-for='repo in repositories' :key='repo.id' class='badge badge-outline badge-sm'>
             {{ repo.name }}

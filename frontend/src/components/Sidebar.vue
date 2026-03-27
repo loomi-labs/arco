@@ -256,10 +256,10 @@ onUnmounted(() => {
         </div>
       </div>
 
-      <!-- Repositories Section (all repos + New Repository) -->
+      <!-- Storage Locations Section -->
       <div class='pt-4'>
         <h3 v-if='!isCollapsed' class='px-3 py-2 text-xs font-semibold text-base-content/70 uppercase tracking-wide'>
-          Repositories
+          Storage Locations
         </h3>
         <div v-else class='border-t border-base-300 my-2'></div>
 
@@ -286,7 +286,7 @@ onUnmounted(() => {
             <span v-if='!isCollapsed' class='truncate'>{{ repo.name }}</span>
           </button>
 
-          <!-- New Repository Button -->
+          <!-- New Storage Location Button -->
           <button
             @click='navigateTo(Page.AddRepository)'
             :class='[
@@ -296,10 +296,10 @@ onUnmounted(() => {
                 ? "bg-primary/20 border-l-4 border-primary"
                 : "hover:bg-base-300"
             ]'
-            :title='isCollapsed ? "New Repository" : undefined'
+            :title='isCollapsed ? "New Storage Location" : undefined'
           >
             <PlusIcon class='size-4 flex-shrink-0' />
-            <span v-if='!isCollapsed'>New Repository</span>
+            <span v-if='!isCollapsed'>New Storage Location</span>
           </button>
         </div>
       </div>

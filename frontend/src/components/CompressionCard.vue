@@ -3,31 +3,29 @@ import { computed, useId, useTemplateRef } from "vue";
 import { InformationCircleIcon } from "@heroicons/vue/24/outline";
 import { CompressionMode } from "../../bindings/github.com/loomi-labs/arco/backend/ent/backupprofile";
 import { useExpertMode } from "../common/expertMode";
+import { CompressionPreset, simplePresets, expertAlgorithms, getPreset, fromPreset } from "../common/compression";
 import CompressionInfoModal from "./CompressionInfoModal.vue";
 
 /************
  * Types
  ************/
 
-enum CompressionPreset {
-  None = "none",
-  Fast = "fast",
-  Balanced = "balanced",
-  Maximum = "maximum",
-  Custom = "custom"
-}
-
 interface Props {
   compressionMode: CompressionMode;
   compressionLevel: number | null;
   showTitle: boolean;
+  showCard?: boolean;
+  showHeader?: boolean;
 }
 
 /************
  * Props & Emits
  ************/
 
-const props = defineProps<Props>();
+const props = withDefaults(defineProps<Props>(), {
+  showCard: true,
+  showHeader: true
+});
 
 const emit = defineEmits<{
   "update:compression": [{ mode: CompressionMode; level: number | null }];
@@ -46,38 +44,10 @@ const { expertMode } = useExpertMode();
  ************/
 
 const compressionPreset = computed({
-  get: (): CompressionPreset => {
-    const mode = props.compressionMode;
-    const level = props.compressionLevel;
-
-    if (mode === CompressionMode.CompressionModeNone) return CompressionPreset.None;
-    if (mode === CompressionMode.CompressionModeLz4) return CompressionPreset.Fast;
-    if (mode === CompressionMode.CompressionModeZstd && level === 3) return CompressionPreset.Balanced;
-    if (mode === CompressionMode.CompressionModeLzma && level === 6) return CompressionPreset.Maximum;
-    return CompressionPreset.Custom; // Custom settings that don't match a preset
-  },
+  get: (): CompressionPreset => getPreset(props.compressionMode, props.compressionLevel),
   set: (preset: CompressionPreset) => {
-    switch (preset) {
-      case CompressionPreset.None:
-        emit("update:compression", { mode: CompressionMode.CompressionModeNone, level: null });
-        break;
-      case CompressionPreset.Fast:
-        emit("update:compression", { mode: CompressionMode.CompressionModeLz4, level: null });
-        break;
-      case CompressionPreset.Balanced:
-        emit("update:compression", { mode: CompressionMode.CompressionModeZstd, level: 3 });
-        break;
-      case CompressionPreset.Maximum:
-        emit("update:compression", { mode: CompressionMode.CompressionModeLzma, level: 6 });
-        break;
-      case CompressionPreset.Custom:
-        // No-op: keep current custom settings unchanged
-        break;
-      default:
-        // Fallback to Fast preset
-        emit("update:compression", { mode: CompressionMode.CompressionModeLz4, level: null });
-        break;
-    }
+    if (preset === CompressionPreset.Custom) return;
+    emit("update:compression", fromPreset(preset));
   }
 });
 
@@ -230,29 +200,28 @@ function toggleCompressionInfoModal() {
 </script>
 
 <template>
-  <div class='ac-card p-10'>
-    <div v-if='showTitle' class='flex items-center justify-between mb-4'>
+  <div :class='showCard ? "ac-card p-10" : ""'>
+    <div v-if='showTitle && showHeader' class='flex items-center justify-between mb-4'>
       <h3 class='text-xl font-semibold'>Compression</h3>
-      <button @click='toggleCompressionInfoModal' class='btn btn-circle btn-ghost btn-xs'>
+      <button @click='toggleCompressionInfoModal' class='btn btn-circle btn-ghost btn-xs' aria-label='Compression help'>
         <InformationCircleIcon class='size-6' />
       </button>
     </div>
 
     <!-- Simple Mode -->
     <div v-if='!expertMode' class='form-control'>
-      <label class='label'>
-        <span class='label-text font-medium'>Compression</span>
-      </label>
-      <select
-        class='select select-bordered w-full'
-        :value='compressionPreset'
-        @change='(e) => compressionPreset = (e.target as HTMLSelectElement).value as CompressionPreset'>
-        <option :value='CompressionPreset.None'>None</option>
-        <option :value='CompressionPreset.Fast'>Fast</option>
-        <option :value='CompressionPreset.Balanced'>Balanced</option>
-        <option :value='CompressionPreset.Maximum'>Maximum</option>
-        <option v-if='compressionPreset === CompressionPreset.Custom' :value='CompressionPreset.Custom'>{{ customPresetLabel }}</option>
-      </select>
+      <div class='flex items-center gap-2'>
+        <select
+          class='select select-bordered w-full'
+          :value='compressionPreset'
+          @change='(e) => compressionPreset = (e.target as HTMLSelectElement).value as CompressionPreset'>
+          <option v-for='p in simplePresets' :key='p.preset' :value='p.preset'>{{ p.label }}</option>
+          <option v-if='compressionPreset === CompressionPreset.Custom' :value='CompressionPreset.Custom'>{{ customPresetLabel }}</option>
+        </select>
+        <button @click='toggleCompressionInfoModal' class='btn btn-circle btn-ghost btn-xs shrink-0' aria-label='Compression help'>
+          <InformationCircleIcon class='size-5' />
+        </button>
+      </div>
     </div>
 
     <!-- Expert Mode -->
@@ -261,16 +230,18 @@ function toggleCompressionInfoModal() {
         <label class='label'>
           <span class='label-text font-medium'>Algorithm</span>
         </label>
-        <select
-          class='select select-bordered w-full'
-          :value='props.compressionMode || CompressionMode.CompressionModeLz4'
-          @change='(e) => onCompressionModeChange((e.target as HTMLSelectElement).value as CompressionMode)'>
-          <option :value='CompressionMode.CompressionModeNone'>None</option>
-          <option :value='CompressionMode.CompressionModeLz4'>Fast - lz4</option>
-          <option :value='CompressionMode.CompressionModeZstd'>Modern - zstd</option>
-          <option :value='CompressionMode.CompressionModeZlib'>Balanced - zlib</option>
-          <option :value='CompressionMode.CompressionModeLzma'>Maximum - lzma</option>
-        </select>
+        <div class='flex items-center gap-2'>
+          <select
+            class='select select-bordered w-full'
+            :value='props.compressionMode || CompressionMode.CompressionModeLz4'
+            @change='(e) => onCompressionModeChange((e.target as HTMLSelectElement).value as CompressionMode)'>
+            <option :value='CompressionMode.CompressionModeNone'>None</option>
+            <option v-for='a in expertAlgorithms' :key='a.mode' :value='a.mode'>{{ a.label }}</option>
+          </select>
+          <button @click='toggleCompressionInfoModal' class='btn btn-circle btn-ghost btn-xs shrink-0' aria-label='Compression help'>
+            <InformationCircleIcon class='size-5' />
+          </button>
+        </div>
       </div>
 
       <!-- Compression Level Slider -->
@@ -305,6 +276,6 @@ function toggleCompressionInfoModal() {
     </div>
 
     <!-- Compression Info Modal -->
-    <CompressionInfoModal v-if='showTitle' :ref='compressionInfoModalKey' />
+    <CompressionInfoModal :ref='compressionInfoModalKey' />
   </div>
 </template>

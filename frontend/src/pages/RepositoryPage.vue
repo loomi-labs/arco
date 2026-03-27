@@ -2,7 +2,7 @@
 import { Dialog, DialogPanel, DialogTitle, TransitionChild, TransitionRoot } from "@headlessui/vue";
 import { EllipsisVerticalIcon, PencilIcon } from "@heroicons/vue/24/solid";
 import {
-  ArrowTrendingUpIcon,
+  ArrowDownOnSquareStackIcon,
   ChartPieIcon,
   CheckCircleIcon,
   ClockIcon,
@@ -124,7 +124,7 @@ const { meta, errors, defineField } = useForm({
   validationSchema: toTypedSchema(
     object({
       name: zod
-        .string({ message: "Enter a name for this repository" })
+        .string({ message: "Enter a name for this storage location" })
         .min(3, { message: "Name must be at least 3 characters long" })
         .max(30, { message: "Name is too long" })
     })
@@ -169,7 +169,7 @@ async function getRepo() {
     // Fetch last archive for "Last Backup" display
     lastArchive.value = (await repoService.GetLastArchiveByRepoId(repoId.value)) ?? undefined;
   } catch (error: unknown) {
-    await showAndLogError("Failed to get repository data", error);
+    await showAndLogError("Failed to get storage location data", error);
   }
   loading.value = false;
 }
@@ -185,7 +185,7 @@ async function saveName() {
         repo.value = updatedRepo;
       }
     } catch (error: unknown) {
-      await showAndLogError("Failed to save repository name", error);
+      await showAndLogError("Failed to save storage location name", error);
     }
   }
 }
@@ -200,20 +200,20 @@ function resizeNameWidth() {
 async function removeRepo() {
   try {
     await repoService.Remove(repoId.value);
-    toast.success("Repository removal queued");
+    toast.success("Storage location removal queued");
     await router.replace(Page.Dashboard);
   } catch (error: unknown) {
-    await showAndLogError("Failed to queue repository removal", error);
+    await showAndLogError("Failed to queue storage location removal", error);
   }
 }
 
 async function deleteRepo() {
   try {
     await repoService.Delete(repoId.value);
-    toast.success("Repository deleted");
+    toast.success("Storage location deleted");
     await router.replace(Page.Dashboard);
   } catch (error: unknown) {
-    await showAndLogError("Failed to delete repository", error);
+    await showAndLogError("Failed to delete storage location", error);
   }
 }
 
@@ -255,7 +255,7 @@ function openChangePathModal() {
 
 function onPathChanged(updatedRepo: Repository) {
   repo.value = updatedRepo;
-  toast.success("Repository path changed successfully");
+  toast.success("Storage location path changed successfully");
 }
 
 async function regenerateSSHKey() {
@@ -367,7 +367,7 @@ onUnmounted(() => {
           <li>
             <button @click='confirmRemoveModal?.showModal()'
                     class='text-error hover:bg-error hover:text-error-content'>
-              Remove Repository
+              Remove storage location
             </button>
           </li>
           <li>
@@ -591,7 +591,7 @@ onUnmounted(() => {
             <!-- Compression -->
             <div class='tooltip cursor-help' :data-tip="compressionRatio !== '-' ? 'Without compression, your backups would use ' + compressionRatio + ' as much disk space' : 'No compression applied'">
               <div class='border border-base-300 rounded-lg p-3 flex items-center gap-3 hover:border-base-content/30 transition-all'>
-                <ArrowTrendingUpIcon class='h-5 w-5 opacity-50 shrink-0' />
+                <ArrowDownOnSquareStackIcon class='h-5 w-5 opacity-50 shrink-0' />
                 <span class='flex-1 text-sm opacity-70'>Compression</span>
                 <span class='font-bold'>{{ compressionRatio }}</span>
               </div>
@@ -620,15 +620,15 @@ onUnmounted(() => {
 
     <!-- Modals -->
     <ConfirmModal :ref='confirmRemoveModalKey'
-                  title='Remove repository'
+                  title='Remove storage location'
                   show-exclamation
-                  confirm-text='Remove repository'
+                  confirm-text='Remove storage location'
                   confirm-class='btn-error'
                   @confirm='removeRepo()'>
       <div class='flex flex-col gap-2'>
-        <p>Are you sure you want to remove this repository?</p>
+        <p>Are you sure you want to remove this storage location?</p>
         <p>
-          Removing a repository will not delete any backups stored in
+          Removing a storage location will not delete any backups stored in
           it. You can add it back later.
         </p>
         <p v-if='deletableBackupProfiles.length === 1'>
@@ -644,13 +644,13 @@ onUnmounted(() => {
       </div>
     </ConfirmModal>
     <ConfirmModal :ref='confirmDeleteModalKey'
-                  title='Delete repository'
+                  title='Delete storage location'
                   show-exclamation
                   @close="confirmDeleteInput = ''">
       <div class='flex flex-col gap-2'>
-        <p>Are you sure you want to delete this repository?</p>
+        <p>Are you sure you want to delete this storage location?</p>
         <p>This action is <span class='font-semibold'>irreversible</span> and will
-          <span class='font-semibold'>delete all backups</span> stored in this repository!</p>
+          <span class='font-semibold'>delete all backups</span> stored in this storage location!</p>
         <p v-if='deletableBackupProfiles.length === 1'>
           The backup profile <span class='font-semibold'>{{ deletableBackupProfiles[0].name }}</span>
           will also be deleted!
@@ -675,7 +675,7 @@ onUnmounted(() => {
           <button type='button' class='btn btn-sm btn-error'
                   :disabled='confirmDeleteInput !== repo.name'
                   @click='deleteRepo()'>
-            Delete repository
+            Delete storage location
           </button>
         </div>
       </template>
@@ -699,7 +699,7 @@ onUnmounted(() => {
               <DialogPanel
                 class='relative transform overflow-hidden rounded-lg bg-base-100 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg'>
                 <div class='p-8'>
-                  <DialogTitle as='h3' class='font-bold text-lg mb-4'>Repository Healthcheck</DialogTitle>
+                  <DialogTitle as='h3' class='font-bold text-lg mb-4'>Storage location healthcheck</DialogTitle>
 
                   <div class='form-control'>
                     <label class='label cursor-pointer justify-start gap-4'>

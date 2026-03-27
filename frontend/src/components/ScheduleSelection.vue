@@ -12,6 +12,8 @@ import * as backupschedule from "../../bindings/github.com/loomi-labs/arco/backe
 
 interface Props {
   schedule: BackupSchedule;
+  showCard?: boolean;
+  showHeader?: boolean;
 }
 
 interface Emits {
@@ -25,7 +27,10 @@ const intervalSteps = [10, 15, 20, 30, 45, 60, 120, 180, 240, 360, 480, 720];
  * Variables
  ************/
 
-const props = defineProps<Props>();
+const props = withDefaults(defineProps<Props>(), {
+  showCard: true,
+  showHeader: true
+});
 const emit = defineEmits<Emits>();
 
 // Use structuredClone for clean deep copy
@@ -152,11 +157,16 @@ watch(schedule, (newSchedule) => {
   emit("update:schedule", newSchedule);
 }, { deep: true });
 
+defineExpose({
+  isScheduleEnabled,
+  toggleScheduleEnabled
+});
+
 </script>
 
 <template>
-  <div class='ac-card p-6'>
-    <div class='flex items-center justify-between mb-4'>
+  <div :class='showCard ? "ac-card p-6" : ""'>
+    <div v-if='showHeader' class='flex items-center justify-between mb-4'>
       <h3 class='text-xl font-semibold'>Run automatic backups</h3>
       <input type='checkbox'
              class='toggle toggle-secondary'
@@ -164,7 +174,7 @@ watch(schedule, (newSchedule) => {
              @change='toggleScheduleEnabled'>
     </div>
     <div class='flex flex-col'>
-      <h3 class='text-lg font-semibold mb-4'>{{ $t("every") }}</h3>
+      <h3 class='text-sm font-semibold mb-4'>{{ $t("every") }}</h3>
 
       <!-- Tabs -->
       <div role='tablist' class='tabs tabs-box'>

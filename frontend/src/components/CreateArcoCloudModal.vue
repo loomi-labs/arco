@@ -136,7 +136,7 @@ const modalTitle = computed(() => {
     case ComponentState.CHECKOUT_PROCESSING:
       return "Processing Subscription";
     case ComponentState.REPOSITORY_CREATION:
-      return "Create Cloud Repository";
+      return "Create Cloud Storage Location";
     case ComponentState.ERROR_PLANS:
       return "Unable to Load Plans";
     case ComponentState.ERROR_SUBSCRIPTION:
@@ -158,7 +158,7 @@ const modalDescription = computed(() => {
     case ComponentState.SUBSCRIPTION_SELECTION:
       return "Select a subscription plan to start using Arco Cloud. You'll need to login after selecting your plan.";
     case ComponentState.SUBSCRIPTION_SELECTION_AUTH:
-      return "Select a subscription plan to start using Arco Cloud for your repositories.";
+      return "Select a subscription plan to start using Arco Cloud for your storage locations.";
     case ComponentState.SUBSCRIPTION_AUTHENTICATED:
       return "Checking your subscription status...";
     case ComponentState.CHECKOUT_PROCESSING:
@@ -166,7 +166,7 @@ const modalDescription = computed(() => {
         ? "Activating your free plan..."
         : "Complete your subscription checkout in the browser.";
     case ComponentState.REPOSITORY_CREATION:
-      return "Create a repository in Arco Cloud.";
+      return "Create a storage location in Arco Cloud.";
     case ComponentState.ERROR_PLANS:
     case ComponentState.ERROR_SUBSCRIPTION:
     case ComponentState.ERROR_CHECKOUT:
@@ -414,9 +414,9 @@ function validateRepoName() {
   }
 
   if (repoName.value.length < 3) {
-    repoNameError.value = "Repository name must be at least 3 characters";
+    repoNameError.value = "Name must be at least 3 characters";
   } else if (repoName.value.length > 30) {
-    repoNameError.value = "Repository name can not be longer than 30 characters";
+    repoNameError.value = "Name can not be longer than 30 characters";
   } else {
     repoNameError.value = undefined;
   }
@@ -483,10 +483,10 @@ async function createRepository() {
       createdRepo.value = response;
       isSuccess.value = true;
     } else {
-      errorMessage.value = "Failed to create repository. Please try again.";
+      errorMessage.value = "Failed to create storage location. Please try again.";
     }
   } catch (error: unknown) {
-    errorMessage.value = "Failed to create repository. Please check your connection and try again.";
+    errorMessage.value = "Failed to create storage location. Please check your connection and try again.";
     await logError("Error creating ArcoCloud repository", error);
   } finally {
     isCreatingRepository.value = false;
@@ -702,7 +702,7 @@ watch(isAuthenticated, async (authenticated) => {
                     <div class='flex flex-col gap-4'>
                       <div class='form-control'>
                         <label class='label'>
-                          <span class='label-text'>Repository Name</span>
+                          <span class='label-text'>Storage location name</span>
                         </label>
                         <label class='input w-full flex items-center gap-2' :class='{ "input-error": repoNameError }'>
                           <input
@@ -730,7 +730,7 @@ watch(isAuthenticated, async (authenticated) => {
                               class='grow p-0 [font:inherit]'
                               v-model='repoPassword'
                               @input='onRepoPasswordInput'
-                              placeholder='Enter repository password'
+                              placeholder='Enter password'
                               :disabled='isLoading'
                             />
                             <CheckCircleIcon v-if='!repoPasswordError && repoPassword.length > 0'
@@ -807,7 +807,7 @@ watch(isAuthenticated, async (authenticated) => {
                         @click='createRepository()'
                       >
                         <span v-if='isCreatingRepository' class='loading loading-spinner loading-sm'></span>
-                        {{ isCreatingRepository ? "Creating..." : "Create Repository" }}
+                        {{ isCreatingRepository ? "Creating..." : "Create Storage Location" }}
                       </button>
                     </div>
                   </template>

@@ -6,16 +6,13 @@ import * as EventHelpers from "../common/events";
 import { Page, withId } from "../router";
 import { showAndLogError } from "../common/logger";
 import DataSelection from "../components/DataSelection.vue";
-import ScheduleSelection from "../components/ScheduleSelection.vue";
 import { formInputClass } from "../common/form";
 import FormField from "../components/common/FormField.vue";
 import { useForm } from "vee-validate";
 import { z } from "zod";
 import { toTypedSchema } from "@vee-validate/zod";
 import SelectIconModal from "../components/SelectIconModal.vue";
-import CompressionCard from "../components/CompressionCard.vue";
-import CompressionInfoModal from "../components/CompressionInfoModal.vue";
-import PruningCard from "../components/PruningCard.vue";
+import BackupProfileOptions from "../components/BackupProfileOptions.vue";
 import ConnectRepo from "../components/ConnectRepo.vue";
 import { useToast } from "vue-toastification";
 import { InformationCircleIcon } from "@heroicons/vue/24/outline";
@@ -35,8 +32,8 @@ import { BackupProfile, BackupSchedule, PruningRule } from "../../bindings/githu
 
 enum Step {
   SelectData = 0,
-  Schedule = 1,
-  Repository = 2,
+  StorageLocation = 1,
+  Options = 2,
 }
 
 /************
@@ -56,16 +53,28 @@ const cleanupFunctions: (() => void)[] = [];
 const confirmLeaveModalKey = useId();
 const confirmLeaveModal = useTemplateRef<InstanceType<typeof ConfirmModal>>(confirmLeaveModalKey);
 
-// Step 1
+// Step 1 - Select Data
 const directorySuggestions = ref<string[]>([]);
 const isBackupPathsValid = ref(false);
 const isExcludePathsValid = ref(true);
 const excludePatternInfoModalKey = useId();
 const excludePatternInfoModal = useTemplateRef<InstanceType<typeof ExcludePatternInfoModal>>(excludePatternInfoModalKey);
-const compressionInfoModalKey = useId();
-const compressionInfoModal = useTemplateRef<InstanceType<typeof CompressionInfoModal>>(compressionInfoModalKey);
 
-const step1Form = useForm({
+const isStep1Valid = computed(() => {
+  return isBackupPathsValid.value && isExcludePathsValid.value;
+});
+
+// Step 2 - Storage Location
+const connectedRepos = ref<Repository[]>([]);
+
+const isStep2Valid = computed(() => {
+  return connectedRepos.value.length > 0;
+});
+
+// Step 3 - Options
+const optionsRef = ref<InstanceType<typeof BackupProfileOptions> | null>(null);
+
+const optionsForm = useForm({
   validationSchema: toTypedSchema(
     z.object({
       name: z.string({ message: "Please choose a name for your backup profile" })
@@ -75,26 +84,13 @@ const step1Form = useForm({
   )
 });
 
-const [name, nameAttrs] = step1Form.defineField("name", {
-  validateOnBlur: false,
-  validateOnModelUpdate: false
+const [name, nameAttrs] = optionsForm.defineField("name", {
+  validateOnBlur: true,
+  validateOnModelUpdate: true
 });
-
-const isStep1Valid = computed(() => {
-  return step1Form.meta.value.valid && isBackupPathsValid.value && isExcludePathsValid.value;
-});
-
-// Step 2
-const isStep2Valid = computed(() => {
-  return pruningCardRef.value?.isValid ?? false;
-});
-const pruningCardRef = ref<InstanceType<typeof PruningCard> | null>(null);
-
-// Step 3
-const connectedRepos = ref<Repository[]>([]);
 
 const isStep3Valid = computed(() => {
-  return connectedRepos.value.length > 0;
+  return optionsForm.meta.value.valid && (optionsRef.value?.isPruningValid ?? false);
 });
 
 /************
@@ -103,40 +99,39 @@ const isStep3Valid = computed(() => {
 
 function getMaxWithPerStep(): string {
   switch (currentStep.value) {
-    case Step.Repository:
+    case Step.StorageLocation:
       return "max-w-[800px]";
     case Step.SelectData:
-    case Step.Schedule:
+    case Step.Options:
     default:
       return "max-w-[600px]";
   }
+}
+
+function canGoToStep(target: Step): boolean {
+  if (target <= currentStep.value) return true;
+  if (target >= Step.StorageLocation && !isStep1Valid.value) return false;
+  if (target >= Step.Options && !isStep2Valid.value) return false;
+  return true;
+}
+
+function goToStep(target: Step) {
+  if (target === currentStep.value) return;
+  if (!canGoToStep(target)) return;
+  if (target === Step.Options) {
+    suggestNameFromPaths();
+  }
+  currentStep.value = target;
+  nextTick(() => window.scrollTo({ top: 0, behavior: 'smooth' }));
 }
 
 function toggleExcludePatternInfoModal() {
   excludePatternInfoModal.value?.showModal();
 }
 
-function toggleCompressionInfoModal() {
-  compressionInfoModal.value?.showModal();
-}
-
 // Step 1
 function saveBackupPaths(paths: string[]) {
   backupProfile.value.backupPaths = paths;
-
-  // If the name hasn't been set manually yet, suggest one based on the first path
-  if (!step1Form.meta.value.touched && backupProfile.value.backupPaths.length > 0) {
-    // Set name to the last part of the first path (capitalize first letter)
-    const path = backupProfile.value.backupPaths[0].split("/").pop() ?? "";
-
-    // If the path is too short, don't suggest it as a name
-    if (path.length < 3) {
-      return;
-    }
-
-    name.value = path.charAt(0).toUpperCase() + path.slice(1);
-    step1Form.validate();
-  }
 }
 
 function saveExcludePaths(paths: string[]) {
@@ -163,21 +158,32 @@ async function newBackupProfile() {
 
 async function getExistingRepositories() {
   try {
-    existingRepos.value = (await repoService.All()).filter((r) => r !== null);
+    const repos = await repoService.All();
+    existingRepos.value = (repos ?? []).filter((r) => r !== null);
   } catch (error: unknown) {
-    await showAndLogError("Failed to get existing repositories", error);
+    await showAndLogError("Failed to get existing storage locations", error);
   }
 }
 
 // Step 2
+const connectRepos = (repos: Repository[]) => {
+  connectedRepos.value = repos;
+};
+
+// Step 3
 function saveSchedule(schedule: BackupSchedule | null) {
   backupProfile.value.backupSchedule = schedule;
 }
 
-// Step 3
-const connectRepos = (repos: Repository[]) => {
-  connectedRepos.value = repos;
-};
+function suggestNameFromPaths() {
+  if (!optionsForm.meta.value.touched && backupProfile.value.backupPaths.length > 0) {
+    const path = backupProfile.value.backupPaths[0].split("/").pop() ?? "";
+    if (path.length >= 3) {
+      name.value = path.charAt(0).toUpperCase() + path.slice(1);
+      optionsForm.validate();
+    }
+  }
+}
 
 async function saveBackupProfile(): Promise<boolean> {
   try {
@@ -216,24 +222,25 @@ const nextStep = async () => {
       if (!isStep1Valid.value) {
         return;
       }
-      backupProfile.value.name = step1Form.values.name ?? "";
       currentStep.value++;
       await nextTick();
       window.scrollTo({ top: 0, behavior: 'smooth' });
       break;
-    case Step.Schedule:
+    case Step.StorageLocation:
       if (!isStep2Valid.value) {
         return;
       }
-      backupProfile.value.pruningRule = pruningCardRef.value?.pruningRule ?? null;
+      suggestNameFromPaths();
       currentStep.value++;
       await nextTick();
       window.scrollTo({ top: 0, behavior: 'smooth' });
       break;
-    case Step.Repository:
+    case Step.Options:
       if (!isStep3Valid.value) {
         return;
       }
+      backupProfile.value.name = optionsForm.values.name ?? "";
+      backupProfile.value.pruningRule = optionsRef.value?.pruningRule ?? null;
       if (await saveBackupProfile()) {
         newBackupProfileCreated.value = true;
         toast.success("Backup profile created");
@@ -335,9 +342,19 @@ onUnmounted(async () => {
 
     <!-- Stepper -->
     <ul class='steps max-w-[600px] w-full self-center py-10'>
-      <li class='step' :class="{'step-primary': currentStep >= 0}">Select data</li>
-      <li class='step' :class="{'step-primary': currentStep >= 1}">Schedule</li>
-      <li class='step' :class="{'step-primary': currentStep >= 2}">Repository</li>
+      <li class='step' :class="{'step-primary': currentStep >= 0}">
+        <button class='cursor-pointer' @click='goToStep(Step.SelectData)'>Select data</button>
+      </li>
+      <li class='step' :class="{'step-primary': currentStep >= 1}">
+        <button :disabled='!canGoToStep(Step.StorageLocation)'
+                :class='canGoToStep(Step.StorageLocation) ? "cursor-pointer" : "cursor-not-allowed opacity-50"'
+                @click='goToStep(Step.StorageLocation)'>Storage location</button>
+      </li>
+      <li class='step' :class="{'step-primary': currentStep >= 2}">
+        <button :disabled='!canGoToStep(Step.Options)'
+                :class='canGoToStep(Step.Options) ? "cursor-pointer" : "cursor-not-allowed opacity-50"'
+                @click='goToStep(Step.Options)'>Options</button>
+      </li>
     </ul>
 
     <!-- 1. Step - Data Selection -->
@@ -381,56 +398,20 @@ onUnmounted(async () => {
         @update:exclude-caches='(val) => backupProfile.excludeCaches = val'
         @update:is-valid='(isValid) => isExcludePathsValid = isValid' />
 
-      <!-- Compression Card -->
-      <div class='flex items-center justify-between pt-8 pb-4'>
-        <h2 class='text-3xl'>Compression</h2>
-        <button @click='toggleCompressionInfoModal' class='btn btn-circle btn-ghost btn-xs'>
-          <InformationCircleIcon class='size-6' />
-        </button>
-      </div>
-      <CompressionCard
-        :show-title='false'
-        :compression-mode='backupProfile.compressionMode || CompressionMode.CompressionModeLz4'
-        :compression-level='backupProfile.compressionLevel'
-        @update:compression='saveCompression' />
-
-      <!-- Name and Logo Selection Card-->
-      <h2 class='text-3xl pt-8 pb-4'>Name</h2>
-      <div class='flex items-center justify-between bg-base-100 rounded-xl shadow-lg px-10 py-2 gap-5'>
-
-        <!-- Name -->
-        <label class='w-full py-6'>
-          <FormField :error='step1Form.errors.value.name' :isValid='!step1Form.errors.value.name && !!name'>
-            <input :class='formInputClass' type='text' autocapitalize='off' placeholder='fancy-pants-backup'
-                   v-model='name'
-                   v-bind='nameAttrs' />
-          </FormField>
-        </label>
-
-        <!-- Icon -->
-        <SelectIconModal :icon=backupProfile.icon @select='selectIcon' />
-      </div>
-
       <div class='flex justify-center gap-6 py-10'>
         <button class='btn btn-outline min-w-24' @click='router.replace(Page.Dashboard)'>Cancel</button>
         <button class='btn btn-primary min-w-24' :disabled='!isStep1Valid' @click='nextStep'>Next</button>
       </div>
     </template>
 
-    <!-- 2. Step - Schedule -->
-    <template v-if='currentStep === Step.Schedule'>
-      <h2 class='text-3xl py-4'>When do you want to run your backups?</h2>
-      <div class='flex flex-col gap-10'>
-        <ScheduleSelection :schedule='backupProfile.backupSchedule ?? BackupSchedule.createFrom()'
-                           @update:schedule='saveSchedule'
-                           @delete:schedule='() => saveSchedule(null)' />
-
-        <PruningCard ref='pruningCardRef'
-                     :backup-profile-id='backupProfile.id'
-                     :pruning-rule='backupProfile.pruningRule ?? PruningRule.createFrom()'
-                     :ask-for-save-before-leaving='false'>
-        </PruningCard>
-      </div>
+    <!-- 2. Step - Storage Location -->
+    <template v-if='currentStep === Step.StorageLocation'>
+      <ConnectRepo
+        :unified-layout='true'
+        :show-titles='true'
+        :existing-repos='existingRepos'
+        @update:connected-repos='connectRepos'>
+      </ConnectRepo>
 
       <div class='flex justify-center gap-6 py-10'>
         <button class='btn btn-outline min-w-24' @click='previousStep'>Back</button>
@@ -438,15 +419,31 @@ onUnmounted(async () => {
       </div>
     </template>
 
-    <!-- 3. Step - Repository -->
-    <template v-if='currentStep === Step.Repository'>
-      <ConnectRepo
-        :show-connected-repos='true'
-        :show-add-repo='true'
-        :show-titles='true'
-        :existing-repos='existingRepos'
-        @update:connected-repos='connectRepos'>
-      </ConnectRepo>
+    <!-- 3. Step - Options -->
+    <template v-if='currentStep === Step.Options'>
+      <!-- Name and Icon -->
+      <h2 class='text-3xl py-4'>Name & Icon</h2>
+      <div class='flex items-center justify-between bg-base-100 rounded-xl shadow-lg px-10 py-2 gap-5'>
+        <label class='w-full py-6'>
+          <FormField :error='optionsForm.errors.value.name' :isValid='!optionsForm.errors.value.name && !!name'>
+            <input :class='formInputClass' type='text' autocapitalize='off' placeholder='fancy-pants-backup'
+                   v-model='name'
+                   v-bind='nameAttrs' />
+          </FormField>
+        </label>
+        <div class='shrink-0'>
+          <SelectIconModal :icon=backupProfile.icon @select='selectIcon' />
+        </div>
+      </div>
+
+      <!-- Option Cards -->
+      <BackupProfileOptions ref='optionsRef'
+                            class='pt-8'
+                            :backup-profile='backupProfile'
+                            :ask-for-save-before-leaving='false'
+                            @update:schedule='saveSchedule'
+                            @update:compression='saveCompression'
+                            @update:pruning-rule='(rule) => backupProfile.pruningRule = rule' />
 
       <div class='flex justify-center gap-6 py-10'>
         <button class='btn btn-outline min-w-24' @click='previousStep'>Back</button>
@@ -469,7 +466,6 @@ onUnmounted(async () => {
   </ConfirmModal>
 
   <ExcludePatternInfoModal :ref='excludePatternInfoModalKey' />
-  <CompressionInfoModal :ref='compressionInfoModalKey' />
 </template>
 
 <style scoped>

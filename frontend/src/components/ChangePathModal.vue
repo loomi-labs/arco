@@ -111,8 +111,8 @@ function showModal() {
 
 async function selectDirectory() {
   const data = SelectDirectoryData.createFrom();
-  data.title = "Select repository location";
-  data.message = "Select the new location of your Borg repository";
+  data.title = "Select storage location";
+  data.message = "Select the new location of your storage location";
   data.buttonText = "Select";
   const pathStr = await backupProfileService.SelectDirectory(data);
   if (pathStr) {
@@ -172,11 +172,11 @@ async function changePath() {
       emit("success", updatedRepo);
       close();
     } else {
-      errorMessage.value = "Failed to update repository path";
+      errorMessage.value = "Failed to update storage location path";
     }
   } catch (error: unknown) {
-    errorMessage.value = error instanceof Error ? error.message : "Failed to change repository path";
-    await logError("Failed to change repository path", error);
+    errorMessage.value = error instanceof Error ? error.message : "Failed to change storage location path";
+    await logError("Failed to change storage location path", error);
   } finally {
     isLoading.value = false;
   }
@@ -211,7 +211,7 @@ defineExpose({
             <DialogPanel
               class='relative transform overflow-hidden rounded-lg bg-base-100 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg'>
               <div class='p-8'>
-                <DialogTitle as='h3' class='font-bold text-lg mb-4'>Change Repository Path</DialogTitle>
+                <DialogTitle as='h3' class='font-bold text-lg mb-4'>Change storage location path</DialogTitle>
 
                 <!-- Form -->
                 <div class='space-y-4'>
@@ -239,7 +239,7 @@ defineExpose({
                                v-model='newPath'
                                class='grow p-0 [font:inherit] font-mono text-sm'
                                :disabled='isLoading'
-                               placeholder='/path/to/repository'
+                               placeholder='/path/to/storage-location'
                                @input='validationResult = null' />
                         <CheckCircleIcon v-if='connectionSuccess' class='size-5 text-success' />
                         <ExclamationTriangleIcon v-else-if='connectionWarning' class='size-5 text-warning' />
@@ -260,7 +260,7 @@ defineExpose({
                              v-model='newPath'
                              class='grow p-0 [font:inherit] font-mono text-sm'
                              :disabled='isLoading'
-                             placeholder='user@host:/path/to/repository'
+                             placeholder='user@host:/path/to/storage-location'
                              @input='validationResult = null' />
                       <CheckCircleIcon v-if='connectionSuccess' class='size-5 text-success' />
                       <ExclamationTriangleIcon v-else-if='connectionWarning' class='size-5 text-warning' />
@@ -292,7 +292,7 @@ defineExpose({
                   <!-- Password (if encrypted) -->
                   <div v-if='showPasswordField' class='form-control'>
                     <label class='label'>
-                      <span class='label-text'>Repository Password</span>
+                      <span class='label-text'>Storage location password</span>
                     </label>
                     <div class='join w-full'>
                       <input :type="showPassword ? 'text' : 'password'"
@@ -300,7 +300,7 @@ defineExpose({
                              v-model='password'
                              class='input join-item flex-1'
                              :disabled='isLoading'
-                             placeholder='Enter repository password (optional)' />
+                             placeholder='Enter storage location password (optional)' />
                       <button type='button'
                               class='btn btn-square join-item'
                               @click='showPassword = !showPassword'

@@ -32,6 +32,8 @@ interface Props {
   backupProfileId: number;
   pruningRule: PruningRule;
   askForSaveBeforeLeaving: boolean;
+  showCard?: boolean;
+  showHeader?: boolean;
 }
 
 interface Emits {
@@ -43,7 +45,10 @@ interface Emits {
  * Variables
  ************/
 
-const props = defineProps<Props>();
+const props = withDefaults(defineProps<Props>(), {
+  showCard: true,
+  showHeader: true
+});
 const emits = defineEmits<Emits>();
 
 const emitUpdatePruningRule = "update:pruningRule";
@@ -349,8 +354,8 @@ defineExpose({
 </script>
 
 <template>
-  <div class='ac-card p-10'>
-    <div class='flex items-center justify-between mb-6'>
+  <div :class='showCard ? "ac-card p-10" : ""'>
+    <div v-if='showHeader' class='flex items-center justify-between mb-6'>
       <TooltipTextIcon
         text='Saves disk space by removing older archives while always keeping recent ones and a selection from each time period (daily, weekly, monthly, yearly).'>
         <h3 class='text-lg font-semibold'>Delete old archives</h3>

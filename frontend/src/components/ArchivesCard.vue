@@ -349,7 +349,7 @@ async function getRepository() {
       repo.value = fetchedRepo;
     }
   } catch (error: unknown) {
-    await showAndLogError("Failed to get repository", error);
+    await showAndLogError("Failed to get storage location", error);
   }
 }
 
@@ -504,13 +504,13 @@ async function unmountArchive(archiveId: number) {
 
 async function mountRepository() {
   try {
-    progressSpinnerText.value = "Mounting repository";
+    progressSpinnerText.value = "Mounting storage location";
     const result = await repoService.Mount(props.repoId);
     if (result?.macFUSENotInstalled) {
       macFUSEModal.value?.showModal();
     }
   } catch (error: unknown) {
-    await showAndLogError("Failed to mount repository", error);
+    await showAndLogError("Failed to mount storage location", error);
   } finally {
     progressSpinnerText.value = undefined;
   }
@@ -518,10 +518,10 @@ async function mountRepository() {
 
 async function unmountRepository() {
   try {
-    progressSpinnerText.value = "Unmounting repository";
+    progressSpinnerText.value = "Unmounting storage location";
     await repoService.Unmount(props.repoId);
   } catch (error: unknown) {
-    await showAndLogError("Failed to unmount repository", error);
+    await showAndLogError("Failed to unmount storage location", error);
   } finally {
     progressSpinnerText.value = undefined;
   }
@@ -1026,7 +1026,7 @@ onUnmounted(() => {
           <!-- Unmount Repository Button (only when mounted) -->
           <span v-if='hasRepositoryMountActive'
                 class='tooltip'
-                :data-tip='canPerformOperations ? `Unmount repository from ${repositoryMountInfo?.mountPath}` : ""'>
+                :data-tip='canPerformOperations ? `Unmount storage location from ${repositoryMountInfo?.mountPath}` : ""'>
             <button class='btn btn-sm btn-circle btn-outline'
                     :disabled='!canPerformOperations'
                     @click='unmountRepository()'>
@@ -1036,7 +1036,7 @@ onUnmounted(() => {
 
           <!-- Browse Repository Button (always visible) -->
           <span class='tooltip'
-                :data-tip='canPerformOperations && archiveMountCount === 0 ? (hasRepositoryMountActive ? "Browse repository" : "Mount and browse repository") : ""'>
+                :data-tip='canPerformOperations && archiveMountCount === 0 ? (hasRepositoryMountActive ? "Browse storage location" : "Mount and browse storage location") : ""'>
             <button class='btn btn-sm btn-circle btn-outline'
                     :disabled='!canPerformOperations || archiveMountCount > 0'
                     @click='mountRepository()'>
@@ -1226,7 +1226,7 @@ onUnmounted(() => {
 
             <!-- Browse Archive Button (always visible) -->
             <span class='tooltip'
-                  :data-tip='canPerformOperations && (isArchiveMounted(archive.id) || hasRepositoryMountActive || canMountNewArchive) ? (isArchiveMounted(archive.id) ? "Browse archive" : hasRepositoryMountActive ? "Archive accessible via repository mount" : "Mount and browse archive") : ""'>
+                  :data-tip='canPerformOperations && (isArchiveMounted(archive.id) || hasRepositoryMountActive || canMountNewArchive) ? (isArchiveMounted(archive.id) ? "Browse archive" : hasRepositoryMountActive ? "Archive accessible via storage location mount" : "Mount and browse archive") : ""'>
               <button class='btn btn-sm btn-circle btn-outline'
                       :disabled='!canPerformOperations || (!isArchiveMounted(archive.id) && !hasRepositoryMountActive && !canMountNewArchive)'
                       @click.stop='mountArchive(archive.id)'>
@@ -1338,7 +1338,7 @@ onUnmounted(() => {
                 confirm-class='btn-info'
                 @confirm='unmountAllAndRename()'
                 @close='handleUnmountRenameModalClose'>
-    <p>You are currently browsing the repository <span class='italic'>{{ repo.name }}</span>.</p>
+    <p>You are currently browsing the storage location <span class='italic'>{{ repo.name }}</span>.</p>
     <p class='mb-4'>Do you want to stop browsing and save the archive changes?</p>
   </ConfirmModal>
 
@@ -1348,7 +1348,7 @@ onUnmounted(() => {
                 confirm-class='btn-error'
                 @confirm='unmountAllAndDelete()'
                 @close='archiveToBeDeleted = undefined'>
-    <p>You are currently browsing the repository <span class='italic'>{{ repo.name }}</span>.</p>
+    <p>You are currently browsing the storage location <span class='italic'>{{ repo.name }}</span>.</p>
     <p class='mb-4'>Do you want to stop browsing and delete the archive?</p>
   </ConfirmModal>
 
@@ -1358,7 +1358,7 @@ onUnmounted(() => {
                 confirm-class='btn-error'
                 @confirm='unmountAllAndDeleteSelected()'
                 @close='selectedArchives.clear()'>
-    <p>You are currently browsing the repository <span class='italic'>{{ repo.name }}</span>.</p>
+    <p>You are currently browsing the storage location <span class='italic'>{{ repo.name }}</span>.</p>
     <p class='mb-4'>Do you want to stop browsing and delete the {{ selectedArchives.size }} selected
       archive{{ selectedArchives.size > 1 ? "s" : "" }}?</p>
   </ConfirmModal>

@@ -85,7 +85,7 @@ async function getRepo() {
     // Only set lastArchive if it has a valid ID (id > 0)
     lastArchive.value = archive && archive.id > 0 ? archive : undefined;
   } catch (error: unknown) {
-    await showAndLogError("Failed to get repository", error);
+    await showAndLogError("Failed to get storage location", error);
   }
 }
 
@@ -112,7 +112,7 @@ async function prune() {
   try {
     await repoService.QueuePrune(backupId);
   } catch (error: unknown) {
-    await showAndLogError("Failed to prune repository", error);
+    await showAndLogError("Failed to prune storage location", error);
   }
 }
 
@@ -233,20 +233,20 @@ onUnmounted(() => {
   </div>
 
   <ConfirmModal :ref='confirmRemoveRepoModalKey'
-                title='Remove repository'
+                title='Remove storage location'
                 show-exclamation
-                :confirmText='deleteArchives ? "Remove repository and delete archives" : "Remove repository"'
+                :confirmText='deleteArchives ? "Remove storage location and delete archives" : "Remove storage location"'
                 :confirm-class='deleteArchives ? "btn-error" : "btn-warning"'
                 @confirm='emits(emitRemoveRepo, deleteArchives)'
   >
-    <p>Are you sure you want to remove this repository from this backup profile?</p><br>
+    <p>Are you sure you want to remove this storage location from this backup profile?</p><br>
     <div class='flex gap-4'>
       <p>Delete archives</p>
       <input type='checkbox' class='toggle toggle-error' v-model='deleteArchives' />
     </div>
     <br>
-    <p v-if='deleteArchives'>This will delete all archives associated with this repository!</p>
-    <p v-else>Archives will still be accessible via repository page.</p>
+    <p v-if='deleteArchives'>This will delete all archives associated with this storage location!</p>
+    <p v-else>Archives will still be accessible via the storage location page.</p>
   </ConfirmModal>
 </template>
 

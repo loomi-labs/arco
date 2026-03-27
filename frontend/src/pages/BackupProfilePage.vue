@@ -9,7 +9,6 @@ import { Dialog, DialogPanel, TransitionChild, TransitionRoot } from "@headlessu
 import type { Icon } from "../../bindings/github.com/loomi-labs/arco/backend/ent/backupprofile";
 import type { Repository } from "../../bindings/github.com/loomi-labs/arco/backend/app/repository";
 import { BackupProfile, BackupSchedule, PruningRule } from "../../bindings/github.com/loomi-labs/arco/backend/app/backup_profile";
-import * as backupschedule from "../../bindings/github.com/loomi-labs/arco/backend/ent/backupschedule";
 import { Anchor, Page } from "../router";
 import { showAndLogError } from "../common/logger";
 import DataSelection from "../components/DataSelection.vue";
@@ -18,16 +17,12 @@ import { useToast } from "vue-toastification";
 import ConfirmModal from "../components/common/ConfirmModal.vue";
 import { useForm } from "vee-validate";
 import { toTypedSchema } from "@vee-validate/zod";
-import ScheduleSelection from "../components/ScheduleSelection.vue";
+import BackupProfileOptions from "../components/BackupProfileOptions.vue";
 import RepoCard from "../components/RepoCard.vue";
 import ArchivesCard from "../components/ArchivesCard.vue";
 import SelectIconModal from "../components/SelectIconModal.vue";
-import PruningCard from "../components/PruningCard.vue";
 import ConnectRepo from "../components/ConnectRepo.vue";
-import CompressionCard from "../components/CompressionCard.vue";
 import ErrorSection from "../components/ErrorSection.vue";
-import { format } from "@formkit/tempo";
-import { CompressionMode } from "../../bindings/github.com/loomi-labs/arco/backend/ent/backupprofile/models";
 
 /************
  * Variables
@@ -41,7 +36,6 @@ const selectedRepoId = ref<number | undefined>(undefined);
 const existingRepos = ref<Repository[]>([]);
 const loading = ref(true);
 const dataSectionCollapsed = ref(false);
-const scheduleSectionCollapsed = ref(false);
 
 const nameInputKey = useId();
 const nameInput = useTemplateRef<InstanceType<typeof HTMLInputElement>>(nameInputKey);
@@ -64,87 +58,21 @@ const { meta, errors, defineField } = useForm({
 
 const [name, nameAttrs] = defineField("name", { validateOnBlur: false });
 
-// Breakpoint detection for responsive Add Repository button placement
+// Breakpoint detection for responsive Add storage location button placement
 type Breakpoint = "base" | "md" | "xl" | "2xl";
 const currentBreakpoint = ref<Breakpoint>("base");
 
 const dataSectionDetails = computed(() => {
-  const pathsInfo = `${backupProfile.value.backupPaths?.length ?? 0} path${backupProfile.value.backupPaths?.length === 1 ? "" : "s"} to backup, ${backupProfile.value.excludePaths?.length ?? 0} excluded`;
-
-  // Compression info (same logic as old advancedSectionDetails)
-  const mode = backupProfile.value.compressionMode || CompressionMode.CompressionModeLz4;
-  const level = backupProfile.value.compressionLevel;
-
-  let compressionInfo = "Compression: Fast";
-  if (mode === CompressionMode.CompressionModeNone) {
-    compressionInfo = "Compression: Off";
-  } else if (mode === CompressionMode.CompressionModeLz4) {
-    compressionInfo = "Compression: Fast";
-  } else if (mode === CompressionMode.CompressionModeZstd && level === 3) {
-    compressionInfo = "Compression: Balanced";
-  } else if (mode === CompressionMode.CompressionModeLzma && level === 6) {
-    compressionInfo = "Compression: Maximum";
-  } else {
-    compressionInfo = "Compression: Custom";
-  }
-
-  return `${pathsInfo}, ${compressionInfo}`;
+  return `${backupProfile.value.backupPaths?.length ?? 0} path${backupProfile.value.backupPaths?.length === 1 ? "" : "s"} to backup, ${backupProfile.value.excludePaths?.length ?? 0} excluded`;
 });
 
-const scheduleSectionDetails = computed(() => {
-  const schedule = backupProfile.value.backupSchedule;
-  const pruning = backupProfile.value.pruningRule;
-
-  if (!schedule || (schedule.mode === backupschedule.Mode.ModeDisabled && !pruning?.isEnabled)) {
-    return "No schedules";
-  }
-
-  let details = "";
-  switch (schedule.mode) {
-    case backupschedule.Mode.ModeMinuteInterval: {
-      const interval = schedule.intervalMinutes ?? 60;
-      if (interval < 60) {
-        details = `Backs up every ${interval} minutes`;
-      } else if (interval === 60) {
-        details = "Backs up every hour";
-      } else {
-        details = `Backs up every ${interval / 60} hours`;
-      }
-      break;
-    }
-    case backupschedule.Mode.ModeDaily:
-      details = `Backs up daily at ${format(new Date(schedule.dailyAt), "HH:mm")}`;
-      break;
-    case backupschedule.Mode.ModeWeekly:
-      details = `Backs up every ${schedule.weekday} at ${format(new Date(schedule.weeklyAt), "HH:mm")}`;
-      break;
-    case backupschedule.Mode.ModeMonthly:
-      details = `Backs up monthly on day ${schedule.monthday} at ${format(new Date(schedule.monthlyAt), "HH:mm")}`;
-      break;
-    case backupschedule.Mode.$zero:
-    case backupschedule.Mode.DefaultMode:
-    default:
-      details = "No schedule configured";
-      break;
-  }
-
-  if (pruning?.isEnabled) {
-    if (details) {
-      details += ", auto-cleanup enabled";
-    } else {
-      details = "Auto-cleanup enabled";
-    }
-  }
-
-  return details;
-});
 
 // Computed property for safe repository access
 const profileRepos = computed(() =>
   backupProfile.value.repositories?.filter(r => r !== null) ?? []
 );
 
-// Determine if Add Repository button should be in title (true) or as card (false)
+// Determine if Add storage location button should be in title (true) or as card (false)
 const shouldShowPlusInTitle = computed(() => {
   const repoCount = profileRepos.value.length;
 
@@ -194,7 +122,6 @@ async function getData() {
     existingRepos.value = (await repoService.All()).filter(r => r !== null);
 
     dataSectionCollapsed.value = !!backupProfile.value.dataSectionCollapsed;
-    scheduleSectionCollapsed.value = !!backupProfile.value.scheduleSectionCollapsed;
   } catch (error: unknown) {
     await showAndLogError("Failed to get backup profile", error);
   } finally {
@@ -283,6 +210,20 @@ async function saveBackupProfile() {
   }
 }
 
+let compressionSaveTimer: ReturnType<typeof setTimeout> | undefined;
+
+function onCompressionUpdate({ mode, level }: { mode: BackupProfile["compressionMode"]; level: number | null }) {
+  backupProfile.value.compressionMode = mode;
+  backupProfile.value.compressionLevel = level;
+
+  if (compressionSaveTimer) {
+    clearTimeout(compressionSaveTimer);
+  }
+  compressionSaveTimer = setTimeout(() => {
+    void saveBackupProfile();
+  }, 250);
+}
+
 async function setPruningRule(pruningRule: PruningRule) {
   try {
     backupProfile.value.pruningRule = pruningRule;
@@ -296,9 +237,9 @@ async function addRepo(repo: Repository) {
   try {
     await backupProfileService.AddRepositoryToBackupProfile(backupProfile.value.id, repo.id);
     await getData();
-    toast.success("Repository added");
+    toast.success("Storage location added");
   } catch (error: unknown) {
-    await showAndLogError("Failed to add repository", error);
+    await showAndLogError("Failed to add storage location", error);
   }
 }
 
@@ -306,21 +247,16 @@ async function removeRepo(repoId: number, deleteArchives: boolean) {
   try {
     await backupProfileService.RemoveRepositoryFromBackupProfile(backupProfile.value.id, repoId, deleteArchives);
     await getData();
-    toast.success("Repository removed");
+    toast.success("Storage location removed");
   } catch (error: unknown) {
-    await showAndLogError("Failed to remove repository", error);
+    await showAndLogError("Failed to remove storage location", error);
   }
 }
 
-async function toggleCollapse(type: "data" | "schedule") {
-  if (type === "data") {
-    dataSectionCollapsed.value = !dataSectionCollapsed.value;
-  } else if (type === "schedule") {
-    scheduleSectionCollapsed.value = !scheduleSectionCollapsed.value;
-  }
+async function toggleCollapse() {
+  dataSectionCollapsed.value = !dataSectionCollapsed.value;
   try {
     backupProfile.value.dataSectionCollapsed = !!dataSectionCollapsed.value;
-    backupProfile.value.scheduleSectionCollapsed = !!scheduleSectionCollapsed.value;
     await backupProfileService.UpdateBackupProfile(backupProfile.value);
   } catch (error: unknown) {
     await showAndLogError("Failed to save collapsed state", error);
@@ -369,6 +305,10 @@ onMounted(() => {
 });
 
 onUnmounted(() => {
+  if (compressionSaveTimer) {
+    clearTimeout(compressionSaveTimer);
+    void saveBackupProfile();
+  }
   Object.values(mediaQueries).forEach((mq) => {
     mq.removeEventListener("change", updateBreakpoint);
   });
@@ -443,7 +383,7 @@ watch(
             </div>
             <br>
             <p v-if='deleteArchives'>This will delete all archives associated with this backup profile!</p>
-            <p v-else>Archives will still be accessible via repository page.</p>
+            <p v-else>Archives will still be accessible via storage location page.</p>
           </ConfirmModal>
         </div>
       </div>
@@ -457,7 +397,7 @@ watch(
          :class='dataSectionCollapsed ? "collapse-close" : "collapse-open"'>
       <div
         class='collapse-title text-sm cursor-pointer select-none truncate peer hover:bg-base-300 transition-transform duration-700 ease-in-out'
-        @click='toggleCollapse("data")'>
+        @click='toggleCollapse'>
         <span class='text-lg font-bold text-base-strong'>Data</span>
         <span class='ml-2 transition-all duration-700 ease-in-out'
               :class='{ "opacity-100": dataSectionCollapsed, "opacity-0": !dataSectionCollapsed }'>{{
@@ -485,46 +425,17 @@ watch(
             @update:exclude-caches='saveExcludeCaches'
           />
         </div>
-        <!-- Compression Card on separate row -->
-        <div class='grid grid-cols-1 md:grid-cols-2 gap-6 mt-6'>
-          <CompressionCard
-            :show-title='true'
-            :compression-mode='backupProfile.compressionMode || CompressionMode.CompressionModeLz4'
-            :compression-level='backupProfile.compressionLevel'
-            @update:compression='({ mode, level }) => {
-              backupProfile.compressionMode = mode;
-              backupProfile.compressionLevel = level; saveBackupProfile();
-            }' />
-        </div>
       </div>
     </div>
 
-    <!-- Schedule Section -->
-    <div tabindex='0' class='collapse collapse-arrow transition-all duration-700 ease-in-out'
-         :class='scheduleSectionCollapsed ? "collapse-close" : "collapse-open"'>
-      <div
-        class='collapse-title text-sm cursor-pointer select-none truncate peer hover:bg-base-300 transition-transform duration-700 ease-in-out'
-        @click='toggleCollapse("schedule")'>
-        <span class='text-lg font-bold text-base-strong'>{{ $t("schedule") }}</span>
-        <span class='ml-2 transition-all duration-700 ease-in-out'
-              :class='{ "opacity-100": scheduleSectionCollapsed, "opacity-0": !scheduleSectionCollapsed }'>{{
-            scheduleSectionDetails
-          }}</span>
-      </div>
-
-      <div class='collapse-content peer-hover:bg-base-300 transition-all duration-700 ease-in-out'>
-        <div class='grid grid-cols-1 xl:grid-cols-2 gap-6 mb-6'>
-          <ScheduleSelection :schedule='backupProfile.backupSchedule ?? BackupSchedule.createFrom()'
-                             @update:schedule='saveSchedule' />
-
-          <PruningCard :backup-profile-id='backupProfile.id'
-                       :pruning-rule='backupProfile.pruningRule ?? PruningRule.createFrom()'
-                       :ask-for-save-before-leaving='true'
-                       @update:pruning-rule='setPruningRule'>
-          </PruningCard>
-        </div>
-      </div>
-    </div>
+    <!-- Option Cards -->
+    <BackupProfileOptions
+      class='p-4'
+      :backup-profile='backupProfile'
+      :ask-for-save-before-leaving='true'
+      @update:schedule='saveSchedule'
+      @update:pruning-rule='setPruningRule'
+      @update:compression='onCompressionUpdate' />
 
     <!-- Repositories Section -->
     <div class='p-4'>
@@ -536,7 +447,7 @@ watch(
           class='btn btn-sm btn-ghost gap-1'
         >
           <PlusCircleIcon class='size-5' />
-          <span>Add Repository</span>
+          <span>Add storage location</span>
         </button>
       </div>
       <div class='grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 mb-4'>
@@ -554,7 +465,7 @@ watch(
           >
           </RepoCard>
         </div>
-        <!-- Add Repository Card -->
+        <!-- Add Storage Location Card -->
         <div
           v-if='!shouldShowPlusInTitle'
           role='button'
@@ -562,10 +473,10 @@ watch(
           @click='isAddRepoModalOpen = true'
           @keydown='(e) => handleKeyboardActivation(e, () => isAddRepoModalOpen = true)'
           class='flex justify-center items-center gap-2 w-full ac-card-dotted cursor-pointer hover:bg-base-300 transition-colors py-6 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2'
-          aria-label='Add Repository'
+          aria-label='Add storage location'
         >
           <PlusCircleIcon class='size-8' aria-hidden='true' />
-          <div class='text-base font-semibold'>Add Repository</div>
+          <div class='text-base font-semibold'>Add storage location</div>
         </div>
 
         <TransitionRoot :show='isAddRepoModalOpen'>
@@ -593,16 +504,16 @@ watch(
 
                       <div class='divider'></div>
 
-                      <!-- Add new Repository -->
+                      <!-- Add new Storage Location -->
                       <div
                         class='group flex justify-between items-end ac-card-hover w-96 p-10 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2'
                         role='button'
                         tabindex='0'
                         @click='router.push({ path: Page.AddRepository, query: { fromBackupProfile: backupProfile.id.toString() } })'
                         @keydown='(e) => handleKeyboardActivation(e, () => router.push({ path: Page.AddRepository, query: { fromBackupProfile: backupProfile.id.toString() } }))'
-                        aria-label='Create new repository'
+                        aria-label='Create new storage location'
                       >
-                        <p>Create new repository</p>
+                        <p>Create new storage location</p>
                         <div class='relative size-24 group-hover:text-arco-cloud-repo'>
                           <CircleStackIcon class='absolute inset-0 size-24 z-10' aria-hidden='true' />
                           <div

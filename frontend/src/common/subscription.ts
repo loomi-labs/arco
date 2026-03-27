@@ -35,7 +35,7 @@ export function useSubscriptionNotifications() {
     // Listen for subscription added events
     const onSubscriptionAdded = Events.On(EventHelpers.subscriptionAddedEvent(), async () => {
       try {
-        toast.success("Subscription activated successfully! You can now create cloud repositories.");
+        toast.success("Subscription activated successfully! You can now create cloud storage locations.");
       } catch (error) {
         await showAndLogError("Error handling subscription added event:", error);
       }
