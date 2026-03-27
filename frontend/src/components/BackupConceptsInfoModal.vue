@@ -57,7 +57,7 @@ defineExpose({ showModal, close });
                 <div class='mb-6'>
                   <div class='flex items-center gap-2 mb-2'>
                     <CircleStackIcon class='size-5' />
-                    <h4 class='font-semibold'>Repositories</h4>
+                    <h4 class='font-semibold'>Storage Locations</h4>
                   </div>
                   <p class='text-base-content/70 mb-2'>
                     Defines <span class='font-semibold'>where</span> your backup archives are stored. Data is deduplicated, and encrypted if you set a password.
@@ -77,11 +77,11 @@ defineExpose({ showModal, close });
                   </div>
                   <p class='text-base-content/70 mb-2'>
                     A <span class='font-semibold'>backup profile</span>  tells Arco <span class='font-semibold'>what</span> to back up and <span class='font-semibold'>when</span>.
-                    A <span class='font-semibold'>repository</span> tells Arco <span class='font-semibold'>where</span> to store it.
+                    A <span class='font-semibold'>storage location</span> tells Arco <span class='font-semibold'>where</span> to store it.
                     Each backup creates an <span class='font-semibold'>archive</span> which is a snapshot you can browse and restore.
                   </p>
                   <p class='text-base-content/70'>
-                    Multiple profiles can share a repository, but it's better to use separate repositories for <span class='font-semibold'>different data sets</span> (improves deduplication).
+                    Multiple profiles can share a storage location, but it's better to use separate storage locations for <span class='font-semibold'>different data sets</span> (improves deduplication).
                   </p>
                 </div>
 

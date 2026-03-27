@@ -134,7 +134,7 @@ async function createRepo() {
       noPassword ? "" : password.value!,
       noPassword
     );
-    toast.success("Repository created");
+    toast.success("Storage location created");
 
     // Show success confirmation for new encrypted repos
     // Store repo to emit later when modal closes (after user confirms password save)
@@ -149,7 +149,7 @@ async function createRepo() {
       close();
     }
   } catch (error: unknown) {
-    await showAndLogError("Failed to init new repository", error);
+    await showAndLogError("Failed to init new storage location", error);
   }
   isCreating.value = false;
 }
@@ -233,7 +233,7 @@ async function validate(force = false) {
       } else {
         // For new repositories (not existing borg repos)
         if (password.value !== undefined || force) {
-          passwordError.value = isEncrypted.value && !password.value ? "Enter a password for this repository" : undefined;
+          passwordError.value = isEncrypted.value && !password.value ? "Enter a password for this storage location" : undefined;
         }
       }
     } else {
@@ -244,7 +244,7 @@ async function validate(force = false) {
       if (!isEncrypted.value) {
         passwordError.value = undefined;
       } else if (password.value !== undefined || force) {
-        passwordError.value = isEncrypted.value && !password.value ? "Enter a password for this repository" : undefined;
+        passwordError.value = isEncrypted.value && !password.value ? "Enter a password for this storage location" : undefined;
       }
     }
   } catch (error: unknown) {
@@ -422,7 +422,7 @@ watch([name, location, password, isEncrypted], async () => {
                              autocapitalize='off'
                              v-model='name'
                              @input='isNameTouchedByUser = true'
-                             placeholder='Repository name' />
+                             placeholder='Storage location name' />
                       <CheckCircleIcon v-if='!nameError && name' class='size-5 text-success' />
                       <ExclamationCircleIcon v-if='nameError' class='size-5 text-error' />
                     </label>

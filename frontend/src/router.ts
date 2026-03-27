@@ -32,7 +32,7 @@ const routes: RouteRecordRaw[] = [
   { path: Page.AddRepository, component: AddRepositoryPage },
   { path: Page.Subscription, component: SubscriptionPage },
   { path: Page.Settings, component: SettingsPage },
-  { path: "/", redirect: Page.Dashboard }
+{ path: "/", redirect: Page.Dashboard }
 ];
 
 export function withId(page: Page, id: string | number): string {

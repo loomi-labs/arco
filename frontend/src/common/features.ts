@@ -45,7 +45,7 @@ export function getFeaturesByPlan(plan: Plan | undefined): PlanFeature[] {
       text: `${plan.storage_gb ?? 0}GB storage included`
     },
     {
-      text: (plan.allowed_repositories ?? 0) === 0 ? 'Unlimited repositories' : `Up to ${plan.allowed_repositories} repositories`
+      text: (plan.allowed_repositories ?? 0) === 0 ? 'Unlimited storage locations' : `Up to ${plan.allowed_repositories} storage locations`
     },
     ...(isProPlan ? [{
       text: "Overage pricing beyond base storage",

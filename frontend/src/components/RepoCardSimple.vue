@@ -153,7 +153,7 @@ onUnmounted(() => {
       <!-- Name & Encryption -->
       <div class='flex justify-between items-center mb-4'>
         <h3 class='text-lg font-semibold'>{{ repo.name }}</h3>
-        <span v-if='repo.hasPassword' class='tooltip' data-tip='Repository is encrypted with a password'>
+        <span v-if='repo.hasPassword' class='tooltip' data-tip='Storage location is encrypted with a password'>
           <LockClosedIcon class='size-5 text-base-content/60 cursor-pointer' />
         </span>
         <span v-else class='text-xs text-base-content/40'>No encryption</span>

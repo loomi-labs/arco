@@ -60,7 +60,7 @@ defineExpose({ showModal, close });
                   <div class='border border-base-300 rounded-lg p-4'>
                     <div class='grid grid-cols-[1fr_auto] gap-6'>
                       <div>
-                        <h4 class='font-semibold mb-1'>lz4</h4>
+                        <h4 class='font-semibold mb-1'>Fast (lz4)</h4>
                         <p class='text-sm text-base-content/70'>Fast compression with low ratio.</p>
                       </div>
                       <div class='w-48 space-y-2'>
@@ -81,7 +81,7 @@ defineExpose({ showModal, close });
                   <div class='border border-base-300 rounded-lg p-4'>
                     <div class='grid grid-cols-[1fr_auto] gap-6'>
                       <div>
-                        <h4 class='font-semibold mb-1'>zstd</h4>
+                        <h4 class='font-semibold mb-1'>Balanced (zstd)</h4>
                         <p class='text-sm text-base-content/70'>Modern, balanced algorithm. Good ratio with speed.</p>
                       </div>
                       <div class='w-48 space-y-2'>
@@ -102,8 +102,8 @@ defineExpose({ showModal, close });
                   <div class='border border-base-300 rounded-lg p-4'>
                     <div class='grid grid-cols-[1fr_auto] gap-6'>
                       <div>
-                        <h4 class='font-semibold mb-1'>zlib</h4>
-                        <p class='text-sm text-base-content/70'>Balanced compression. Widely compatible.</p>
+                        <h4 class='font-semibold mb-1'>Classic (zlib)</h4>
+                        <p class='text-sm text-base-content/70'>Classic compression. Widely compatible.</p>
                       </div>
                       <div class='w-48 space-y-2'>
                         <div class='flex items-center gap-2'>
@@ -123,7 +123,7 @@ defineExpose({ showModal, close });
                   <div class='border border-base-300 rounded-lg p-4'>
                     <div class='grid grid-cols-[1fr_auto] gap-6'>
                       <div>
-                        <h4 class='font-semibold mb-1'>lzma</h4>
+                        <h4 class='font-semibold mb-1'>Maximum (lzma)</h4>
                         <p class='text-sm text-base-content/70'>Maximum compression. Slowest, smallest size.</p>
                       </div>
                       <div class='w-48 space-y-2'>

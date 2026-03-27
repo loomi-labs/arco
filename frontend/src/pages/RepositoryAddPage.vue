@@ -35,7 +35,7 @@ async function handleRepoCreated(repo: Repository) {
       await backupProfileService.AddRepositoryToBackupProfile(fromBackupProfileId.value, repo.id);
       // Note: Toast already shown by the create modal, so we don't add another one here
     } catch (error: unknown) {
-      await showAndLogError("Failed to add repository to backup profile", error);
+      await showAndLogError("Failed to add storage location to backup profile", error);
     }
     await router.push(withId(Page.BackupProfile, fromBackupProfileId.value));
   } else {
@@ -53,7 +53,7 @@ async function handleRepoCreated(repo: Repository) {
 <template>
   <div class='container mx-auto text-left flex flex-col max-w-[800px]'>
 
-    <h1 class='text-4xl font-bold text-center p-10'>New Repository</h1>
+    <h1 class='text-4xl font-bold p-10'>New Storage Location</h1>
 
     <ConnectRepo
       :show-add-repo='true'

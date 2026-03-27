@@ -829,7 +829,7 @@ onMounted(async () => {
                             <div class='flex flex-col gap-1'>
                               <span class='font-medium'>{{ plan.name }}</span>
                               <span class='text-xs text-base-content/70'>
-                                {{ plan.storage_gb ?? 0 }} GB storage • {{ (plan.allowed_repositories ?? 0) === 0 ? 'Unlimited' : plan.allowed_repositories }} repos
+                                {{ plan.storage_gb ?? 0 }} GB storage • {{ (plan.allowed_repositories ?? 0) === 0 ? 'Unlimited' : plan.allowed_repositories }} storage locations
                               </span>
                               <span class='text-xs text-base-content/70'>
                                 <template v-if='plan.is_free'>Free</template>
@@ -876,8 +876,8 @@ onMounted(async () => {
                       <template v-if='selectedSwitchPlanDetails.is_free'>Hard limit</template>
                       <template v-else>${{ ((selectedSwitchPlanDetails.overage_cents_per_gb ?? 0) / 100).toFixed(3) }} per GB over {{ selectedSwitchPlanDetails.storage_gb ?? 0 }}GB</template>
                     </span>
-                    <!-- Repositories -->
-                    <span class='text-sm text-base-content/70'>Repositories</span>
+                    <!-- Storage Locations -->
+                    <span class='text-sm text-base-content/70'>Storage Locations</span>
                     <span class='text-sm text-right'>{{ (subscription?.plan?.allowed_repositories ?? 0) === 0 ? 'Unlimited' : subscription?.plan?.allowed_repositories }}</span>
                     <span class='text-center' :class='isSwitchUpgrade ? "text-success" : "text-warning"'>→</span>
                     <span :class='["text-sm font-medium", isSwitchUpgrade ? "text-success" : "text-warning"]'>
@@ -1161,7 +1161,7 @@ onMounted(async () => {
                       <div class='flex items-start gap-3'>
                         <div class='badge badge-info badge-sm mt-0.5'>1</div>
                         <div>
-                          <strong>Until {{ nextBillingDate }}:</strong> Full access continues - create backups, repositories,
+                          <strong>Until {{ nextBillingDate }}:</strong> Full access continues - create backups, storage locations,
                           and use all features normally.
                         </div>
                       </div>
@@ -1170,7 +1170,7 @@ onMounted(async () => {
                         <div class='badge badge-warning badge-sm mt-0.5'>2</div>
                         <div>
                           <strong>After {{ nextBillingDate }}:</strong> Account becomes read-only - you can access and download
-                          your data, but cannot create new backups or repositories.
+                          your data, but cannot create new backups or storage locations.
                         </div>
                       </div>
 

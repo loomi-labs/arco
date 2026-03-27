@@ -67,7 +67,7 @@ const errorTooltipText = computed(() => {
     return "";
   }
 
-  return "Click to view repository error details";
+  return "Click to view storage location error details";
 });
 
 const repositoryWithErrorId = computed(() => {
@@ -219,7 +219,7 @@ async function getRepositories() {
       .filter(repo => repo.state.error?.errorType === statemachine.ErrorType.ErrorTypeLocked)
       .filter(repo => props.backupIds.some(id => id.repositoryId === repo.id));
   } catch (error: unknown) {
-    await showAndLogError("Failed to get repository states", error);
+    await showAndLogError("Failed to get storage location states", error);
   }
 }
 

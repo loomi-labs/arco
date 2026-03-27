@@ -173,7 +173,7 @@ function subscribeToFreePlan(planName: string) {
             <FolderIcon class='size-5 text-base-content/50' />
             <div>
               <p class='font-semibold'>{{ (plan.allowed_repositories ?? 0) === 0 ? 'Unlimited' : plan.allowed_repositories }}</p>
-              <p class='text-xs text-base-content/60'>Repositories</p>
+              <p class='text-xs text-base-content/60'>Storage Locations</p>
             </div>
           </div>
 
