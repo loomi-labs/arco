@@ -1,22 +1,22 @@
--- Test seed data for migration testing
--- This data represents the state after migration 20250221150025_add_collapse_state.sql
--- Schema at this point has repositories with 'location' field (before rename to 'url')
+-- Seed data after init migration (20241202145510)
+-- Schema at this point: repositories has 'location' and 'password' columns,
+-- backup_profiles does NOT have collapse or compression columns.
 
--- Insert repositories (using 'location' field, not 'url')
+-- Insert repositories (with location, password -- init schema)
 INSERT INTO `repositories` (`id`, `created_at`, `updated_at`, `name`, `location`, `password`, `stats_total_chunks`, `stats_total_size`, `stats_total_csize`, `stats_total_unique_chunks`, `stats_unique_size`, `stats_unique_csize`)
 VALUES
     (1, '2024-01-01 10:00:00', '2024-01-01 10:00:00', 'Test Repo 1', 'ssh://user@host1.example.com:22/~/backup', 'password123', 100, 1024000, 512000, 80, 819200, 409600),
     (2, '2024-01-02 10:00:00', '2024-01-02 10:00:00', 'Test Repo 2', 'ssh://user@host2.example.com:22/~/backup', 'password456', 200, 2048000, 1024000, 150, 1638400, 819200);
 
--- Insert backup profiles
+-- Insert backup profiles (without collapse columns -- they don't exist yet)
 -- Note: Profile 3 intentionally has the same name as Profile 1 to test duplicate name migration
-INSERT INTO `backup_profiles` (`id`, `created_at`, `updated_at`, `name`, `prefix`, `backup_paths`, `exclude_paths`, `icon`, `data_section_collapsed`, `schedule_section_collapsed`)
+INSERT INTO `backup_profiles` (`id`, `created_at`, `updated_at`, `name`, `prefix`, `backup_paths`, `exclude_paths`, `icon`)
 VALUES
-    (1, '2024-01-01 10:00:00', '2024-01-01 10:00:00', 'Home Backup', 'home-', '["\/home\/user\/documents", "\/home\/user\/photos"]', '["*.tmp", "*.cache"]', 'home', false, false),
-    (2, '2024-01-02 10:00:00', '2024-01-02 10:00:00', 'Work Backup', 'work-', '["\/home\/user\/work"]', '["node_modules"]', 'briefcase', false, false),
-    (3, '2024-01-03 10:00:00', '2024-01-03 10:00:00', 'Home Backup', 'home2-', '["\/home\/user\/music"]', '["*.mp3"]', 'camera', true, true);
+    (1, '2024-01-01 10:00:00', '2024-01-01 10:00:00', 'Home Backup', 'home-', '["\/home\/user\/documents", "\/home\/user\/photos"]', '["*.tmp", "*.cache"]', 'home'),
+    (2, '2024-01-02 10:00:00', '2024-01-02 10:00:00', 'Work Backup', 'work-', '["\/home\/user\/work"]', '["node_modules"]', 'briefcase'),
+    (3, '2024-01-03 10:00:00', '2024-01-03 10:00:00', 'Home Backup', 'home2-', '["\/home\/user\/music"]', '["*.mp3"]', 'camera');
 
--- Insert backup_profile_repositories relationships (this is the critical data to preserve)
+-- Insert backup_profile_repositories relationships
 INSERT INTO `backup_profile_repositories` (`backup_profile_id`, `repository_id`)
 VALUES
     (1, 1),  -- Home Backup -> Test Repo 1
@@ -25,11 +25,10 @@ VALUES
     (3, 2);  -- Home Backup (duplicate) -> Test Repo 2
 
 -- Insert archives
--- Note: Using archive_backup_profile column as this represents state before October 2025 migration
-INSERT INTO `archives` (`id`, `created_at`, `updated_at`, `name`, `duration`, `borg_id`, `will_be_pruned`, `archive_repository`, `archive_backup_profile`)
+INSERT INTO `archives` (`id`, `created_at`, `updated_at`, `name`, `duration`, `borg_id`, `will_be_pruned`, `archive_repository`, `archive_backup_profile`, `backup_profile_archives`)
 VALUES
-    (1, '2024-01-01 12:00:00', '2024-01-01 12:00:00', 'home-2024-01-01', 120.5, 'abc123def456', false, 1, 1),
-    (2, '2024-01-02 12:00:00', '2024-01-02 12:00:00', 'work-2024-01-02', 95.3, 'ghi789jkl012', false, 1, 2);
+    (1, '2024-01-01 12:00:00', '2024-01-01 12:00:00', 'home-2024-01-01', 120.5, 'abc123def456', false, 1, 1, NULL),
+    (2, '2024-01-02 12:00:00', '2024-01-02 12:00:00', 'work-2024-01-02', 95.3, 'ghi789jkl012', false, 1, 2, NULL);
 
 -- Insert notifications
 INSERT INTO `notifications` (`id`, `created_at`, `updated_at`, `message`, `type`, `seen`, `notification_backup_profile`, `notification_repository`)
@@ -50,5 +49,3 @@ VALUES
     (1, '2024-01-01 10:00:00', '2024-01-01 10:00:00', true, 24, 7, 4, 6, 2, 30, 1),
     (2, '2024-01-02 10:00:00', '2024-01-02 10:00:00', true, 0, 14, 8, 12, 3, 60, 2),
     (3, '2024-01-03 10:00:00', '2024-01-03 10:00:00', false, 12, 30, 12, 24, 5, 90, 3);
-
--- Settings row already exists from 20241202193640_default_settings.sql migration
