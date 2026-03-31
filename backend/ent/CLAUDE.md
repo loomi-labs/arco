@@ -58,12 +58,13 @@ PRAGMA foreign_keys = on;
 - Always disable FK constraints during table recreation
 - Recreate dependent tables to restore foreign key relationships
 
-**Testing table recreation migrations:**
-When using table recreation, update the migration tests in `backend/ent/migrate/migrate_test.go`:
-1. Add seed data for the affected tables in `testdata/seed_data.sql`
-2. Update `captureState()` to capture pre-migration state for affected fields
-3. Update `validateMigration()` to verify data was preserved correctly
-4. Run `task test` to verify migrations preserve all data and relationships
+**Testing migrations:**
+Every migration must have a validator in `backend/ent/migrate/migrate_test.go`:
+1. Add a validator function (e.g., `validateMyMigration`) to check the migration's effect
+2. Register it in the `migrationValidators` map — `TestMigrationCoverage` enforces this
+3. If the migration needs seed data, add `testdata/<version>.sql` (version = numeric prefix)
+4. Update `knownEntities` in `TestSchemaCompleteness` if adding/removing entities
+5. Run `task test` to verify
 
 ### Foreign Key Handling
 
