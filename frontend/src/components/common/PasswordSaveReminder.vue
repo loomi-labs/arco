@@ -53,7 +53,7 @@ async function copyPassword(password: string) {
     </div>
     <h3 class='font-bold text-xl mb-2'>Save Your Password!</h3>
     <p class='text-base-content/70 mb-6'>
-      Your repository has been created successfully.<br><br>
+      Your storage location has been created successfully.<br><br>
       <span class='font-bold text-warning'>Warning:</span> If you lose this password,
       <span class='font-bold'>you will permanently lose access to all your backups.</span>
       There is no way to recover it. Please store it safely in a password manager or write it down.

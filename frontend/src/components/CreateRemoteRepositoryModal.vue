@@ -308,11 +308,11 @@ watch([name, location, password, isEncrypted], async () => {
 
                 <!-- Form View -->
                 <template v-else>
-                  <DialogTitle as='h3' class='font-bold text-xl mb-2'>Add Remote Repository</DialogTitle>
-                  <p class='text-base-content/70 mb-4'>You can create a new repository or connect an existing one.</p>
+                  <DialogTitle as='h3' class='font-bold text-xl mb-2'>Add Remote Storage Location</DialogTitle>
+                  <p class='text-base-content/70 mb-4'>You can create a new storage location or connect an existing one.</p>
 
                   <div v-if='isBorgRepo' role='alert' class='alert alert-soft alert-info py-2 mb-4'>
-                    <span>Existing repository found.</span>
+                    <span>Existing storage location found.</span>
                   </div>
 
                   <div class='space-y-4'>
@@ -346,17 +346,17 @@ watch([name, location, password, isEncrypted], async () => {
                     <!-- Encryption Toggle -->
                     <div class='pt-2'>
                       <p v-if='!isBorgRepo' class='text-sm text-base-content/70 mb-2'>
-                        You can choose to encrypt your repository with a password. All backups will then be unreadable without the password.
+                        You can choose to encrypt your storage location with a password. All backups will then be unreadable without the password.
                       </p>
                       <p v-else-if='needsPassword' class='text-sm text-base-content/70 mb-2'>
-                        This repository is encrypted and requires a password.
+                        This storage location is encrypted and requires a password.
                       </p>
                       <p v-else class='text-sm text-base-content/70 mb-2'>
-                        This repository is not encrypted.
+                        This storage location is not encrypted.
                       </p>
                       <div class='form-control w-52'>
                         <label class='label cursor-pointer'>
-                          <span class='label-text'>Encrypt repository</span>
+                          <span class='label-text'>Encrypt storage location</span>
                           <input type='checkbox' class='toggle toggle-secondary' v-model='isEncrypted' :disabled='isBorgRepo' />
                         </label>
                       </div>

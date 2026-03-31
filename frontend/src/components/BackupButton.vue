@@ -348,10 +348,10 @@ onUnmounted(() => {
                 confirm-text='Stop browsing and start backup'
                 confirm-class='btn-info'
                 @confirm='unmountAllAndRunBackups'>
-    <p v-if='reposWithMounts.length === 1'>You are currently browsing the repository <span
+    <p v-if='reposWithMounts.length === 1'>You are currently browsing the storage location <span
       class='italic'>{{ reposWithMounts[0].name }}</span>.</p>
     <div v-else>
-      <p>You are currently browsing the following repositories:</p>
+      <p>You are currently browsing the following storage locations:</p>
       <ul class='mb-4'>
         <li v-for='(repo, index) in reposWithMounts' :key='index'>- <span class='italic'>{{ repo.name }}</span></li>
       </ul>
@@ -368,14 +368,14 @@ onUnmounted(() => {
     <p v-if='lockedRepos.length === 1'><span class='italic'>{{ lockedRepos[0].name }}</span> has
       been locked!</p>
     <div v-else>
-      <p>The following repositories have been locked:</p>
+      <p>The following storage locations have been locked:</p>
       <ul class='mb-4'>
         <li v-for='(repo, index) in lockedRepos' :key='index'>- <span class='italic'>{{ repo.name }}</span></li>
       </ul>
     </div>
-    <p class='mb-4'>This can happen if multiple instances try to do backup operations on the same repository.</p>
+    <p class='mb-4'>This can happen if multiple instances try to do backup operations on the same storage location.</p>
 
-    <p class='mb-4'>Make sure that no other process (borg, arco, etc.) is running on this repository before removing the
+    <p class='mb-4'>Make sure that no other process (borg, arco, etc.) is running on this storage location before removing the
       lock!</p>
     <p class='mb-4'>
       {{

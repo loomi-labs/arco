@@ -146,7 +146,7 @@ defineExpose({
                     <CheckCircleIcon class='h-6 w-6' />
                     <div>
                       <div class='font-semibold'>Success</div>
-                      <div class='text-sm'>Your repository password has been updated.</div>
+                      <div class='text-sm'>Your storage location password has been updated.</div>
                     </div>
                   </div>
 

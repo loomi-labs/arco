@@ -388,7 +388,7 @@ onUnmounted(() => {
               d='M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z' />
       </svg>
       <div class='flex-1'>
-        <div class='font-bold'>Repository Error</div>
+        <div class='font-bold'>Storage Location Error</div>
         <div class='text-sm'>{{ repo.state.error?.message }}</div>
       </div>
       <!-- SSH Regeneration Button for Cloud Repositories -->
@@ -707,7 +707,7 @@ onUnmounted(() => {
                              v-model='healthcheckDepthQuick' />
                       <div>
                         <div class='font-semibold'>Quick Check</div>
-                        <div class='text-sm opacity-70'>Checks repository metadata only (faster)</div>
+                        <div class='text-sm opacity-70'>Checks storage location metadata only (faster)</div>
                       </div>
                     </label>
 
@@ -716,7 +716,7 @@ onUnmounted(() => {
                              v-model='healthcheckDepthQuick' />
                       <div>
                         <div class='font-semibold'>Full Check</div>
-                        <div class='text-sm opacity-70'>Checks repository + all data (slower)</div>
+                        <div class='text-sm opacity-70'>Checks storage location + all data (slower)</div>
                       </div>
                     </label>
                   </div>
@@ -727,7 +727,7 @@ onUnmounted(() => {
                       <path stroke-linecap='round' stroke-linejoin='round' stroke-width='2'
                             d='M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z' />
                     </svg>
-                    Full check reads all backup data and can take a long time for large repositories.
+                    Full check reads all backup data and can take a long time for large storage locations.
                   </div>
 
                   <div class='flex justify-between pt-5'>
