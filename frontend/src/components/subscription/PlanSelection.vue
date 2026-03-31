@@ -168,7 +168,7 @@ function subscribeToFreePlan(planName: string) {
             </div>
           </div>
 
-          <!-- Repositories -->
+          <!-- Storage Locations -->
           <div class='flex items-center gap-3'>
             <FolderIcon class='size-5 text-base-content/50' />
             <div>
