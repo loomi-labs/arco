@@ -297,6 +297,9 @@ func startApp(log *zap.SugaredLogger, config *types.Config, assets fs.FS, startH
 		systray.SetDarkModeIcon(config.Icons.AppIconDark)
 		systray.SetIcon(config.Icons.AppIconLight)
 	}
+	systray.OnClick(func() {
+		arco.ShowOrCreateMainWindow()
+	})
 
 	wailsApp.Event.OnApplicationEvent(events.Common.ApplicationStarted, func(event *application.ApplicationEvent) {
 		arco.Startup(application.Get().Context(), systray, trayMenu)
