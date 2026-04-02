@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"entgo.io/ent/dialect/sql"
+	"github.com/google/uuid"
 )
 
 const (
@@ -32,6 +33,10 @@ const (
 	FieldFullDiskAccessWarningDismissed = "full_disk_access_warning_dismissed"
 	// FieldFeedbackLastPromptedAt holds the string denoting the feedback_last_prompted_at field in the database.
 	FieldFeedbackLastPromptedAt = "feedback_last_prompted_at"
+	// FieldUsageLoggingEnabled holds the string denoting the usage_logging_enabled field in the database.
+	FieldUsageLoggingEnabled = "usage_logging_enabled"
+	// FieldInstallationID holds the string denoting the installation_id field in the database.
+	FieldInstallationID = "installation_id"
 	// Table holds the table name of the settings in the database.
 	Table = "settings"
 )
@@ -48,6 +53,8 @@ var Columns = []string{
 	FieldMacfuseWarningDismissed,
 	FieldFullDiskAccessWarningDismissed,
 	FieldFeedbackLastPromptedAt,
+	FieldUsageLoggingEnabled,
+	FieldInstallationID,
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -77,6 +84,8 @@ var (
 	DefaultMacfuseWarningDismissed bool
 	// DefaultFullDiskAccessWarningDismissed holds the default value on creation for the "full_disk_access_warning_dismissed" field.
 	DefaultFullDiskAccessWarningDismissed bool
+	// DefaultInstallationID holds the default value on creation for the "installation_id" field.
+	DefaultInstallationID func() uuid.UUID
 )
 
 // Theme defines the type for the "theme" enum field.
@@ -157,4 +166,14 @@ func ByFullDiskAccessWarningDismissed(opts ...sql.OrderTermOption) OrderOption {
 // ByFeedbackLastPromptedAt orders the results by the feedback_last_prompted_at field.
 func ByFeedbackLastPromptedAt(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldFeedbackLastPromptedAt, opts...).ToFunc()
+}
+
+// ByUsageLoggingEnabled orders the results by the usage_logging_enabled field.
+func ByUsageLoggingEnabled(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldUsageLoggingEnabled, opts...).ToFunc()
+}
+
+// ByInstallationID orders the results by the installation_id field.
+func ByInstallationID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldInstallationID, opts...).ToFunc()
 }

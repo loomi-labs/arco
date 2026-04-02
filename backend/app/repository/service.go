@@ -15,6 +15,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"github.com/google/uuid"
 	arcov1 "github.com/loomi-labs/arco/backend/api/v1"
+	"github.com/loomi-labs/arco/backend/app/analytics"
 	backupprofileservice "github.com/loomi-labs/arco/backend/app/backup_profile"
 	"github.com/loomi-labs/arco/backend/app/database"
 	"github.com/loomi-labs/arco/backend/app/keyring"
@@ -53,6 +54,7 @@ type Service struct {
 	borgClient      borg.Borg
 	cloudRepoClient *CloudRepositoryClient
 	keyring         *keyring.Service
+	analytics       analytics.Tracker
 }
 
 // ServiceInternal provides backend-only methods that should not be exposed to frontend
@@ -78,15 +80,16 @@ func NewService(log *zap.SugaredLogger, config *types.Config) *ServiceInternal {
 }
 
 // Init initializes the service with remaining dependencies
-func (si *ServiceInternal) Init(ctx context.Context, db *ent.Client, eventEmitter types.EventEmitter, borgClient borg.Borg, cloudRepoClient *CloudRepositoryClient, keyringService *keyring.Service) {
+func (si *ServiceInternal) Init(ctx context.Context, db *ent.Client, eventEmitter types.EventEmitter, borgClient borg.Borg, cloudRepoClient *CloudRepositoryClient, keyringService *keyring.Service, analyticsService analytics.Tracker) {
 	si.db = db
 	si.eventEmitter = eventEmitter
 	si.borgClient = borgClient
 	si.cloudRepoClient = cloudRepoClient
 	si.keyring = keyringService
+	si.analytics = analyticsService
 
 	// Initialize queue manager with database and borg clients
-	si.queueManager.Init(db, si.borgClient, si.eventEmitter, keyringService)
+	si.queueManager.Init(db, si.borgClient, si.eventEmitter, keyringService, analyticsService)
 
 	// Initialize mount states
 	si.initMountStates(ctx)
@@ -356,6 +359,15 @@ func (s *Service) Create(ctx context.Context, name, location, password string, n
 	}
 
 	s.eventEmitter.EmitEvent(ctx, types.EventRepositoryCreatedString())
+
+	locationType := "remote"
+	if strings.HasPrefix(location, "/") || strings.HasPrefix(location, "~") {
+		locationType = "local"
+	}
+	s.analytics.TrackEvent(ctx, analytics.EventRepositoryCreated, map[string]string{
+		analytics.PropLocationType: locationType,
+	})
+
 	return s.entityToRepository(ctx, repoEntity), nil
 }
 
@@ -441,6 +453,10 @@ func (s *Service) CreateCloudRepository(ctx context.Context, name, password stri
 	}
 
 	s.eventEmitter.EmitEvent(ctx, types.EventRepositoryCreatedString())
+	s.analytics.TrackEvent(ctx, analytics.EventRepositoryCreated, map[string]string{
+		analytics.PropLocationType: "arco_cloud",
+	})
+
 	return s.entityToRepository(ctx, entRepo), nil
 }
 
@@ -674,6 +690,7 @@ func (s *Service) Delete(ctx context.Context, id int) error {
 			return err
 		}
 		s.eventEmitter.EmitEvent(ctx, types.EventRepositoryDeletedString())
+		s.analytics.TrackEvent(ctx, analytics.EventRepositoryDeleted, nil)
 		return nil
 	}
 
@@ -707,7 +724,11 @@ func (s *Service) Delete(ctx context.Context, id int) error {
 	}
 
 	// Remove repository from database after successfully queuing the delete operation
-	return s.Remove(ctx, id)
+	if err := s.Remove(ctx, id); err != nil {
+		return err
+	}
+	s.analytics.TrackEvent(ctx, analytics.EventRepositoryDeleted, nil)
+	return nil
 }
 
 // RefreshArchives refreshes all archives of a repository

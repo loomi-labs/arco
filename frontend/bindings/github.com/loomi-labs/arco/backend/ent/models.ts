@@ -7,6 +7,9 @@ import { Create as $Create } from "@wailsio/runtime";
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
+import * as uuid$0 from "../../../../google/uuid/models.js";
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore: Unused imports
 import * as backupprofile$0 from "./backupprofile/models.js";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
@@ -26,6 +29,26 @@ import * as settings$0 from "./settings/models.js";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
 import * as time$0 from "../../../../../time/models.js";
+
+/**
+ * AnalyticsEventClient is a client for the AnalyticsEvent schema.
+ */
+export class AnalyticsEventClient {
+
+    /** Creates a new AnalyticsEventClient instance. */
+    constructor($$source: Partial<AnalyticsEventClient> = {}) {
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new AnalyticsEventClient instance from a string or object.
+     */
+    static createFrom($$source: any = {}): AnalyticsEventClient {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new AnalyticsEventClient($$parsedSource as Partial<AnalyticsEventClient>);
+    }
+}
 
 /**
  * Archive is the model entity for the Archive schema.
@@ -635,6 +658,11 @@ export class Client {
     "Schema": migrate$0.Schema | null;
 
     /**
+     * AnalyticsEvent is the client for interacting with the AnalyticsEvent builders.
+     */
+    "AnalyticsEvent": AnalyticsEventClient | null;
+
+    /**
      * Archive is the client for interacting with the Archive builders.
      */
     "Archive": ArchiveClient | null;
@@ -689,6 +717,9 @@ export class Client {
         if (!("Schema" in $$source)) {
             this["Schema"] = null;
         }
+        if (!("AnalyticsEvent" in $$source)) {
+            this["AnalyticsEvent"] = null;
+        }
         if (!("Archive" in $$source)) {
             this["Archive"] = null;
         }
@@ -738,39 +769,43 @@ export class Client {
         const $$createField8_0 = $$createType36;
         const $$createField9_0 = $$createType38;
         const $$createField10_0 = $$createType40;
+        const $$createField11_0 = $$createType42;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("Schema" in $$parsedSource) {
             $$parsedSource["Schema"] = $$createField0_0($$parsedSource["Schema"]);
         }
+        if ("AnalyticsEvent" in $$parsedSource) {
+            $$parsedSource["AnalyticsEvent"] = $$createField1_0($$parsedSource["AnalyticsEvent"]);
+        }
         if ("Archive" in $$parsedSource) {
-            $$parsedSource["Archive"] = $$createField1_0($$parsedSource["Archive"]);
+            $$parsedSource["Archive"] = $$createField2_0($$parsedSource["Archive"]);
         }
         if ("AuthSession" in $$parsedSource) {
-            $$parsedSource["AuthSession"] = $$createField2_0($$parsedSource["AuthSession"]);
+            $$parsedSource["AuthSession"] = $$createField3_0($$parsedSource["AuthSession"]);
         }
         if ("BackupProfile" in $$parsedSource) {
-            $$parsedSource["BackupProfile"] = $$createField3_0($$parsedSource["BackupProfile"]);
+            $$parsedSource["BackupProfile"] = $$createField4_0($$parsedSource["BackupProfile"]);
         }
         if ("BackupSchedule" in $$parsedSource) {
-            $$parsedSource["BackupSchedule"] = $$createField4_0($$parsedSource["BackupSchedule"]);
+            $$parsedSource["BackupSchedule"] = $$createField5_0($$parsedSource["BackupSchedule"]);
         }
         if ("CloudRepository" in $$parsedSource) {
-            $$parsedSource["CloudRepository"] = $$createField5_0($$parsedSource["CloudRepository"]);
+            $$parsedSource["CloudRepository"] = $$createField6_0($$parsedSource["CloudRepository"]);
         }
         if ("Notification" in $$parsedSource) {
-            $$parsedSource["Notification"] = $$createField6_0($$parsedSource["Notification"]);
+            $$parsedSource["Notification"] = $$createField7_0($$parsedSource["Notification"]);
         }
         if ("PruningRule" in $$parsedSource) {
-            $$parsedSource["PruningRule"] = $$createField7_0($$parsedSource["PruningRule"]);
+            $$parsedSource["PruningRule"] = $$createField8_0($$parsedSource["PruningRule"]);
         }
         if ("Repository" in $$parsedSource) {
-            $$parsedSource["Repository"] = $$createField8_0($$parsedSource["Repository"]);
+            $$parsedSource["Repository"] = $$createField9_0($$parsedSource["Repository"]);
         }
         if ("Settings" in $$parsedSource) {
-            $$parsedSource["Settings"] = $$createField9_0($$parsedSource["Settings"]);
+            $$parsedSource["Settings"] = $$createField10_0($$parsedSource["Settings"]);
         }
         if ("User" in $$parsedSource) {
-            $$parsedSource["User"] = $$createField10_0($$parsedSource["User"]);
+            $$parsedSource["User"] = $$createField11_0($$parsedSource["User"]);
         }
         return new Client($$parsedSource as Partial<Client>);
     }
@@ -847,7 +882,7 @@ export class CloudRepository {
      * Creates a new CloudRepository instance from a string or object.
      */
     static createFrom($$source: any = {}): CloudRepository {
-        const $$createField6_0 = $$createType41;
+        const $$createField6_0 = $$createType43;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("edges" in $$parsedSource) {
             $$parsedSource["edges"] = $$createField6_0($$parsedSource["edges"]);
@@ -986,7 +1021,7 @@ export class Notification {
      * Creates a new Notification instance from a string or object.
      */
     static createFrom($$source: any = {}): Notification {
-        const $$createField7_0 = $$createType42;
+        const $$createField7_0 = $$createType44;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("edges" in $$parsedSource) {
             $$parsedSource["edges"] = $$createField7_0($$parsedSource["edges"]);
@@ -1179,7 +1214,7 @@ export class PruningRule {
      * Creates a new PruningRule instance from a string or object.
      */
     static createFrom($$source: any = {}): PruningRule {
-        const $$createField13_0 = $$createType43;
+        const $$createField13_0 = $$createType45;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("edges" in $$parsedSource) {
             $$parsedSource["edges"] = $$createField13_0($$parsedSource["edges"]);
@@ -1389,7 +1424,7 @@ export class Repository {
     static createFrom($$source: any = {}): Repository {
         const $$createField7_0 = $$createType5;
         const $$createField9_0 = $$createType5;
-        const $$createField16_0 = $$createType44;
+        const $$createField16_0 = $$createType46;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("quickCheckError" in $$parsedSource) {
             $$parsedSource["quickCheckError"] = $$createField7_0($$parsedSource["quickCheckError"]);
@@ -1458,10 +1493,10 @@ export class RepositoryEdges {
      * Creates a new RepositoryEdges instance from a string or object.
      */
     static createFrom($$source: any = {}): RepositoryEdges {
-        const $$createField0_0 = $$createType45;
+        const $$createField0_0 = $$createType47;
         const $$createField1_0 = $$createType10;
         const $$createField2_0 = $$createType17;
-        const $$createField3_0 = $$createType47;
+        const $$createField3_0 = $$createType49;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("backupProfiles" in $$parsedSource) {
             $$parsedSource["backupProfiles"] = $$createField0_0($$parsedSource["backupProfiles"]);
@@ -1533,6 +1568,16 @@ export class Settings {
      */
     "feedbackLastPromptedAt": time$0.Time | null;
 
+    /**
+     * UsageLoggingEnabled holds the value of the "usage_logging_enabled" field.
+     */
+    "usageLoggingEnabled": boolean | null;
+
+    /**
+     * InstallationID holds the value of the "installation_id" field.
+     */
+    "installationId": uuid$0.UUID;
+
     /** Creates a new Settings instance. */
     constructor($$source: Partial<Settings> = {}) {
         if (!("createdAt" in $$source)) {
@@ -1558,6 +1603,12 @@ export class Settings {
         }
         if (!("feedbackLastPromptedAt" in $$source)) {
             this["feedbackLastPromptedAt"] = null;
+        }
+        if (!("usageLoggingEnabled" in $$source)) {
+            this["usageLoggingEnabled"] = null;
+        }
+        if (!("installationId" in $$source)) {
+            this["installationId"] = "";
         }
 
         Object.assign(this, $$source);
@@ -1634,30 +1685,32 @@ const $$createType17 = $Create.Array($$createType16);
 const $$createType18 = BackupScheduleEdges.createFrom;
 const $$createType19 = migrate$0.Schema.createFrom;
 const $$createType20 = $Create.Nullable($$createType19);
-const $$createType21 = ArchiveClient.createFrom;
+const $$createType21 = AnalyticsEventClient.createFrom;
 const $$createType22 = $Create.Nullable($$createType21);
-const $$createType23 = AuthSessionClient.createFrom;
+const $$createType23 = ArchiveClient.createFrom;
 const $$createType24 = $Create.Nullable($$createType23);
-const $$createType25 = BackupProfileClient.createFrom;
+const $$createType25 = AuthSessionClient.createFrom;
 const $$createType26 = $Create.Nullable($$createType25);
-const $$createType27 = BackupScheduleClient.createFrom;
+const $$createType27 = BackupProfileClient.createFrom;
 const $$createType28 = $Create.Nullable($$createType27);
-const $$createType29 = CloudRepositoryClient.createFrom;
+const $$createType29 = BackupScheduleClient.createFrom;
 const $$createType30 = $Create.Nullable($$createType29);
-const $$createType31 = NotificationClient.createFrom;
+const $$createType31 = CloudRepositoryClient.createFrom;
 const $$createType32 = $Create.Nullable($$createType31);
-const $$createType33 = PruningRuleClient.createFrom;
+const $$createType33 = NotificationClient.createFrom;
 const $$createType34 = $Create.Nullable($$createType33);
-const $$createType35 = RepositoryClient.createFrom;
+const $$createType35 = PruningRuleClient.createFrom;
 const $$createType36 = $Create.Nullable($$createType35);
-const $$createType37 = SettingsClient.createFrom;
+const $$createType37 = RepositoryClient.createFrom;
 const $$createType38 = $Create.Nullable($$createType37);
-const $$createType39 = UserClient.createFrom;
+const $$createType39 = SettingsClient.createFrom;
 const $$createType40 = $Create.Nullable($$createType39);
-const $$createType41 = CloudRepositoryEdges.createFrom;
-const $$createType42 = NotificationEdges.createFrom;
-const $$createType43 = PruningRuleEdges.createFrom;
-const $$createType44 = RepositoryEdges.createFrom;
-const $$createType45 = $Create.Array($$createType4);
-const $$createType46 = CloudRepository.createFrom;
-const $$createType47 = $Create.Nullable($$createType46);
+const $$createType41 = UserClient.createFrom;
+const $$createType42 = $Create.Nullable($$createType41);
+const $$createType43 = CloudRepositoryEdges.createFrom;
+const $$createType44 = NotificationEdges.createFrom;
+const $$createType45 = PruningRuleEdges.createFrom;
+const $$createType46 = RepositoryEdges.createFrom;
+const $$createType47 = $Create.Array($$createType4);
+const $$createType48 = CloudRepository.createFrom;
+const $$createType49 = $Create.Nullable($$createType48);

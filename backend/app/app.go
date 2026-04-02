@@ -18,6 +18,7 @@ import (
 	"github.com/Masterminds/semver/v3"
 	"github.com/google/go-github/v66/github"
 	"github.com/loomi-labs/arco/backend/api/v1/arcov1connect"
+	"github.com/loomi-labs/arco/backend/app/analytics"
 	"github.com/loomi-labs/arco/backend/app/auth"
 	"github.com/loomi-labs/arco/backend/app/backup_profile"
 	"github.com/loomi-labs/arco/backend/app/feedback"
@@ -69,6 +70,7 @@ type App struct {
 	repositoryService    *repository.ServiceInternal
 	backupProfileService *backup_profile.ServiceInternal
 	feedbackService      *feedback.ServiceInternal
+	analyticsService     *analytics.ServiceInternal
 	notificationService  *notification.Service
 	trayService          *tray.Service
 }
@@ -98,6 +100,7 @@ func NewApp(
 		repositoryService:        repository.NewService(log, config),
 		backupProfileService:     backup_profile.NewService(log, state, config),
 		feedbackService:          feedback.NewService(log, state),
+		analyticsService:         analytics.NewService(log, state),
 		notificationService:      notification.NewService(log),
 		trayService:              tray.NewService(log),
 	}
@@ -137,6 +140,10 @@ func (a *App) Keyring() *keyring.Service {
 
 func (a *App) FeedbackService() *feedback.Service {
 	return a.feedbackService.Service
+}
+
+func (a *App) AnalyticsService() *analytics.Service {
+	return a.analyticsService.Service
 }
 
 func (a *App) NotificationService() *notification.Service {
@@ -282,22 +289,30 @@ func (a *App) Startup(ctx context.Context, systray *application.SystemTray, tray
 		connect.WithInterceptors(jwtInterceptor.UnaryInterceptor()),
 	)
 
+	// Create analytics RPC client (uses JWT interceptor for optional user identification)
+	analyticsRPCClient := arcov1connect.NewAnalyticsServiceClient(
+		httpClient,
+		a.config.CloudRPCURL,
+		connect.WithInterceptors(jwtInterceptor.UnaryInterceptor()),
+	)
+
 	// Initialize services with database and authenticated RPC clients
-	a.userService.Init(a.db, a.eventEmitter)
+	a.userService.Init(a.db, a.eventEmitter, a.analyticsService.Service)
 	a.notificationService.Init(a.db, a.eventEmitter)
-	a.authService.Init(a.db, authRPCClient, a.keyring)
+	a.authService.Init(a.db, authRPCClient, a.keyring, a.analyticsService.Service)
 	a.planService.Init(a.db, planRPCClient)
 	a.legalService.Init(a.db, legalRPCClient)
 	a.subscriptionService.Init(a.db, subscriptionRPCClient)
 	a.feedbackService.Init(a.db, feedbackRPCClient)
+	a.analyticsService.Init(a.db, analyticsRPCClient)
 
 	cloudRepositoryService := repository.NewCloudRepositoryClient(a.log, a.state, a.config)
 	cloudRepositoryService.Init(a.db, cloudRepositoryRPCClient)
 
-	a.repositoryService.Init(a.ctx, a.db, a.eventEmitter, a.borg, cloudRepositoryService, a.keyring)
+	a.repositoryService.Init(a.ctx, a.db, a.eventEmitter, a.borg, cloudRepositoryService, a.keyring, a.analyticsService.Service)
 
 	// Initialize backup profile service with repository service dependency
-	a.backupProfileService.Init(a.ctx, a.db, a.eventEmitter, a.backupScheduleChangedCh, a.pruningScheduleChangedCh, a.repositoryService)
+	a.backupProfileService.Init(a.ctx, a.db, a.eventEmitter, a.backupScheduleChangedCh, a.pruningScheduleChangedCh, a.repositoryService, a.analyticsService.Service)
 
 	// Initialize tray service with app as controller for window/quit operations
 	a.trayService.Init(a.backupProfileService.Service, a, systray, trayMenu)
@@ -324,6 +339,9 @@ func (a *App) Startup(ctx context.Context, systray *application.SystemTray, tray
 		// Don't fail startup for token validation errors, just log them
 	}
 
+	// Start analytics flush loop
+	go a.analyticsService.StartFlushLoop(a.ctx)
+
 	// Start ArcoCloud sync listener
 	go a.startArcoCloudSyncListener()
 
@@ -343,10 +361,17 @@ func (a *App) Startup(ctx context.Context, systray *application.SystemTray, tray
 
 	// Set the app as ready
 	a.state.SetStartupStatus(a.ctx, appstate.StartupStatusReady, nil)
+
+	// Track app started event
+	go func() {
+		a.analyticsService.TrackEvent(a.ctx, analytics.EventAppStarted, nil)
+	}()
 }
 
 func (a *App) Shutdown() {
 	a.log.Info(fmt.Sprintf("Shutting down %s", Name))
+	a.analyticsService.StopFlushLoop()
+	a.analyticsService.FlushAndShutdown()
 	a.cancel()
 	err := a.db.Close()
 	if err != nil {

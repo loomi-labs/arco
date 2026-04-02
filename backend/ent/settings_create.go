@@ -10,6 +10,7 @@ import (
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/google/uuid"
 	"github.com/loomi-labs/arco/backend/ent/settings"
 )
 
@@ -146,6 +147,34 @@ func (_c *SettingsCreate) SetNillableFeedbackLastPromptedAt(v *time.Time) *Setti
 	return _c
 }
 
+// SetUsageLoggingEnabled sets the "usage_logging_enabled" field.
+func (_c *SettingsCreate) SetUsageLoggingEnabled(v bool) *SettingsCreate {
+	_c.mutation.SetUsageLoggingEnabled(v)
+	return _c
+}
+
+// SetNillableUsageLoggingEnabled sets the "usage_logging_enabled" field if the given value is not nil.
+func (_c *SettingsCreate) SetNillableUsageLoggingEnabled(v *bool) *SettingsCreate {
+	if v != nil {
+		_c.SetUsageLoggingEnabled(*v)
+	}
+	return _c
+}
+
+// SetInstallationID sets the "installation_id" field.
+func (_c *SettingsCreate) SetInstallationID(v uuid.UUID) *SettingsCreate {
+	_c.mutation.SetInstallationID(v)
+	return _c
+}
+
+// SetNillableInstallationID sets the "installation_id" field if the given value is not nil.
+func (_c *SettingsCreate) SetNillableInstallationID(v *uuid.UUID) *SettingsCreate {
+	if v != nil {
+		_c.SetInstallationID(*v)
+	}
+	return _c
+}
+
 // Mutation returns the SettingsMutation object of the builder.
 func (_c *SettingsCreate) Mutation() *SettingsMutation {
 	return _c.mutation
@@ -213,6 +242,10 @@ func (_c *SettingsCreate) defaults() {
 		v := settings.DefaultFullDiskAccessWarningDismissed
 		_c.mutation.SetFullDiskAccessWarningDismissed(v)
 	}
+	if _, ok := _c.mutation.InstallationID(); !ok {
+		v := settings.DefaultInstallationID()
+		_c.mutation.SetInstallationID(v)
+	}
 }
 
 // check runs all checks and user-defined validators on the builder.
@@ -245,6 +278,9 @@ func (_c *SettingsCreate) check() error {
 	}
 	if _, ok := _c.mutation.FullDiskAccessWarningDismissed(); !ok {
 		return &ValidationError{Name: "full_disk_access_warning_dismissed", err: errors.New(`ent: missing required field "Settings.full_disk_access_warning_dismissed"`)}
+	}
+	if _, ok := _c.mutation.InstallationID(); !ok {
+		return &ValidationError{Name: "installation_id", err: errors.New(`ent: missing required field "Settings.installation_id"`)}
 	}
 	return nil
 }
@@ -307,6 +343,14 @@ func (_c *SettingsCreate) createSpec() (*Settings, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.FeedbackLastPromptedAt(); ok {
 		_spec.SetField(settings.FieldFeedbackLastPromptedAt, field.TypeTime, value)
 		_node.FeedbackLastPromptedAt = &value
+	}
+	if value, ok := _c.mutation.UsageLoggingEnabled(); ok {
+		_spec.SetField(settings.FieldUsageLoggingEnabled, field.TypeBool, value)
+		_node.UsageLoggingEnabled = &value
+	}
+	if value, ok := _c.mutation.InstallationID(); ok {
+		_spec.SetField(settings.FieldInstallationID, field.TypeUUID, value)
+		_node.InstallationID = value
 	}
 	return _node, _spec
 }

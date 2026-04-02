@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"entgo.io/ent/dialect/sql"
+	"github.com/loomi-labs/arco/backend/app/analytics"
 	"github.com/loomi-labs/arco/backend/app/state"
 	"github.com/loomi-labs/arco/backend/app/types"
 	"github.com/loomi-labs/arco/backend/ent"
@@ -36,6 +37,7 @@ type Service struct {
 	backupScheduleChangedCh  chan struct{}
 	pruningScheduleChangedCh chan struct{}
 	repositoryService        RepositoryServiceInterface
+	analytics                analytics.Tracker
 	ctx                      context.Context
 }
 
@@ -63,13 +65,14 @@ func NewService(log *zap.SugaredLogger, state *state.State, config *types.Config
 }
 
 // Init initializes the service with remaining dependencies
-func (si *ServiceInternal) Init(ctx context.Context, db *ent.Client, eventEmitter types.EventEmitter, backupScheduleChangedCh, pruningScheduleChangedCh chan struct{}, repositoryService RepositoryServiceInterface) {
+func (si *ServiceInternal) Init(ctx context.Context, db *ent.Client, eventEmitter types.EventEmitter, backupScheduleChangedCh, pruningScheduleChangedCh chan struct{}, repositoryService RepositoryServiceInterface, analyticsService analytics.Tracker) {
 	si.ctx = ctx
 	si.db = db
 	si.eventEmitter = eventEmitter
 	si.backupScheduleChangedCh = backupScheduleChangedCh
 	si.pruningScheduleChangedCh = pruningScheduleChangedCh
 	si.repositoryService = repositoryService
+	si.analytics = analyticsService
 }
 
 // mustHaveDB panics if db is nil. This is a programming error guard.
@@ -357,6 +360,7 @@ func (s *Service) CreateBackupProfile(ctx context.Context, backup BackupProfile,
 		return nil, err
 	}
 	s.eventEmitter.EmitEvent(ctx, types.EventBackupProfileCreatedString())
+	s.analytics.TrackEvent(ctx, analytics.EventProfileCreated, nil)
 	return s.toBackupProfile(ctx, profile)
 }
 
@@ -400,6 +404,7 @@ func (s *Service) UpdateBackupProfile(ctx context.Context, backup BackupProfile)
 		return err
 	}
 	s.eventEmitter.EmitEvent(ctx, types.EventBackupProfileUpdatedString())
+	s.analytics.TrackEvent(ctx, analytics.EventProfileUpdated, nil)
 	return nil
 }
 
@@ -448,6 +453,7 @@ func (s *Service) DeleteBackupProfile(ctx context.Context, backupProfileId int, 
 		return err
 	}
 	s.eventEmitter.EmitEvent(ctx, types.EventBackupProfileDeleted.String())
+	s.analytics.TrackEvent(ctx, analytics.EventProfileDeleted, nil)
 
 	return nil
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/loomi-labs/arco/backend/app/analytics"
 	"github.com/loomi-labs/arco/backend/app/state"
 	"github.com/loomi-labs/arco/backend/app/types"
 	"github.com/loomi-labs/arco/backend/ent"
@@ -19,6 +20,7 @@ type Service struct {
 	db           *ent.Client
 	state        *state.State
 	eventEmitter types.EventEmitter
+	analytics    analytics.Tracker
 }
 
 // ServiceInternal provides backend-only methods that should not be exposed to frontend
@@ -37,9 +39,10 @@ func NewService(log *zap.SugaredLogger, state *state.State) *ServiceInternal {
 }
 
 // Init initializes the service with remaining dependencies
-func (si *ServiceInternal) Init(db *ent.Client, eventEmitter types.EventEmitter) {
+func (si *ServiceInternal) Init(db *ent.Client, eventEmitter types.EventEmitter, analyticsService analytics.Tracker) {
 	si.db = db
 	si.eventEmitter = eventEmitter
+	si.analytics = analyticsService
 }
 
 // mustHaveDB panics if db is nil. This is a programming error guard.
@@ -106,6 +109,7 @@ func (s *Service) SaveSettings(ctx context.Context, settings *ent.Settings) erro
 	}
 
 	s.eventEmitter.EmitEvent(application.Get().Context(), types.EventSettingsChangedString())
+	s.analytics.TrackEvent(ctx, analytics.EventSettingsChanged, nil)
 	return nil
 }
 

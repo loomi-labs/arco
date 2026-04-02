@@ -11,6 +11,8 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
+	"github.com/google/uuid"
+	"github.com/loomi-labs/arco/backend/ent/analyticsevent"
 	"github.com/loomi-labs/arco/backend/ent/archive"
 	"github.com/loomi-labs/arco/backend/ent/authsession"
 	"github.com/loomi-labs/arco/backend/ent/backupprofile"
@@ -33,6 +35,7 @@ const (
 	OpUpdateOne = ent.OpUpdateOne
 
 	// Node types.
+	TypeAnalyticsEvent  = "AnalyticsEvent"
 	TypeArchive         = "Archive"
 	TypeAuthSession     = "AuthSession"
 	TypeBackupProfile   = "BackupProfile"
@@ -44,6 +47,786 @@ const (
 	TypeSettings        = "Settings"
 	TypeUser            = "User"
 )
+
+// AnalyticsEventMutation represents an operation that mutates the AnalyticsEvent nodes in the graph.
+type AnalyticsEventMutation struct {
+	config
+	op               Op
+	typ              string
+	id               *int
+	created_at       *time.Time
+	updated_at       *time.Time
+	event_name       *string
+	event_properties *map[string]string
+	app_version      *string
+	os_info          *string
+	locale           *string
+	event_time       *time.Time
+	sent             *bool
+	clearedFields    map[string]struct{}
+	done             bool
+	oldValue         func(context.Context) (*AnalyticsEvent, error)
+	predicates       []predicate.AnalyticsEvent
+}
+
+var _ ent.Mutation = (*AnalyticsEventMutation)(nil)
+
+// analyticseventOption allows management of the mutation configuration using functional options.
+type analyticseventOption func(*AnalyticsEventMutation)
+
+// newAnalyticsEventMutation creates new mutation for the AnalyticsEvent entity.
+func newAnalyticsEventMutation(c config, op Op, opts ...analyticseventOption) *AnalyticsEventMutation {
+	m := &AnalyticsEventMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeAnalyticsEvent,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withAnalyticsEventID sets the ID field of the mutation.
+func withAnalyticsEventID(id int) analyticseventOption {
+	return func(m *AnalyticsEventMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *AnalyticsEvent
+		)
+		m.oldValue = func(ctx context.Context) (*AnalyticsEvent, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().AnalyticsEvent.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withAnalyticsEvent sets the old AnalyticsEvent of the mutation.
+func withAnalyticsEvent(node *AnalyticsEvent) analyticseventOption {
+	return func(m *AnalyticsEventMutation) {
+		m.oldValue = func(context.Context) (*AnalyticsEvent, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m AnalyticsEventMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m AnalyticsEventMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *AnalyticsEventMutation) ID() (id int, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *AnalyticsEventMutation) IDs(ctx context.Context) ([]int, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []int{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().AnalyticsEvent.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (m *AnalyticsEventMutation) SetCreatedAt(t time.Time) {
+	m.created_at = &t
+}
+
+// CreatedAt returns the value of the "created_at" field in the mutation.
+func (m *AnalyticsEventMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.created_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatedAt returns the old "created_at" field's value of the AnalyticsEvent entity.
+// If the AnalyticsEvent object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AnalyticsEventMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
+	}
+	return oldValue.CreatedAt, nil
+}
+
+// ResetCreatedAt resets all changes to the "created_at" field.
+func (m *AnalyticsEventMutation) ResetCreatedAt() {
+	m.created_at = nil
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (m *AnalyticsEventMutation) SetUpdatedAt(t time.Time) {
+	m.updated_at = &t
+}
+
+// UpdatedAt returns the value of the "updated_at" field in the mutation.
+func (m *AnalyticsEventMutation) UpdatedAt() (r time.Time, exists bool) {
+	v := m.updated_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUpdatedAt returns the old "updated_at" field's value of the AnalyticsEvent entity.
+// If the AnalyticsEvent object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AnalyticsEventMutation) OldUpdatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUpdatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUpdatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUpdatedAt: %w", err)
+	}
+	return oldValue.UpdatedAt, nil
+}
+
+// ResetUpdatedAt resets all changes to the "updated_at" field.
+func (m *AnalyticsEventMutation) ResetUpdatedAt() {
+	m.updated_at = nil
+}
+
+// SetEventName sets the "event_name" field.
+func (m *AnalyticsEventMutation) SetEventName(s string) {
+	m.event_name = &s
+}
+
+// EventName returns the value of the "event_name" field in the mutation.
+func (m *AnalyticsEventMutation) EventName() (r string, exists bool) {
+	v := m.event_name
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldEventName returns the old "event_name" field's value of the AnalyticsEvent entity.
+// If the AnalyticsEvent object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AnalyticsEventMutation) OldEventName(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldEventName is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldEventName requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldEventName: %w", err)
+	}
+	return oldValue.EventName, nil
+}
+
+// ResetEventName resets all changes to the "event_name" field.
+func (m *AnalyticsEventMutation) ResetEventName() {
+	m.event_name = nil
+}
+
+// SetEventProperties sets the "event_properties" field.
+func (m *AnalyticsEventMutation) SetEventProperties(value map[string]string) {
+	m.event_properties = &value
+}
+
+// EventProperties returns the value of the "event_properties" field in the mutation.
+func (m *AnalyticsEventMutation) EventProperties() (r map[string]string, exists bool) {
+	v := m.event_properties
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldEventProperties returns the old "event_properties" field's value of the AnalyticsEvent entity.
+// If the AnalyticsEvent object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AnalyticsEventMutation) OldEventProperties(ctx context.Context) (v map[string]string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldEventProperties is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldEventProperties requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldEventProperties: %w", err)
+	}
+	return oldValue.EventProperties, nil
+}
+
+// ClearEventProperties clears the value of the "event_properties" field.
+func (m *AnalyticsEventMutation) ClearEventProperties() {
+	m.event_properties = nil
+	m.clearedFields[analyticsevent.FieldEventProperties] = struct{}{}
+}
+
+// EventPropertiesCleared returns if the "event_properties" field was cleared in this mutation.
+func (m *AnalyticsEventMutation) EventPropertiesCleared() bool {
+	_, ok := m.clearedFields[analyticsevent.FieldEventProperties]
+	return ok
+}
+
+// ResetEventProperties resets all changes to the "event_properties" field.
+func (m *AnalyticsEventMutation) ResetEventProperties() {
+	m.event_properties = nil
+	delete(m.clearedFields, analyticsevent.FieldEventProperties)
+}
+
+// SetAppVersion sets the "app_version" field.
+func (m *AnalyticsEventMutation) SetAppVersion(s string) {
+	m.app_version = &s
+}
+
+// AppVersion returns the value of the "app_version" field in the mutation.
+func (m *AnalyticsEventMutation) AppVersion() (r string, exists bool) {
+	v := m.app_version
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldAppVersion returns the old "app_version" field's value of the AnalyticsEvent entity.
+// If the AnalyticsEvent object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AnalyticsEventMutation) OldAppVersion(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldAppVersion is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldAppVersion requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldAppVersion: %w", err)
+	}
+	return oldValue.AppVersion, nil
+}
+
+// ResetAppVersion resets all changes to the "app_version" field.
+func (m *AnalyticsEventMutation) ResetAppVersion() {
+	m.app_version = nil
+}
+
+// SetOsInfo sets the "os_info" field.
+func (m *AnalyticsEventMutation) SetOsInfo(s string) {
+	m.os_info = &s
+}
+
+// OsInfo returns the value of the "os_info" field in the mutation.
+func (m *AnalyticsEventMutation) OsInfo() (r string, exists bool) {
+	v := m.os_info
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldOsInfo returns the old "os_info" field's value of the AnalyticsEvent entity.
+// If the AnalyticsEvent object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AnalyticsEventMutation) OldOsInfo(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldOsInfo is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldOsInfo requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldOsInfo: %w", err)
+	}
+	return oldValue.OsInfo, nil
+}
+
+// ResetOsInfo resets all changes to the "os_info" field.
+func (m *AnalyticsEventMutation) ResetOsInfo() {
+	m.os_info = nil
+}
+
+// SetLocale sets the "locale" field.
+func (m *AnalyticsEventMutation) SetLocale(s string) {
+	m.locale = &s
+}
+
+// Locale returns the value of the "locale" field in the mutation.
+func (m *AnalyticsEventMutation) Locale() (r string, exists bool) {
+	v := m.locale
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldLocale returns the old "locale" field's value of the AnalyticsEvent entity.
+// If the AnalyticsEvent object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AnalyticsEventMutation) OldLocale(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldLocale is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldLocale requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLocale: %w", err)
+	}
+	return oldValue.Locale, nil
+}
+
+// ResetLocale resets all changes to the "locale" field.
+func (m *AnalyticsEventMutation) ResetLocale() {
+	m.locale = nil
+}
+
+// SetEventTime sets the "event_time" field.
+func (m *AnalyticsEventMutation) SetEventTime(t time.Time) {
+	m.event_time = &t
+}
+
+// EventTime returns the value of the "event_time" field in the mutation.
+func (m *AnalyticsEventMutation) EventTime() (r time.Time, exists bool) {
+	v := m.event_time
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldEventTime returns the old "event_time" field's value of the AnalyticsEvent entity.
+// If the AnalyticsEvent object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AnalyticsEventMutation) OldEventTime(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldEventTime is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldEventTime requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldEventTime: %w", err)
+	}
+	return oldValue.EventTime, nil
+}
+
+// ResetEventTime resets all changes to the "event_time" field.
+func (m *AnalyticsEventMutation) ResetEventTime() {
+	m.event_time = nil
+}
+
+// SetSent sets the "sent" field.
+func (m *AnalyticsEventMutation) SetSent(b bool) {
+	m.sent = &b
+}
+
+// Sent returns the value of the "sent" field in the mutation.
+func (m *AnalyticsEventMutation) Sent() (r bool, exists bool) {
+	v := m.sent
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSent returns the old "sent" field's value of the AnalyticsEvent entity.
+// If the AnalyticsEvent object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AnalyticsEventMutation) OldSent(ctx context.Context) (v bool, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSent is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSent requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSent: %w", err)
+	}
+	return oldValue.Sent, nil
+}
+
+// ResetSent resets all changes to the "sent" field.
+func (m *AnalyticsEventMutation) ResetSent() {
+	m.sent = nil
+}
+
+// Where appends a list predicates to the AnalyticsEventMutation builder.
+func (m *AnalyticsEventMutation) Where(ps ...predicate.AnalyticsEvent) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the AnalyticsEventMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *AnalyticsEventMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.AnalyticsEvent, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *AnalyticsEventMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *AnalyticsEventMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (AnalyticsEvent).
+func (m *AnalyticsEventMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *AnalyticsEventMutation) Fields() []string {
+	fields := make([]string, 0, 9)
+	if m.created_at != nil {
+		fields = append(fields, analyticsevent.FieldCreatedAt)
+	}
+	if m.updated_at != nil {
+		fields = append(fields, analyticsevent.FieldUpdatedAt)
+	}
+	if m.event_name != nil {
+		fields = append(fields, analyticsevent.FieldEventName)
+	}
+	if m.event_properties != nil {
+		fields = append(fields, analyticsevent.FieldEventProperties)
+	}
+	if m.app_version != nil {
+		fields = append(fields, analyticsevent.FieldAppVersion)
+	}
+	if m.os_info != nil {
+		fields = append(fields, analyticsevent.FieldOsInfo)
+	}
+	if m.locale != nil {
+		fields = append(fields, analyticsevent.FieldLocale)
+	}
+	if m.event_time != nil {
+		fields = append(fields, analyticsevent.FieldEventTime)
+	}
+	if m.sent != nil {
+		fields = append(fields, analyticsevent.FieldSent)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *AnalyticsEventMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case analyticsevent.FieldCreatedAt:
+		return m.CreatedAt()
+	case analyticsevent.FieldUpdatedAt:
+		return m.UpdatedAt()
+	case analyticsevent.FieldEventName:
+		return m.EventName()
+	case analyticsevent.FieldEventProperties:
+		return m.EventProperties()
+	case analyticsevent.FieldAppVersion:
+		return m.AppVersion()
+	case analyticsevent.FieldOsInfo:
+		return m.OsInfo()
+	case analyticsevent.FieldLocale:
+		return m.Locale()
+	case analyticsevent.FieldEventTime:
+		return m.EventTime()
+	case analyticsevent.FieldSent:
+		return m.Sent()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *AnalyticsEventMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case analyticsevent.FieldCreatedAt:
+		return m.OldCreatedAt(ctx)
+	case analyticsevent.FieldUpdatedAt:
+		return m.OldUpdatedAt(ctx)
+	case analyticsevent.FieldEventName:
+		return m.OldEventName(ctx)
+	case analyticsevent.FieldEventProperties:
+		return m.OldEventProperties(ctx)
+	case analyticsevent.FieldAppVersion:
+		return m.OldAppVersion(ctx)
+	case analyticsevent.FieldOsInfo:
+		return m.OldOsInfo(ctx)
+	case analyticsevent.FieldLocale:
+		return m.OldLocale(ctx)
+	case analyticsevent.FieldEventTime:
+		return m.OldEventTime(ctx)
+	case analyticsevent.FieldSent:
+		return m.OldSent(ctx)
+	}
+	return nil, fmt.Errorf("unknown AnalyticsEvent field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *AnalyticsEventMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case analyticsevent.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
+	case analyticsevent.FieldUpdatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUpdatedAt(v)
+		return nil
+	case analyticsevent.FieldEventName:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetEventName(v)
+		return nil
+	case analyticsevent.FieldEventProperties:
+		v, ok := value.(map[string]string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetEventProperties(v)
+		return nil
+	case analyticsevent.FieldAppVersion:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetAppVersion(v)
+		return nil
+	case analyticsevent.FieldOsInfo:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetOsInfo(v)
+		return nil
+	case analyticsevent.FieldLocale:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetLocale(v)
+		return nil
+	case analyticsevent.FieldEventTime:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetEventTime(v)
+		return nil
+	case analyticsevent.FieldSent:
+		v, ok := value.(bool)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSent(v)
+		return nil
+	}
+	return fmt.Errorf("unknown AnalyticsEvent field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *AnalyticsEventMutation) AddedFields() []string {
+	return nil
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *AnalyticsEventMutation) AddedField(name string) (ent.Value, bool) {
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *AnalyticsEventMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown AnalyticsEvent numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *AnalyticsEventMutation) ClearedFields() []string {
+	var fields []string
+	if m.FieldCleared(analyticsevent.FieldEventProperties) {
+		fields = append(fields, analyticsevent.FieldEventProperties)
+	}
+	return fields
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *AnalyticsEventMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *AnalyticsEventMutation) ClearField(name string) error {
+	switch name {
+	case analyticsevent.FieldEventProperties:
+		m.ClearEventProperties()
+		return nil
+	}
+	return fmt.Errorf("unknown AnalyticsEvent nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *AnalyticsEventMutation) ResetField(name string) error {
+	switch name {
+	case analyticsevent.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
+	case analyticsevent.FieldUpdatedAt:
+		m.ResetUpdatedAt()
+		return nil
+	case analyticsevent.FieldEventName:
+		m.ResetEventName()
+		return nil
+	case analyticsevent.FieldEventProperties:
+		m.ResetEventProperties()
+		return nil
+	case analyticsevent.FieldAppVersion:
+		m.ResetAppVersion()
+		return nil
+	case analyticsevent.FieldOsInfo:
+		m.ResetOsInfo()
+		return nil
+	case analyticsevent.FieldLocale:
+		m.ResetLocale()
+		return nil
+	case analyticsevent.FieldEventTime:
+		m.ResetEventTime()
+		return nil
+	case analyticsevent.FieldSent:
+		m.ResetSent()
+		return nil
+	}
+	return fmt.Errorf("unknown AnalyticsEvent field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *AnalyticsEventMutation) AddedEdges() []string {
+	edges := make([]string, 0, 0)
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *AnalyticsEventMutation) AddedIDs(name string) []ent.Value {
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *AnalyticsEventMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 0)
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *AnalyticsEventMutation) RemovedIDs(name string) []ent.Value {
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *AnalyticsEventMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 0)
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *AnalyticsEventMutation) EdgeCleared(name string) bool {
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *AnalyticsEventMutation) ClearEdge(name string) error {
+	return fmt.Errorf("unknown AnalyticsEvent unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *AnalyticsEventMutation) ResetEdge(name string) error {
+	return fmt.Errorf("unknown AnalyticsEvent edge %s", name)
+}
 
 // ArchiveMutation represents an operation that mutates the Archive nodes in the graph.
 type ArchiveMutation struct {
@@ -8486,6 +9269,8 @@ type SettingsMutation struct {
 	macfuse_warning_dismissed          *bool
 	full_disk_access_warning_dismissed *bool
 	feedback_last_prompted_at          *time.Time
+	usage_logging_enabled              *bool
+	installation_id                    *uuid.UUID
 	clearedFields                      map[string]struct{}
 	done                               bool
 	oldValue                           func(context.Context) (*Settings, error)
@@ -8927,6 +9712,91 @@ func (m *SettingsMutation) ResetFeedbackLastPromptedAt() {
 	delete(m.clearedFields, settings.FieldFeedbackLastPromptedAt)
 }
 
+// SetUsageLoggingEnabled sets the "usage_logging_enabled" field.
+func (m *SettingsMutation) SetUsageLoggingEnabled(b bool) {
+	m.usage_logging_enabled = &b
+}
+
+// UsageLoggingEnabled returns the value of the "usage_logging_enabled" field in the mutation.
+func (m *SettingsMutation) UsageLoggingEnabled() (r bool, exists bool) {
+	v := m.usage_logging_enabled
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUsageLoggingEnabled returns the old "usage_logging_enabled" field's value of the Settings entity.
+// If the Settings object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SettingsMutation) OldUsageLoggingEnabled(ctx context.Context) (v *bool, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUsageLoggingEnabled is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUsageLoggingEnabled requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUsageLoggingEnabled: %w", err)
+	}
+	return oldValue.UsageLoggingEnabled, nil
+}
+
+// ClearUsageLoggingEnabled clears the value of the "usage_logging_enabled" field.
+func (m *SettingsMutation) ClearUsageLoggingEnabled() {
+	m.usage_logging_enabled = nil
+	m.clearedFields[settings.FieldUsageLoggingEnabled] = struct{}{}
+}
+
+// UsageLoggingEnabledCleared returns if the "usage_logging_enabled" field was cleared in this mutation.
+func (m *SettingsMutation) UsageLoggingEnabledCleared() bool {
+	_, ok := m.clearedFields[settings.FieldUsageLoggingEnabled]
+	return ok
+}
+
+// ResetUsageLoggingEnabled resets all changes to the "usage_logging_enabled" field.
+func (m *SettingsMutation) ResetUsageLoggingEnabled() {
+	m.usage_logging_enabled = nil
+	delete(m.clearedFields, settings.FieldUsageLoggingEnabled)
+}
+
+// SetInstallationID sets the "installation_id" field.
+func (m *SettingsMutation) SetInstallationID(u uuid.UUID) {
+	m.installation_id = &u
+}
+
+// InstallationID returns the value of the "installation_id" field in the mutation.
+func (m *SettingsMutation) InstallationID() (r uuid.UUID, exists bool) {
+	v := m.installation_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldInstallationID returns the old "installation_id" field's value of the Settings entity.
+// If the Settings object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SettingsMutation) OldInstallationID(ctx context.Context) (v uuid.UUID, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldInstallationID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldInstallationID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldInstallationID: %w", err)
+	}
+	return oldValue.InstallationID, nil
+}
+
+// ResetInstallationID resets all changes to the "installation_id" field.
+func (m *SettingsMutation) ResetInstallationID() {
+	m.installation_id = nil
+}
+
 // Where appends a list predicates to the SettingsMutation builder.
 func (m *SettingsMutation) Where(ps ...predicate.Settings) {
 	m.predicates = append(m.predicates, ps...)
@@ -8961,7 +9831,7 @@ func (m *SettingsMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *SettingsMutation) Fields() []string {
-	fields := make([]string, 0, 9)
+	fields := make([]string, 0, 11)
 	if m.created_at != nil {
 		fields = append(fields, settings.FieldCreatedAt)
 	}
@@ -8989,6 +9859,12 @@ func (m *SettingsMutation) Fields() []string {
 	if m.feedback_last_prompted_at != nil {
 		fields = append(fields, settings.FieldFeedbackLastPromptedAt)
 	}
+	if m.usage_logging_enabled != nil {
+		fields = append(fields, settings.FieldUsageLoggingEnabled)
+	}
+	if m.installation_id != nil {
+		fields = append(fields, settings.FieldInstallationID)
+	}
 	return fields
 }
 
@@ -9015,6 +9891,10 @@ func (m *SettingsMutation) Field(name string) (ent.Value, bool) {
 		return m.FullDiskAccessWarningDismissed()
 	case settings.FieldFeedbackLastPromptedAt:
 		return m.FeedbackLastPromptedAt()
+	case settings.FieldUsageLoggingEnabled:
+		return m.UsageLoggingEnabled()
+	case settings.FieldInstallationID:
+		return m.InstallationID()
 	}
 	return nil, false
 }
@@ -9042,6 +9922,10 @@ func (m *SettingsMutation) OldField(ctx context.Context, name string) (ent.Value
 		return m.OldFullDiskAccessWarningDismissed(ctx)
 	case settings.FieldFeedbackLastPromptedAt:
 		return m.OldFeedbackLastPromptedAt(ctx)
+	case settings.FieldUsageLoggingEnabled:
+		return m.OldUsageLoggingEnabled(ctx)
+	case settings.FieldInstallationID:
+		return m.OldInstallationID(ctx)
 	}
 	return nil, fmt.Errorf("unknown Settings field %s", name)
 }
@@ -9114,6 +9998,20 @@ func (m *SettingsMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetFeedbackLastPromptedAt(v)
 		return nil
+	case settings.FieldUsageLoggingEnabled:
+		v, ok := value.(bool)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUsageLoggingEnabled(v)
+		return nil
+	case settings.FieldInstallationID:
+		v, ok := value.(uuid.UUID)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetInstallationID(v)
+		return nil
 	}
 	return fmt.Errorf("unknown Settings field %s", name)
 }
@@ -9147,6 +10045,9 @@ func (m *SettingsMutation) ClearedFields() []string {
 	if m.FieldCleared(settings.FieldFeedbackLastPromptedAt) {
 		fields = append(fields, settings.FieldFeedbackLastPromptedAt)
 	}
+	if m.FieldCleared(settings.FieldUsageLoggingEnabled) {
+		fields = append(fields, settings.FieldUsageLoggingEnabled)
+	}
 	return fields
 }
 
@@ -9163,6 +10064,9 @@ func (m *SettingsMutation) ClearField(name string) error {
 	switch name {
 	case settings.FieldFeedbackLastPromptedAt:
 		m.ClearFeedbackLastPromptedAt()
+		return nil
+	case settings.FieldUsageLoggingEnabled:
+		m.ClearUsageLoggingEnabled()
 		return nil
 	}
 	return fmt.Errorf("unknown Settings nullable field %s", name)
@@ -9198,6 +10102,12 @@ func (m *SettingsMutation) ResetField(name string) error {
 		return nil
 	case settings.FieldFeedbackLastPromptedAt:
 		m.ResetFeedbackLastPromptedAt()
+		return nil
+	case settings.FieldUsageLoggingEnabled:
+		m.ResetUsageLoggingEnabled()
+		return nil
+	case settings.FieldInstallationID:
+		m.ResetInstallationID()
 		return nil
 	}
 	return fmt.Errorf("unknown Settings field %s", name)

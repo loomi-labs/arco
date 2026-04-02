@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/Masterminds/semver/v3"
+	"github.com/loomi-labs/arco/backend/app/analytics"
 	"github.com/loomi-labs/arco/backend/app/keyring"
 	"github.com/loomi-labs/arco/backend/app/repository"
 	"github.com/loomi-labs/arco/backend/app/types"
@@ -86,10 +87,11 @@ func NewTestApp(t *testing.T) (*App, *borgmocks.MockBorg, *typesmocks.MockEventE
 		mockBorg,
 		cloudRepositoryClient,
 		testKeyring,
+		analytics.NoopTracker{},
 	)
 
 	// Initialize backup profile service with repository service dependency
-	a.backupProfileService.Init(a.ctx, db, mockEventEmitter, a.backupScheduleChangedCh, a.pruningScheduleChangedCh, a.repositoryService)
+	a.backupProfileService.Init(a.ctx, db, mockEventEmitter, a.backupScheduleChangedCh, a.pruningScheduleChangedCh, a.repositoryService, analytics.NoopTracker{})
 
 	// Add cleanup function to test to ensure context is cancelled
 	t.Cleanup(func() {

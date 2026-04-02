@@ -3,6 +3,7 @@ package schema
 import (
 	"entgo.io/ent"
 	"entgo.io/ent/schema/field"
+	"github.com/google/uuid"
 	"github.com/loomi-labs/arco/backend/ent/schema/mixin"
 )
 
@@ -42,6 +43,13 @@ func (Settings) Fields() []ent.Field {
 			StructTag(`json:"feedbackLastPromptedAt"`).
 			Optional().
 			Nillable(),
+		field.Bool("usage_logging_enabled").
+			StructTag(`json:"usageLoggingEnabled"`).
+			Optional().
+			Nillable(),
+		field.UUID("installation_id", uuid.UUID{}).
+			StructTag(`json:"installationId"`).
+			Default(uuid.New),
 	}
 }
 

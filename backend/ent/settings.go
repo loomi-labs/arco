@@ -9,6 +9,7 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
+	"github.com/google/uuid"
 	"github.com/loomi-labs/arco/backend/ent/settings"
 )
 
@@ -35,7 +36,11 @@ type Settings struct {
 	FullDiskAccessWarningDismissed bool `json:"fullDiskAccessWarningDismissed"`
 	// FeedbackLastPromptedAt holds the value of the "feedback_last_prompted_at" field.
 	FeedbackLastPromptedAt *time.Time `json:"feedbackLastPromptedAt"`
-	selectValues           sql.SelectValues
+	// UsageLoggingEnabled holds the value of the "usage_logging_enabled" field.
+	UsageLoggingEnabled *bool `json:"usageLoggingEnabled"`
+	// InstallationID holds the value of the "installation_id" field.
+	InstallationID uuid.UUID `json:"installationId"`
+	selectValues   sql.SelectValues
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -43,7 +48,7 @@ func (*Settings) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case settings.FieldExpertMode, settings.FieldDisableTransitions, settings.FieldDisableShadows, settings.FieldMacfuseWarningDismissed, settings.FieldFullDiskAccessWarningDismissed:
+		case settings.FieldExpertMode, settings.FieldDisableTransitions, settings.FieldDisableShadows, settings.FieldMacfuseWarningDismissed, settings.FieldFullDiskAccessWarningDismissed, settings.FieldUsageLoggingEnabled:
 			values[i] = new(sql.NullBool)
 		case settings.FieldID:
 			values[i] = new(sql.NullInt64)
@@ -51,6 +56,8 @@ func (*Settings) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullString)
 		case settings.FieldCreatedAt, settings.FieldUpdatedAt, settings.FieldFeedbackLastPromptedAt:
 			values[i] = new(sql.NullTime)
+		case settings.FieldInstallationID:
+			values[i] = new(uuid.UUID)
 		default:
 			values[i] = new(sql.UnknownType)
 		}
@@ -127,6 +134,19 @@ func (_m *Settings) assignValues(columns []string, values []any) error {
 				_m.FeedbackLastPromptedAt = new(time.Time)
 				*_m.FeedbackLastPromptedAt = value.Time
 			}
+		case settings.FieldUsageLoggingEnabled:
+			if value, ok := values[i].(*sql.NullBool); !ok {
+				return fmt.Errorf("unexpected type %T for field usage_logging_enabled", values[i])
+			} else if value.Valid {
+				_m.UsageLoggingEnabled = new(bool)
+				*_m.UsageLoggingEnabled = value.Bool
+			}
+		case settings.FieldInstallationID:
+			if value, ok := values[i].(*uuid.UUID); !ok {
+				return fmt.Errorf("unexpected type %T for field installation_id", values[i])
+			} else if value != nil {
+				_m.InstallationID = *value
+			}
 		default:
 			_m.selectValues.Set(columns[i], values[i])
 		}
@@ -191,6 +211,14 @@ func (_m *Settings) String() string {
 		builder.WriteString("feedback_last_prompted_at=")
 		builder.WriteString(v.Format(time.ANSIC))
 	}
+	builder.WriteString(", ")
+	if v := _m.UsageLoggingEnabled; v != nil {
+		builder.WriteString("usage_logging_enabled=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
+	builder.WriteString(", ")
+	builder.WriteString("installation_id=")
+	builder.WriteString(fmt.Sprintf("%v", _m.InstallationID))
 	builder.WriteByte(')')
 	return builder.String()
 }

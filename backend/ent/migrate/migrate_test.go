@@ -49,6 +49,7 @@ var migrationValidators = map[string]func(t *testing.T, ctx context.Context, db 
 	"20260127174049_add_full_disk_access_warning_dismissed":       validateFullDiskAccessWarning,
 	"20260202123657_gen":                                          validateIntervalMinutes,
 	"20260327153722_gen":                                          validateFeedbackPrompt,
+	"20260331130829_gen":                                          validateAnalytics,
 }
 
 // TestMigrationCoverage ensures every migration file has a registered validator.
@@ -118,6 +119,7 @@ func TestMigrationCoverage(t *testing.T) {
 // TestSchemaCompleteness ensures all schema entities are covered by the migration test.
 func TestSchemaCompleteness(t *testing.T) {
 	knownEntities := []string{
+		"analyticsevent.go",
 		"archive.go",
 		"authsession.go",
 		"backupprofile.go",
@@ -977,6 +979,35 @@ func validateFeedbackPrompt(t *testing.T, ctx context.Context, db *sql.DB, _ *en
 	}
 }
 
+// validateAnalytics checks that usage_logging_enabled, installation_id, and analytics_events table exist.
+func validateAnalytics(t *testing.T, ctx context.Context, db *sql.DB, client *ent.Client) {
+	t.Helper()
+
+	// Verify usage_logging_enabled is nullable on settings.
+	if !columnExists(t, db, "settings", "usage_logging_enabled") {
+		t.Error("usage_logging_enabled column should exist on settings")
+	}
+
+	// Verify installation_id exists on settings.
+	if !columnExists(t, db, "settings", "installation_id") {
+		t.Error("installation_id column should exist on settings")
+	}
+
+	// Verify analytics_events table exists and is queryable.
+	count, err := client.AnalyticsEvent.Query().Count(ctx)
+	if err != nil {
+		t.Fatalf("analytics_events table should exist: %v", err)
+	}
+	if count != 0 {
+		t.Errorf("expected 0 analytics events, got %d", count)
+	}
+
+	// Verify sent index exists.
+	if !indexExists(t, db, "analytics_events", "sent") {
+		t.Error("index on sent column should exist on analytics_events")
+	}
+}
+
 // --- helpers ---
 
 func toSet(ss []string) map[string]bool {
@@ -1084,6 +1115,45 @@ func uniqueIndexExists(t *testing.T, db *sql.DB, table, column string) bool {
 		}
 
 		// Check if this unique index covers the target column.
+		infoRows, err := db.Query(fmt.Sprintf("PRAGMA index_info('%s')", name))
+		if err != nil {
+			t.Fatalf("failed to get index info for %s: %v", name, err)
+		}
+		for infoRows.Next() {
+			var seqno, cid int
+			var colName string
+			if err := infoRows.Scan(&seqno, &cid, &colName); err != nil {
+				t.Fatalf("failed to scan index info: %v", err)
+			}
+			if colName == column {
+				infoRows.Close()
+				return true
+			}
+		}
+		infoRows.Close()
+	}
+	return false
+}
+
+// indexExists checks if an index exists on a specific column of a table.
+func indexExists(t *testing.T, db *sql.DB, table, column string) bool {
+	t.Helper()
+
+	idxRows, err := db.Query(fmt.Sprintf("PRAGMA index_list('%s')", table))
+	if err != nil {
+		t.Fatalf("failed to get index list for %s: %v", table, err)
+	}
+	defer idxRows.Close()
+
+	for idxRows.Next() {
+		var seq int
+		var name string
+		var unique int
+		var origin, partial string
+		if err := idxRows.Scan(&seq, &name, &unique, &origin, &partial); err != nil {
+			t.Fatalf("failed to scan index list: %v", err)
+		}
+
 		infoRows, err := db.Query(fmt.Sprintf("PRAGMA index_info('%s')", name))
 		if err != nil {
 			t.Fatalf("failed to get index info for %s: %v", name, err)
