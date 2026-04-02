@@ -8,6 +8,7 @@ import PasswordSaveReminder from "./common/PasswordSaveReminder.vue";
 import { capitalizeFirstLetter } from "../common/util";
 import * as repoService from "../../bindings/github.com/loomi-labs/arco/backend/app/repository/service";
 import type { Repository } from "../../bindings/github.com/loomi-labs/arco/backend/app/repository";
+import { Browser } from "@wailsio/runtime";
 
 
 /************
@@ -309,7 +310,13 @@ watch([name, location, password, isEncrypted], async () => {
                 <!-- Form View -->
                 <template v-else>
                   <DialogTitle as='h3' class='font-bold text-xl mb-2'>Add Remote Storage Location</DialogTitle>
-                  <p class='text-base-content/70 mb-4'>You can create a new storage location or connect an existing one.</p>
+                  <p class='text-base-content/70 mb-4'>
+                    You can create a new storage location or connect an existing one.
+                    <a @click='Browser.OpenURL("https://arco-backup.com/guides/how-to-set-up-a-remote-borg-repository.html")'
+                       class='link link-info cursor-pointer'>
+                      Learn how to set up a remote repository.
+                    </a>
+                  </p>
 
                   <div v-if='isBorgRepo' role='alert' class='alert alert-soft alert-info py-2 mb-4'>
                     <span>Existing storage location found.</span>
