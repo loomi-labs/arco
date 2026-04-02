@@ -62,6 +62,7 @@ async function loadSettings() {
       expertMode.value = result.expertMode ?? false;
       disableTransitions.value = result.disableTransitions ?? false;
       disableShadows.value = result.disableShadows ?? false;
+      usageLoggingEnabled.value = result.usageLoggingEnabled === true;
 
       // Load theme from backend and apply it
       if (result.theme) {
@@ -107,14 +108,6 @@ async function saveSettings() {
   }
 }
 
-async function loadAnalyticsPreference() {
-  try {
-    const enabled = await analyticsService.IsUsageLoggingEnabled();
-    usageLoggingEnabled.value = enabled === true;
-  } catch (error: unknown) {
-    await logError("Failed to load analytics preference", error);
-  }
-}
 
 async function saveAnalyticsPreference() {
   isSaving.value = true;
@@ -164,7 +157,6 @@ function restartApp() {
 onMounted(async () => {
   await loadSettings();
   await loadEnvVars();
-  await loadAnalyticsPreference();
 });
 
 </script>
