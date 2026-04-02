@@ -2,6 +2,7 @@
 import { ServerIcon, GlobeEuropeAfricaIcon } from "@heroicons/vue/24/solid";
 import ArcoLogo from "./common/ArcoLogo.vue";
 import { LocationType } from "../../bindings/github.com/loomi-labs/arco/backend/app/repository";
+import { Browser } from "@wailsio/runtime";
 
 /************
  * Types
@@ -56,6 +57,10 @@ const emitClick = "click";
     <p class='text-center text-lg font-semibold mb-2 group-hover:text-secondary'>Remote</p>
     <div class='divider'></div>
     <p class='text-sm text-base-content/70 group-hover:text-secondary'>Store your backups on a remote server.</p>
+    <a @click.stop='Browser.OpenURL("https://arco-backup.com/guides/how-to-set-up-a-remote-borg-repository.html")'
+       class='link link-info text-sm cursor-pointer mt-2 inline-block'>
+      Learn how to set up a remote repository
+    </a>
   </div>
   <!-- Arco Cloud Card -->
   <div v-if='locationType === LocationType.LocationTypeArcoCloud'
