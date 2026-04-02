@@ -9,6 +9,18 @@ import (
 	"github.com/loomi-labs/arco/backend/ent"
 )
 
+// The AnalyticsEventFunc type is an adapter to allow the use of ordinary
+// function as AnalyticsEvent mutator.
+type AnalyticsEventFunc func(context.Context, *ent.AnalyticsEventMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f AnalyticsEventFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.AnalyticsEventMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.AnalyticsEventMutation", m)
+}
+
 // The ArchiveFunc type is an adapter to allow the use of ordinary
 // function as Archive mutator.
 type ArchiveFunc func(context.Context, *ent.ArchiveMutation) (ent.Value, error)

@@ -1,0 +1,88 @@
+syntax = "proto3";
+
+package api.v1;
+
+import "buf/validate/validate.proto";
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/loomi-labs/arco/backend/api/v1;arcov1";
+
+// AnalyticsService handles ingestion of anonymous usage analytics from the
+// desktop application.
+//
+// This service is publicly accessible with optional authentication.
+// If the user is authenticated, their identity may be associated with the
+// events for aggregation purposes. Unauthenticated events are accepted
+// and correlated by installation ID only.
+service AnalyticsService {
+  // IngestEvents receives a batch of analytics events from the desktop client.
+  //
+  // Authentication:
+  //   Public endpoint. If auth context is present, the submitting user is
+  //   associated automatically.
+  //
+  // Rate limits:
+  //   Subject to public API rate limiting (IP and global).
+  //
+  // Behavior:
+  //   Persists all events in the batch. Empty batches are accepted as no-ops.
+  //
+  // Client context:
+  //   Each event includes app version, OS, and locale for segmentation.
+  rpc IngestEvents(IngestEventsRequest) returns (IngestEventsResponse) {}
+}
+
+// AnalyticsEvent represents a single usage event from the desktop application.
+//
+// Events capture anonymous, non-PII usage data such as feature usage,
+// page views, and backup outcomes. File paths, names, contents, passwords,
+// and credentials are never included.
+message AnalyticsEvent {
+  // Opaque UUID identifying the app installation. Not linked to user identity.
+  string installation_id = 1 [(buf.validate.field).string.uuid = true];
+
+  // Name of the event (e.g., "app_started", "page_view", "backup_completed").
+  string event_name = 2 [(buf.validate.field).string = {
+    min_len: 1,
+    max_len: 100
+  }];
+
+  // Key-value properties associated with the event.
+  // Values must not contain PII, file paths, or credentials.
+  // Limited to 20 pairs with bounded key/value lengths.
+  map<string, string> event_properties = 3 [(buf.validate.field).map = {
+    max_pairs: 20,
+    keys: {
+      string: {max_len: 100}
+    },
+    values: {
+      string: {max_len: 500}
+    }
+  }];
+
+  // Version of the desktop application that generated the event (e.g., "1.2.3").
+  string app_version = 4 [(buf.validate.field).string.max_len = 50];
+
+  // Operating system information (e.g., "linux", "darwin", "windows").
+  string os_info = 5 [(buf.validate.field).string.max_len = 100];
+
+  // User locale (e.g., "en-US", "de-DE").
+  string locale = 6 [(buf.validate.field).string.max_len = 20];
+
+  // Timestamp when the event occurred on the client. Required.
+  google.protobuf.Timestamp timestamp = 7 [(buf.validate.field).required = true];
+}
+
+// IngestEventsRequest contains a batch of analytics events to ingest.
+//
+// The desktop client batches events locally and sends them periodically.
+// An empty events list is accepted as a no-op.
+message IngestEventsRequest {
+  // Batch of analytics events to ingest. Maximum 1000 events per request.
+  repeated AnalyticsEvent events = 1 [(buf.validate.field).repeated.max_items = 1000];
+}
+
+// IngestEventsResponse is returned after events are successfully ingested.
+//
+// An empty response indicates all events were accepted.
+message IngestEventsResponse {}

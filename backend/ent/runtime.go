@@ -5,6 +5,8 @@ package ent
 import (
 	"time"
 
+	"github.com/google/uuid"
+	"github.com/loomi-labs/arco/backend/ent/analyticsevent"
 	"github.com/loomi-labs/arco/backend/ent/archive"
 	"github.com/loomi-labs/arco/backend/ent/authsession"
 	"github.com/loomi-labs/arco/backend/ent/backupprofile"
@@ -22,6 +24,33 @@ import (
 // (default values, validators, hooks and policies) and stitches it
 // to their package variables.
 func init() {
+	analyticseventMixin := schema.AnalyticsEvent{}.Mixin()
+	analyticseventMixinFields0 := analyticseventMixin[0].Fields()
+	_ = analyticseventMixinFields0
+	analyticseventFields := schema.AnalyticsEvent{}.Fields()
+	_ = analyticseventFields
+	// analyticseventDescCreatedAt is the schema descriptor for created_at field.
+	analyticseventDescCreatedAt := analyticseventMixinFields0[0].Descriptor()
+	// analyticsevent.DefaultCreatedAt holds the default value on creation for the created_at field.
+	analyticsevent.DefaultCreatedAt = analyticseventDescCreatedAt.Default.(func() time.Time)
+	// analyticseventDescUpdatedAt is the schema descriptor for updated_at field.
+	analyticseventDescUpdatedAt := analyticseventMixinFields0[1].Descriptor()
+	// analyticsevent.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	analyticsevent.DefaultUpdatedAt = analyticseventDescUpdatedAt.Default.(func() time.Time)
+	// analyticsevent.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	analyticsevent.UpdateDefaultUpdatedAt = analyticseventDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// analyticseventDescEventName is the schema descriptor for event_name field.
+	analyticseventDescEventName := analyticseventFields[0].Descriptor()
+	// analyticsevent.EventNameValidator is a validator for the "event_name" field. It is called by the builders before save.
+	analyticsevent.EventNameValidator = analyticseventDescEventName.Validators[0].(func(string) error)
+	// analyticseventDescLocale is the schema descriptor for locale field.
+	analyticseventDescLocale := analyticseventFields[4].Descriptor()
+	// analyticsevent.DefaultLocale holds the default value on creation for the locale field.
+	analyticsevent.DefaultLocale = analyticseventDescLocale.Default.(string)
+	// analyticseventDescSent is the schema descriptor for sent field.
+	analyticseventDescSent := analyticseventFields[6].Descriptor()
+	// analyticsevent.DefaultSent holds the default value on creation for the sent field.
+	analyticsevent.DefaultSent = analyticseventDescSent.Default.(bool)
 	archiveMixin := schema.Archive{}.Mixin()
 	archiveMixinFields0 := archiveMixin[0].Fields()
 	_ = archiveMixinFields0
@@ -311,6 +340,10 @@ func init() {
 	settingsDescFullDiskAccessWarningDismissed := settingsFields[5].Descriptor()
 	// settings.DefaultFullDiskAccessWarningDismissed holds the default value on creation for the full_disk_access_warning_dismissed field.
 	settings.DefaultFullDiskAccessWarningDismissed = settingsDescFullDiskAccessWarningDismissed.Default.(bool)
+	// settingsDescInstallationID is the schema descriptor for installation_id field.
+	settingsDescInstallationID := settingsFields[8].Descriptor()
+	// settings.DefaultInstallationID holds the default value on creation for the installation_id field.
+	settings.DefaultInstallationID = settingsDescInstallationID.Default.(func() uuid.UUID)
 	userMixin := schema.User{}.Mixin()
 	userMixinFields0 := userMixin[0].Fields()
 	_ = userMixinFields0

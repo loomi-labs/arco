@@ -9,6 +9,32 @@ import (
 )
 
 var (
+	// AnalyticsEventsColumns holds the columns for the "analytics_events" table.
+	AnalyticsEventsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "event_name", Type: field.TypeString},
+		{Name: "event_properties", Type: field.TypeJSON, Nullable: true},
+		{Name: "app_version", Type: field.TypeString},
+		{Name: "os_info", Type: field.TypeString},
+		{Name: "locale", Type: field.TypeString, Default: ""},
+		{Name: "event_time", Type: field.TypeTime},
+		{Name: "sent", Type: field.TypeBool, Default: false},
+	}
+	// AnalyticsEventsTable holds the schema information for the "analytics_events" table.
+	AnalyticsEventsTable = &schema.Table{
+		Name:       "analytics_events",
+		Columns:    AnalyticsEventsColumns,
+		PrimaryKey: []*schema.Column{AnalyticsEventsColumns[0]},
+		Indexes: []*schema.Index{
+			{
+				Name:    "analyticsevent_sent",
+				Unique:  false,
+				Columns: []*schema.Column{AnalyticsEventsColumns[9]},
+			},
+		},
+	}
 	// ArchivesColumns holds the columns for the "archives" table.
 	ArchivesColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
@@ -243,6 +269,8 @@ var (
 		{Name: "macfuse_warning_dismissed", Type: field.TypeBool, Default: false},
 		{Name: "full_disk_access_warning_dismissed", Type: field.TypeBool, Default: false},
 		{Name: "feedback_last_prompted_at", Type: field.TypeTime, Nullable: true},
+		{Name: "usage_logging_enabled", Type: field.TypeBool, Nullable: true},
+		{Name: "installation_id", Type: field.TypeUUID},
 	}
 	// SettingsTable holds the schema information for the "settings" table.
 	SettingsTable = &schema.Table{
@@ -293,6 +321,7 @@ var (
 	}
 	// Tables holds all the tables in the schema.
 	Tables = []*schema.Table{
+		AnalyticsEventsTable,
 		ArchivesTable,
 		AuthSessionsTable,
 		BackupProfilesTable,

@@ -1,4 +1,4 @@
-h1:B3NDmtC713HEjuaCfMF4+JarCwcb14iVvtcTe9+/YZ0=
+h1:otQNijen+xxRmBdFhWrcbi/GR0WncmeQ64nUc9mfqwc=
 20241202145510_init.sql h1:3Vh7O+dfaLbEkPBEbxOcHIse/G5XcXsrUzXLphw9M0E=
 20241202193640_default_settings.sql h1:nCE2FptFxuRc8jN3RNrqp8OZWZuUluQqPRzwR+NLaW8=
 20250221150025_add_collapse_state.sql h1:DFoBihPNN1p/68mrP4iROI4VC+/DHwtj+BmGW4Os/3Y=
@@ -23,3 +23,4 @@ h1:B3NDmtC713HEjuaCfMF4+JarCwcb14iVvtcTe9+/YZ0=
 20260127174049_add_full_disk_access_warning_dismissed.sql h1:qCD+hie333GMs612JDV3RKHTMcr/lGTExrsz+aj0FaA=
 20260202123657_gen.sql h1:lqglB/XK+9Ef4kIyTe7YRLeoxt9Gyuj1vsg7hsE2MMQ=
 20260327153722_gen.sql h1:VicsCrct9wZZG5CThrCAvNtr2HgxlA/w3JD3Jow1Z0U=
+20260331130829_gen.sql h1:im1ZlRXPbw5OVoLG2V/gsseNNdHf9ze1YEiXWztUOFU=

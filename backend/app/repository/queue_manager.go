@@ -13,6 +13,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/loomi-labs/arco/backend/app/analytics"
 	"github.com/loomi-labs/arco/backend/app/keyring"
 	"github.com/loomi-labs/arco/backend/app/statemachine"
 	"github.com/loomi-labs/arco/backend/app/types"
@@ -54,6 +55,7 @@ type QueueManager struct {
 	borg         borg.Borg
 	eventEmitter types.EventEmitter
 	keyring      *keyring.Service
+	analytics    analytics.Tracker
 	queues       map[int]*RepositoryQueue // RepoID -> Queue
 	mu           sync.RWMutex
 
@@ -81,13 +83,14 @@ func NewQueueManager(log *zap.SugaredLogger, stateMachine *statemachine.Reposito
 }
 
 // Init initializes the queue manager with database and borg clients
-func (qm *QueueManager) Init(db *ent.Client, borgClient borg.Borg, eventEmitter types.EventEmitter, keyringService *keyring.Service) {
+func (qm *QueueManager) Init(db *ent.Client, borgClient borg.Borg, eventEmitter types.EventEmitter, keyringService *keyring.Service, analyticsService analytics.Tracker) {
 	qm.mu.Lock()
 	defer qm.mu.Unlock()
 	qm.db = db
 	qm.borg = borgClient
 	qm.eventEmitter = eventEmitter
 	qm.keyring = keyringService
+	qm.analytics = analyticsService
 }
 
 // GetRepositoryState returns the current state of a repository (defaults to idle if not set)
@@ -513,6 +516,17 @@ func (qm *QueueManager) CompleteOperation(ctx context.Context, repoID int, opera
 	err := queue.CompleteActive(errorMsg)
 	if err != nil {
 		return fmt.Errorf("failed to complete operation: %w", err)
+	}
+
+	// Track backup analytics events
+	if qm.analytics != nil && statemachine.GetOperationType(operation) == statemachine.OperationTypeBackup {
+		if errorMsg == "" {
+			qm.analytics.TrackEvent(ctx, analytics.EventBackupCompleted, nil)
+		} else {
+			qm.analytics.TrackEvent(ctx, analytics.EventBackupFailed, map[string]string{
+				analytics.PropErrorType: categorizeBackupError(errorMsg),
+			})
+		}
 	}
 
 	// Transition repository state via state machine
@@ -2383,4 +2397,22 @@ func ensurePathExists(path string) error {
 		return os.MkdirAll(path, 0755)
 	}
 	return nil
+}
+
+// categorizeBackupError returns a generic error category for analytics.
+// Avoids including raw error messages which may contain file paths or PII.
+func categorizeBackupError(msg string) string {
+	lower := strings.ToLower(msg)
+	switch {
+	case strings.Contains(lower, "connection") || strings.Contains(lower, "ssh") || strings.Contains(lower, "network"):
+		return "connection"
+	case strings.Contains(lower, "permission") || strings.Contains(lower, "denied"):
+		return "permission"
+	case strings.Contains(lower, "lock"):
+		return "lock"
+	case strings.Contains(lower, "no space") || strings.Contains(lower, "disk full") || strings.Contains(lower, "quota"):
+		return "disk_space"
+	default:
+		return "other"
+	}
 }

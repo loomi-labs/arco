@@ -12,6 +12,7 @@ import (
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
+	"github.com/loomi-labs/arco/backend/ent/analyticsevent"
 	"github.com/loomi-labs/arco/backend/ent/archive"
 	"github.com/loomi-labs/arco/backend/ent/authsession"
 	"github.com/loomi-labs/arco/backend/ent/backupprofile"
@@ -82,6 +83,7 @@ var (
 func checkColumn(t, c string) error {
 	initCheck.Do(func() {
 		columnCheck = sql.NewColumnCheck(map[string]func(string) bool{
+			analyticsevent.Table:  analyticsevent.ValidColumn,
 			archive.Table:         archive.ValidColumn,
 			authsession.Table:     authsession.ValidColumn,
 			backupprofile.Table:   backupprofile.ValidColumn,

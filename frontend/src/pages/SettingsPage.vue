@@ -6,6 +6,7 @@ import { Page } from "../router";
 import {
   ArrowRightStartOnRectangleIcon,
   BeakerIcon,
+  ChartBarIcon,
   MoonIcon,
   SunIcon,
   UserCircleIcon
@@ -15,6 +16,7 @@ import { useAuth } from "../common/auth";
 import { useTheme } from "../common/theme";
 import { logError } from "../common/logger";
 import * as userService from "../../bindings/github.com/loomi-labs/arco/backend/app/user/service";
+import * as analyticsService from "../../bindings/github.com/loomi-labs/arco/backend/app/analytics/service";
 import type * as ent from "../../bindings/github.com/loomi-labs/arco/backend/ent";
 import { Theme } from "../../bindings/github.com/loomi-labs/arco/backend/ent/settings";
 
@@ -42,6 +44,8 @@ const selectedTheme = ref<Theme>(Theme.ThemeSystem);
 const expertMode = ref(false);
 const disableTransitions = ref(false);
 const disableShadows = ref(false);
+const usageLoggingEnabled = ref(false);
+const showCollectedData = ref(false);
 
 /************
  * Functions
@@ -103,6 +107,26 @@ async function saveSettings() {
   }
 }
 
+async function loadAnalyticsPreference() {
+  try {
+    const enabled = await analyticsService.IsUsageLoggingEnabled();
+    usageLoggingEnabled.value = enabled === true;
+  } catch (error: unknown) {
+    await logError("Failed to load analytics preference", error);
+  }
+}
+
+async function saveAnalyticsPreference() {
+  isSaving.value = true;
+  try {
+    await analyticsService.SetUsageLoggingEnabled(usageLoggingEnabled.value);
+  } catch (error: unknown) {
+    await logError("Failed to save analytics preference", error);
+  } finally {
+    isSaving.value = false;
+  }
+}
+
 async function handleLogout() {
   try {
     await logout();
@@ -140,6 +164,7 @@ function restartApp() {
 onMounted(async () => {
   await loadSettings();
   await loadEnvVars();
+  await loadAnalyticsPreference();
 });
 
 </script>
@@ -331,6 +356,64 @@ onMounted(async () => {
                 <button class='btn btn-sm btn-outline' @click='restartApp'>
                   Restart
                 </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Privacy Section -->
+        <div class='card bg-base-200 shadow-sm'>
+          <div class='card-body'>
+            <h2 class='card-title flex items-center gap-2'>
+              <ChartBarIcon class='size-6' />
+              Privacy
+            </h2>
+
+            <div class='space-y-4 mt-4'>
+              <!-- Usage Analytics Toggle -->
+              <div class='flex items-center justify-between py-3 px-4 bg-base-100 rounded-lg'>
+                <div class='flex-1'>
+                  <p class='font-medium'>Usage Analytics</p>
+                  <p class='text-sm text-base-content/70 mt-1'>
+                    Share anonymous usage data to help improve Arco
+                  </p>
+                </div>
+                <input
+                  type='checkbox'
+                  v-model='usageLoggingEnabled'
+                  @change='saveAnalyticsPreference'
+                  class='toggle toggle-secondary'
+                  :disabled='isSaving'
+                />
+              </div>
+
+              <!-- Collapsible data info -->
+              <button
+                class='text-sm text-base-content/50 hover:text-base-content/70 transition-colors'
+                @click='showCollectedData = !showCollectedData'
+              >
+                {{ showCollectedData ? 'Hide' : 'Show' }} what we collect
+              </button>
+
+              <div v-if='showCollectedData' class='space-y-3'>
+                <div class='bg-base-100 rounded-lg p-4'>
+                  <p class='font-medium text-sm mb-2'>What we collect:</p>
+                  <ul class='text-sm text-base-content/70 space-y-1 list-disc list-inside'>
+                    <li>Page views and navigation</li>
+                    <li>Actions like creating backups and storage locations</li>
+                    <li>Backup success/failure statistics</li>
+                    <li>Settings changes and login events</li>
+                    <li>App version and operating system</li>
+                  </ul>
+                </div>
+                <div class='bg-base-100 rounded-lg p-4'>
+                  <p class='font-medium text-sm mb-2'>What we never collect:</p>
+                  <ul class='text-sm text-base-content/70 space-y-1 list-disc list-inside'>
+                    <li>File paths, names, or contents</li>
+                    <li>Passwords, keys, or credentials</li>
+                    <li>Personal identifiable information</li>
+                  </ul>
+                </div>
               </div>
             </div>
           </div>

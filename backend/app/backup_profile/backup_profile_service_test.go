@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/loomi-labs/arco/backend/app/analytics"
 	"github.com/loomi-labs/arco/backend/app/state"
 	"github.com/loomi-labs/arco/backend/app/types"
 	"github.com/loomi-labs/arco/backend/ent"
@@ -114,7 +115,7 @@ func newTestBackupProfileService(t *testing.T) (*Service, *ent.Client, context.C
 
 	// Create service
 	serviceInternal := NewService(sugarLog, st, config)
-	serviceInternal.Init(ctx, db, mockEmitter, make(chan struct{}, 1), make(chan struct{}, 1), mockRepoService)
+	serviceInternal.Init(ctx, db, mockEmitter, make(chan struct{}, 1), make(chan struct{}, 1), mockRepoService, analytics.NoopTracker{})
 
 	return serviceInternal.Service, db, ctx
 }

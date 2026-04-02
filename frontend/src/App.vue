@@ -6,6 +6,7 @@ import { useRouter } from "vue-router";
 import { Page } from "./router";
 import Sidebar from "./components/Sidebar.vue";
 import FeedbackModal from "./components/FeedbackModal.vue";
+import UsageLoggingModal from "./components/UsageLoggingModal.vue";
 import { computed, onUnmounted, ref, watch } from "vue";
 import * as userService from "../bindings/github.com/loomi-labs/arco/backend/app/user/service";
 import * as state from "../bindings/github.com/loomi-labs/arco/backend/app/state";
@@ -13,10 +14,13 @@ import * as types from "../bindings/github.com/loomi-labs/arco/backend/app/types
 import { Events } from "@wailsio/runtime";
 import { initializeFeatureFlags } from "./common/featureFlags";
 import * as feedbackService from "../bindings/github.com/loomi-labs/arco/backend/app/feedback/service";
+import * as analyticsService from "../bindings/github.com/loomi-labs/arco/backend/app/analytics/service";
+import * as backupProfileService from "../bindings/github.com/loomi-labs/arco/backend/app/backup_profile/service";
 import { useSubscriptionNotifications } from "./common/subscription";
 import { initializeTheme } from "./common/theme";
 import { initializeExpertMode, useExpertMode } from "./common/expertMode";
 import { initializeReducedMotion, setupReducedMotionListener } from "./common/reducedMotion";
+import { setupPageViewTracking } from "./common/analytics";
 import { useNavigationShortcuts } from "./common/navigationShortcuts";
 import type { WailsEvent } from "@wailsio/runtime/types/events";
 
@@ -29,6 +33,7 @@ const toast = useToast();
 const cleanupFunctions: (() => void)[] = [];
 const startupState = ref<state.StartupState>(state.StartupState.createFrom());
 const feedbackPopupModal = ref<InstanceType<typeof FeedbackModal>>();
+const usageLoggingModal = ref<InstanceType<typeof UsageLoggingModal>>();
 const isInitialized = computed(() => startupState.value.status === state.StartupStatus.StartupStatusReady);
 
 /************
@@ -76,6 +81,23 @@ async function getStartupState() {
     startupState.value = await userService.GetStartupState();
   } catch (error: unknown) {
     await showAndLogError("Failed to get startup state", error);
+  }
+}
+
+async function checkUsageLoggingPrompt() {
+  try {
+    const enabled = await analyticsService.IsUsageLoggingEnabled();
+    if (enabled !== null) {
+      return; // Already decided
+    }
+    // Skip if no backup profiles exist — the WelcomeModal will handle the opt-in
+    const profiles = await backupProfileService.GetBackupProfiles();
+    if (profiles.length === 0) {
+      return;
+    }
+    usageLoggingModal.value?.showModal();
+  } catch (error: unknown) {
+    await logError("Failed to check usage logging prompt", error);
   }
 }
 
@@ -134,7 +156,11 @@ watch(isInitialized, async (initialized) => {
     await initializeExpertMode();
     await initializeReducedMotion();
 
+    // Start page view tracking after settings are available
+    cleanupFunctions.push(setupPageViewTracking());
+
     await goToNextPage();
+    await checkUsageLoggingPrompt();
     await checkFeedbackPopup();
   }
 }, { once: true });
@@ -158,6 +184,7 @@ onUnmounted(() => {
       <RouterView class='container mx-auto flex-grow text-left' />
     </div>
     <FeedbackModal ref='feedbackPopupModal' :is-popup='true' @close='onFeedbackPopupClose' />
+    <UsageLoggingModal ref='usageLoggingModal' />
   </div>
   <div v-else class='bg-base-200 min-w-svw min-h-svh'>
     <div class='container mx-auto flex items-center justify-center h-svh'>

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/loomi-labs/arco/backend/app/analytics"
 	"github.com/loomi-labs/arco/backend/app/keyring"
 	"github.com/loomi-labs/arco/backend/app/statemachine"
 	"github.com/loomi-labs/arco/backend/app/types"
@@ -73,7 +74,7 @@ func newTestQueueManager(t *testing.T) (*QueueManager, *ent.Client, context.Cont
 	stateMachine.SetQueueManager(qm)
 
 	// Initialize with real database, mock borg, and test keyring
-	qm.Init(db, mockBorgClient, mockEmitter, testKeyring)
+	qm.Init(db, mockBorgClient, mockEmitter, testKeyring, analytics.NoopTracker{})
 
 	return qm, db, ctx, mockEmitter
 }

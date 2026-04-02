@@ -11,6 +11,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/google/uuid"
 	"github.com/loomi-labs/arco/backend/ent/predicate"
 	"github.com/loomi-labs/arco/backend/ent/settings"
 )
@@ -139,6 +140,40 @@ func (_u *SettingsUpdate) ClearFeedbackLastPromptedAt() *SettingsUpdate {
 	return _u
 }
 
+// SetUsageLoggingEnabled sets the "usage_logging_enabled" field.
+func (_u *SettingsUpdate) SetUsageLoggingEnabled(v bool) *SettingsUpdate {
+	_u.mutation.SetUsageLoggingEnabled(v)
+	return _u
+}
+
+// SetNillableUsageLoggingEnabled sets the "usage_logging_enabled" field if the given value is not nil.
+func (_u *SettingsUpdate) SetNillableUsageLoggingEnabled(v *bool) *SettingsUpdate {
+	if v != nil {
+		_u.SetUsageLoggingEnabled(*v)
+	}
+	return _u
+}
+
+// ClearUsageLoggingEnabled clears the value of the "usage_logging_enabled" field.
+func (_u *SettingsUpdate) ClearUsageLoggingEnabled() *SettingsUpdate {
+	_u.mutation.ClearUsageLoggingEnabled()
+	return _u
+}
+
+// SetInstallationID sets the "installation_id" field.
+func (_u *SettingsUpdate) SetInstallationID(v uuid.UUID) *SettingsUpdate {
+	_u.mutation.SetInstallationID(v)
+	return _u
+}
+
+// SetNillableInstallationID sets the "installation_id" field if the given value is not nil.
+func (_u *SettingsUpdate) SetNillableInstallationID(v *uuid.UUID) *SettingsUpdate {
+	if v != nil {
+		_u.SetInstallationID(*v)
+	}
+	return _u
+}
+
 // Mutation returns the SettingsMutation object of the builder.
 func (_u *SettingsUpdate) Mutation() *SettingsMutation {
 	return _u.mutation
@@ -234,6 +269,15 @@ func (_u *SettingsUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if _u.mutation.FeedbackLastPromptedAtCleared() {
 		_spec.ClearField(settings.FieldFeedbackLastPromptedAt, field.TypeTime)
+	}
+	if value, ok := _u.mutation.UsageLoggingEnabled(); ok {
+		_spec.SetField(settings.FieldUsageLoggingEnabled, field.TypeBool, value)
+	}
+	if _u.mutation.UsageLoggingEnabledCleared() {
+		_spec.ClearField(settings.FieldUsageLoggingEnabled, field.TypeBool)
+	}
+	if value, ok := _u.mutation.InstallationID(); ok {
+		_spec.SetField(settings.FieldInstallationID, field.TypeUUID, value)
 	}
 	_spec.AddModifiers(_u.modifiers...)
 	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
@@ -367,6 +411,40 @@ func (_u *SettingsUpdateOne) ClearFeedbackLastPromptedAt() *SettingsUpdateOne {
 	return _u
 }
 
+// SetUsageLoggingEnabled sets the "usage_logging_enabled" field.
+func (_u *SettingsUpdateOne) SetUsageLoggingEnabled(v bool) *SettingsUpdateOne {
+	_u.mutation.SetUsageLoggingEnabled(v)
+	return _u
+}
+
+// SetNillableUsageLoggingEnabled sets the "usage_logging_enabled" field if the given value is not nil.
+func (_u *SettingsUpdateOne) SetNillableUsageLoggingEnabled(v *bool) *SettingsUpdateOne {
+	if v != nil {
+		_u.SetUsageLoggingEnabled(*v)
+	}
+	return _u
+}
+
+// ClearUsageLoggingEnabled clears the value of the "usage_logging_enabled" field.
+func (_u *SettingsUpdateOne) ClearUsageLoggingEnabled() *SettingsUpdateOne {
+	_u.mutation.ClearUsageLoggingEnabled()
+	return _u
+}
+
+// SetInstallationID sets the "installation_id" field.
+func (_u *SettingsUpdateOne) SetInstallationID(v uuid.UUID) *SettingsUpdateOne {
+	_u.mutation.SetInstallationID(v)
+	return _u
+}
+
+// SetNillableInstallationID sets the "installation_id" field if the given value is not nil.
+func (_u *SettingsUpdateOne) SetNillableInstallationID(v *uuid.UUID) *SettingsUpdateOne {
+	if v != nil {
+		_u.SetInstallationID(*v)
+	}
+	return _u
+}
+
 // Mutation returns the SettingsMutation object of the builder.
 func (_u *SettingsUpdateOne) Mutation() *SettingsMutation {
 	return _u.mutation
@@ -492,6 +570,15 @@ func (_u *SettingsUpdateOne) sqlSave(ctx context.Context) (_node *Settings, err 
 	}
 	if _u.mutation.FeedbackLastPromptedAtCleared() {
 		_spec.ClearField(settings.FieldFeedbackLastPromptedAt, field.TypeTime)
+	}
+	if value, ok := _u.mutation.UsageLoggingEnabled(); ok {
+		_spec.SetField(settings.FieldUsageLoggingEnabled, field.TypeBool, value)
+	}
+	if _u.mutation.UsageLoggingEnabledCleared() {
+		_spec.ClearField(settings.FieldUsageLoggingEnabled, field.TypeBool)
+	}
+	if value, ok := _u.mutation.InstallationID(); ok {
+		_spec.SetField(settings.FieldInstallationID, field.TypeUUID, value)
 	}
 	_spec.AddModifiers(_u.modifiers...)
 	_node = &Settings{config: _u.config}

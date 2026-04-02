@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"entgo.io/ent/dialect/sql"
+	"github.com/google/uuid"
 	"github.com/loomi-labs/arco/backend/ent/predicate"
 )
 
@@ -92,6 +93,16 @@ func FullDiskAccessWarningDismissed(v bool) predicate.Settings {
 // FeedbackLastPromptedAt applies equality check predicate on the "feedback_last_prompted_at" field. It's identical to FeedbackLastPromptedAtEQ.
 func FeedbackLastPromptedAt(v time.Time) predicate.Settings {
 	return predicate.Settings(sql.FieldEQ(FieldFeedbackLastPromptedAt, v))
+}
+
+// UsageLoggingEnabled applies equality check predicate on the "usage_logging_enabled" field. It's identical to UsageLoggingEnabledEQ.
+func UsageLoggingEnabled(v bool) predicate.Settings {
+	return predicate.Settings(sql.FieldEQ(FieldUsageLoggingEnabled, v))
+}
+
+// InstallationID applies equality check predicate on the "installation_id" field. It's identical to InstallationIDEQ.
+func InstallationID(v uuid.UUID) predicate.Settings {
+	return predicate.Settings(sql.FieldEQ(FieldInstallationID, v))
 }
 
 // CreatedAtEQ applies the EQ predicate on the "created_at" field.
@@ -292,6 +303,66 @@ func FeedbackLastPromptedAtIsNil() predicate.Settings {
 // FeedbackLastPromptedAtNotNil applies the NotNil predicate on the "feedback_last_prompted_at" field.
 func FeedbackLastPromptedAtNotNil() predicate.Settings {
 	return predicate.Settings(sql.FieldNotNull(FieldFeedbackLastPromptedAt))
+}
+
+// UsageLoggingEnabledEQ applies the EQ predicate on the "usage_logging_enabled" field.
+func UsageLoggingEnabledEQ(v bool) predicate.Settings {
+	return predicate.Settings(sql.FieldEQ(FieldUsageLoggingEnabled, v))
+}
+
+// UsageLoggingEnabledNEQ applies the NEQ predicate on the "usage_logging_enabled" field.
+func UsageLoggingEnabledNEQ(v bool) predicate.Settings {
+	return predicate.Settings(sql.FieldNEQ(FieldUsageLoggingEnabled, v))
+}
+
+// UsageLoggingEnabledIsNil applies the IsNil predicate on the "usage_logging_enabled" field.
+func UsageLoggingEnabledIsNil() predicate.Settings {
+	return predicate.Settings(sql.FieldIsNull(FieldUsageLoggingEnabled))
+}
+
+// UsageLoggingEnabledNotNil applies the NotNil predicate on the "usage_logging_enabled" field.
+func UsageLoggingEnabledNotNil() predicate.Settings {
+	return predicate.Settings(sql.FieldNotNull(FieldUsageLoggingEnabled))
+}
+
+// InstallationIDEQ applies the EQ predicate on the "installation_id" field.
+func InstallationIDEQ(v uuid.UUID) predicate.Settings {
+	return predicate.Settings(sql.FieldEQ(FieldInstallationID, v))
+}
+
+// InstallationIDNEQ applies the NEQ predicate on the "installation_id" field.
+func InstallationIDNEQ(v uuid.UUID) predicate.Settings {
+	return predicate.Settings(sql.FieldNEQ(FieldInstallationID, v))
+}
+
+// InstallationIDIn applies the In predicate on the "installation_id" field.
+func InstallationIDIn(vs ...uuid.UUID) predicate.Settings {
+	return predicate.Settings(sql.FieldIn(FieldInstallationID, vs...))
+}
+
+// InstallationIDNotIn applies the NotIn predicate on the "installation_id" field.
+func InstallationIDNotIn(vs ...uuid.UUID) predicate.Settings {
+	return predicate.Settings(sql.FieldNotIn(FieldInstallationID, vs...))
+}
+
+// InstallationIDGT applies the GT predicate on the "installation_id" field.
+func InstallationIDGT(v uuid.UUID) predicate.Settings {
+	return predicate.Settings(sql.FieldGT(FieldInstallationID, v))
+}
+
+// InstallationIDGTE applies the GTE predicate on the "installation_id" field.
+func InstallationIDGTE(v uuid.UUID) predicate.Settings {
+	return predicate.Settings(sql.FieldGTE(FieldInstallationID, v))
+}
+
+// InstallationIDLT applies the LT predicate on the "installation_id" field.
+func InstallationIDLT(v uuid.UUID) predicate.Settings {
+	return predicate.Settings(sql.FieldLT(FieldInstallationID, v))
+}
+
+// InstallationIDLTE applies the LTE predicate on the "installation_id" field.
+func InstallationIDLTE(v uuid.UUID) predicate.Settings {
+	return predicate.Settings(sql.FieldLTE(FieldInstallationID, v))
 }
 
 // And groups predicates with the AND operator between them.

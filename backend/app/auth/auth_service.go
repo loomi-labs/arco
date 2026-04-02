@@ -8,6 +8,7 @@ import (
 
 	"connectrpc.com/connect"
 	"github.com/loomi-labs/arco/backend/api/v1/arcov1connect"
+	"github.com/loomi-labs/arco/backend/app/analytics"
 	"github.com/loomi-labs/arco/backend/app/keyring"
 
 	v1 "github.com/loomi-labs/arco/backend/api/v1"
@@ -32,6 +33,7 @@ type Service struct {
 	state     *state.State
 	keyring   *keyring.Service
 	rpcClient arcov1connect.AuthServiceClient
+	analytics analytics.Tracker
 }
 
 // ServiceInternal provides backend-only methods that should not be exposed to frontend
@@ -48,10 +50,11 @@ func NewService(log *zap.SugaredLogger, state *state.State) *ServiceInternal {
 	}
 }
 
-func (asi *ServiceInternal) Init(db *ent.Client, rpcClient arcov1connect.AuthServiceClient, keyring *keyring.Service) {
+func (asi *ServiceInternal) Init(db *ent.Client, rpcClient arcov1connect.AuthServiceClient, keyring *keyring.Service, analyticsService analytics.Tracker) {
 	asi.db = db
 	asi.rpcClient = rpcClient
 	asi.keyring = keyring
+	asi.analytics = analyticsService
 }
 
 // mustHaveDB panics if db is nil. This is a programming error guard.
@@ -440,6 +443,7 @@ func (as *Service) startAuthMonitoring(session *ent.AuthSession) {
 				internal := &ServiceInternal{Service: as}
 				internal.syncAuthenticatedSession(ctx, session.SessionID, authStatus)
 				as.state.SetAuthenticated(ctx)
+				as.analytics.TrackEvent(ctx, analytics.EventLoginCompleted, nil)
 				return
 			case v1.AuthStatus_AUTH_STATUS_EXPIRED, v1.AuthStatus_AUTH_STATUS_CANCELLED:
 				// Authentication failed

@@ -6,6 +6,9 @@ import (
 	"entgo.io/ent/dialect/sql"
 )
 
+// AnalyticsEvent is the predicate function for analyticsevent builders.
+type AnalyticsEvent func(*sql.Selector)
+
 // Archive is the predicate function for archive builders.
 type Archive func(*sql.Selector)
 
