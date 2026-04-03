@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.23.0](https://github.com/loomi-labs/arco/compare/v0.22.1...v0.23.0) (2026-04-03)
+
+
+### Features
+
+* **analytics:** add opt-out usage logging with local event buffering and cloud RPC ([#289](https://github.com/loomi-labs/arco/issues/289)) ([#289](https://github.com/loomi-labs/arco/issues/289)) ([15111d9](https://github.com/loomi-labs/arco/commit/15111d9bf9581885afd7009b15cb95977a026e88))
+* **backup:** add auto compression, revamp repo stats, fix timezone bug ([#282](https://github.com/loomi-labs/arco/issues/282)) ([fd88bb7](https://github.com/loomi-labs/arco/commit/fd88bb7a24855220a0cdccc84e0a0c69681cf705))
+* **feedback:** add user feedback feature with star rating and recurring popup ([#286](https://github.com/loomi-labs/arco/issues/286)) ([#286](https://github.com/loomi-labs/arco/issues/286)) ([a5aa3a8](https://github.com/loomi-labs/arco/commit/a5aa3a8e18df2a437c395d2f827e7b1e3e1ce7be))
+* **tray:** add click handler to open app from systray ([5a4e736](https://github.com/loomi-labs/arco/commit/5a4e7361e630d2cf0ff18f9188e855af2e0e69b6))
+* **ui:** add remote repository tutorial link to storage location setup ([4c370c5](https://github.com/loomi-labs/arco/commit/4c370c57db46ee843701e93d3157db9bdb97e2d2))
+* **ui:** revamp backup profile flow with collapsible options and rename Repository to Storage Location ([#285](https://github.com/loomi-labs/arco/issues/285)) ([11da173](https://github.com/loomi-labs/arco/commit/11da1737f23a6f49d7d8814e59c95e17ece9ff81))
+
+
+### Bug Fixes
+
+* **ui:** load analytics toggle from settings to prevent animation on page load ([da93b75](https://github.com/loomi-labs/arco/commit/da93b75db99ad2534b334fc547d2e5644415eb2d))
+* **ui:** prevent analytics and feedback dialogs from stacking on startup ([#292](https://github.com/loomi-labs/arco/issues/292)) ([dd45942](https://github.com/loomi-labs/arco/commit/dd45942444f5bb1eb317f894c143f23ff68c96dd))
+
 ## [0.22.1](https://github.com/loomi-labs/arco/compare/v0.22.0...v0.22.1) (2026-03-05)
 
 
