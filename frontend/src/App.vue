@@ -84,20 +84,25 @@ async function getStartupState() {
   }
 }
 
-async function checkUsageLoggingPrompt() {
+async function checkUsageLoggingPrompt(): Promise<boolean> {
   try {
     const enabled = await analyticsService.IsUsageLoggingEnabled();
     if (enabled !== null) {
-      return; // Already decided
+      return false; // Already decided
     }
     // Skip if no backup profiles exist — the WelcomeModal will handle the opt-in
     const profiles = await backupProfileService.GetBackupProfiles();
     if (profiles.length === 0) {
-      return;
+      return false;
     }
-    usageLoggingModal.value?.showModal();
+    if (!usageLoggingModal.value) {
+      return false;
+    }
+    usageLoggingModal.value.showModal();
+    return true;
   } catch (error: unknown) {
     await logError("Failed to check usage logging prompt", error);
+    return false;
   }
 }
 
@@ -160,8 +165,12 @@ watch(isInitialized, async (initialized) => {
     cleanupFunctions.push(setupPageViewTracking());
 
     await goToNextPage();
-    await checkUsageLoggingPrompt();
-    await checkFeedbackPopup();
+    // Show only one startup modal at a time — if the analytics prompt is shown,
+    // the feedback popup will appear on the next restart instead
+    const shownUsageLogging = await checkUsageLoggingPrompt();
+    if (!shownUsageLogging) {
+      await checkFeedbackPopup();
+    }
   }
 }, { once: true });
 
