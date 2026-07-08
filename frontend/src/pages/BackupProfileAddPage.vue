@@ -22,9 +22,10 @@ import * as backupProfileService from "../../bindings/github.com/loomi-labs/arco
 import * as repoService from "../../bindings/github.com/loomi-labs/arco/backend/app/repository/service";
 import * as userService from "../../bindings/github.com/loomi-labs/arco/backend/app/user/service";
 import type { Icon } from "../../bindings/github.com/loomi-labs/arco/backend/ent/backupprofile";
-import { CompressionMode } from "../../bindings/github.com/loomi-labs/arco/backend/ent/backupprofile/models";
+import type { CompressionMode } from "../../bindings/github.com/loomi-labs/arco/backend/ent/backupprofile/models";
 import type { Repository } from "../../bindings/github.com/loomi-labs/arco/backend/app/repository";
-import { BackupProfile, BackupSchedule, PruningRule } from "../../bindings/github.com/loomi-labs/arco/backend/app/backup_profile";
+import { BackupProfile } from "../../bindings/github.com/loomi-labs/arco/backend/app/backup_profile";
+import type { BackupSchedule } from "../../bindings/github.com/loomi-labs/arco/backend/app/backup_profile";
 
 /************
  * Types

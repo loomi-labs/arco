@@ -372,11 +372,11 @@ async function getPaginatedArchives() {
     }
     request.search = search.value;
     request.startDate = dateRange.value.startDate
-      ? new Date(dateRange.value.startDate)
+      ? new Date(dateRange.value.startDate).toISOString()
       : undefined;
     // Add a day to the end date to include the end date itself
     request.endDate = dateRange.value.endDate
-      ? dayEnd(new Date(dateRange.value.endDate))
+      ? dayEnd(new Date(dateRange.value.endDate)).toISOString()
       : undefined;
 
     const result =
@@ -810,10 +810,10 @@ async function selectAllPages() {
     }
     request.search = search.value;
     request.startDate = dateRange.value.startDate
-      ? new Date(dateRange.value.startDate)
+      ? new Date(dateRange.value.startDate).toISOString()
       : undefined;
     request.endDate = dateRange.value.endDate
-      ? dayEnd(new Date(dateRange.value.endDate))
+      ? dayEnd(new Date(dateRange.value.endDate)).toISOString()
       : undefined;
 
     const ids = await repoService.GetFilteredArchiveIds(request);

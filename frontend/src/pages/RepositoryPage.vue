@@ -94,7 +94,7 @@ const showLastAttempt = computed(() => {
   const attempt = repo.value.lastAttempt;
   const backup = repo.value.lastBackup;
 
-  if (!attempt || attempt.status !== BackupStatus.BackupStatusError) return false;
+  if (attempt?.status !== BackupStatus.BackupStatusError) return false;
   if (!backup?.timestamp) return true; // No successful backup, show error
   if (!attempt.timestamp) return false;
 

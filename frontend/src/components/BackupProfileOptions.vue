@@ -58,6 +58,8 @@ const scheduleSummary = computed(() => {
       return "Weekly";
     case backupschedule.Mode.ModeMonthly:
       return "Monthly";
+    case backupschedule.Mode.$zero:
+    case backupschedule.Mode.DefaultMode:
     default:
       return "Off";
   }

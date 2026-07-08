@@ -16,7 +16,7 @@ tasks:
       LD_FLAGS: '-X github.com/loomi-labs/arco/backend/app/types.Version=v{{.VERSION}}'
 #      TODO: add -race back once it is fixed in Wails
 #      BUILD_FLAGS: '{{if eq .PRODUCTION "true"}}-tags production -trimpath -buildvcs=false -ldflags="-w -s {{.LD_FLAGS}}"{{else}}-race -tags assert -buildvcs=false -gcflags=all="-l" -ldflags="{{.LD_FLAGS}}"{{end}}'
-      BUILD_FLAGS: '{{if eq .PRODUCTION "true"}}-tags production -trimpath -buildvcs=false -ldflags="-w -s {{.LD_FLAGS}}"{{else}} -tags assert -buildvcs=false -gcflags=all="-l" -ldflags="{{.LD_FLAGS}}"{{end}}'
+      BUILD_FLAGS: '{{if eq .PRODUCTION "true"}}-tags production,gtk3 -trimpath -buildvcs=false -ldflags="-w -s {{.LD_FLAGS}}"{{else}} -tags assert,gtk3 -buildvcs=false -gcflags=all="-l" -ldflags="{{.LD_FLAGS}}"{{end}}'
     env:
       GOOS: linux
       CGO_ENABLED: 1
@@ -45,7 +45,7 @@ tasks:
     cmds:
       - cp {{.APP_BINARY}} {{.BINARY_NAME}}
       - cp ../../appicon-light.png appicon-light.png
-      - go tool wails3 generate appimage -binary {{.BINARY_NAME}} -icon {{.ICON}} -desktopfile {{.DESKTOP_FILE}} -outputdir {{.OUTPUT_DIR}} -builddir {{.ROOT_DIR}}/build/linux/appimage/build
+      - go run -tags gtk3 github.com/wailsapp/wails/v3/cmd/wails3 generate appimage -binary {{.BINARY_NAME}} -icon {{.ICON}} -desktopfile {{.DESKTOP_FILE}} -outputdir {{.OUTPUT_DIR}} -builddir {{.ROOT_DIR}}/build/linux/appimage/build
     vars:
       APP_BINARY: '../../../bin/{{.BINARY_NAME}}'
       ICON: '../../appicon-light.png'
@@ -85,21 +85,21 @@ tasks:
   generate:deb:
     desc: Creates a deb package
     cmds:
-      - go tool wails3 tool package -name {{.BINARY_NAME}} -format deb -config ./build/linux/nfpm/nfpm.yaml -out {{.ROOT_DIR}}/bin
+      - go run -tags gtk3 github.com/wailsapp/wails/v3/cmd/wails3 tool package -name {{.BINARY_NAME}} -format deb -config ./build/linux/nfpm/nfpm.yaml -out {{.ROOT_DIR}}/bin
     env:
       VERSION: '{{.VERSION}}'
 
   generate:rpm:
     desc: Creates a rpm package
     cmds:
-      - go tool wails3 tool package -name {{.BINARY_NAME}} -format rpm -config ./build/linux/nfpm/nfpm.yaml -out {{.ROOT_DIR}}/bin
+      - go run -tags gtk3 github.com/wailsapp/wails/v3/cmd/wails3 tool package -name {{.BINARY_NAME}} -format rpm -config ./build/linux/nfpm/nfpm.yaml -out {{.ROOT_DIR}}/bin
     env:
       VERSION: '{{.VERSION}}'
 
   generate:aur:
     desc: Creates a arch linux packager package
     cmds:
-      - go tool wails3 tool package -name {{.BINARY_NAME}} -format archlinux -config ./build/linux/nfpm/nfpm.yaml -out {{.ROOT_DIR}}/bin
+      - go run -tags gtk3 github.com/wailsapp/wails/v3/cmd/wails3 tool package -name {{.BINARY_NAME}} -format archlinux -config ./build/linux/nfpm/nfpm.yaml -out {{.ROOT_DIR}}/bin
     env:
       VERSION: '{{.VERSION}}'
 
@@ -108,7 +108,7 @@ tasks:
     dir: build
     cmds:
       - mkdir -p {{.ROOT_DIR}}/build/linux/appimage
-      - go tool wails3 generate .desktop -name "{{.BINARY_NAME}}" -exec "{{.BINARY_NAME}}" -icon "appicon-light" -outputfile {{.ROOT_DIR}}/build/linux/{{.BINARY_NAME}}.desktop -categories "Utility;" -keywords "backup;borg;borgbackup;" -comment "A modern backup application based on BorgBackup"
+      - go run -tags gtk3 github.com/wailsapp/wails/v3/cmd/wails3 generate .desktop -name "{{.BINARY_NAME}}" -exec "{{.BINARY_NAME}}" -icon "appicon-light" -outputfile {{.ROOT_DIR}}/build/linux/{{.BINARY_NAME}}.desktop -categories "Utility;" -keywords "backup;borg;borgbackup;" -comment "A modern backup application based on BorgBackup"
       - sed -i 's/^Name={{.BINARY_NAME}}$/Name={{.APP_NAME}}/' {{.ROOT_DIR}}/build/linux/{{.BINARY_NAME}}.desktop
     vars:
       APP_NAME: '{{.APP_NAME}}'

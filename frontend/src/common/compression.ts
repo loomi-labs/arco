@@ -40,7 +40,7 @@ function findByPreset(preset: CompressionPreset): Algorithm | undefined {
 /** Simple-mode preset options (for dropdown) */
 export const simplePresets: { preset: CompressionPreset; label: string }[] = [
   { preset: CompressionPreset.None, label: "Off" },
-  ...algorithms.filter(a => a.preset !== null).map(a => ({ preset: a.preset!, label: a.simpleLabel })),
+  ...algorithms.flatMap(a => a.preset !== null ? [{ preset: a.preset, label: a.simpleLabel }] : []),
 ];
 
 /** Expert-mode algorithm options (for dropdown) */
