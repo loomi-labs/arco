@@ -5,10 +5,6 @@
 // @ts-ignore: Unused imports
 import { Create as $Create } from "@wailsio/runtime";
 
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-ignore: Unused imports
-import * as time$0 from "../../../../../../time/models.js";
-
 /**
  * ErrorCounts holds error counts per entity
  */
@@ -52,7 +48,7 @@ export class ErrorNotification {
     "id": number;
     "message": string;
     "type": string;
-    "createdAt": time$0.Time;
+    "createdAt": string;
     "backupProfileId": number;
     "backupProfileName": string;
     "repositoryId": number;
@@ -70,7 +66,7 @@ export class ErrorNotification {
             this["type"] = "";
         }
         if (!("createdAt" in $$source)) {
-            this["createdAt"] = null;
+            this["createdAt"] = "0001-01-01T00:00:00.000Z";
         }
         if (!("backupProfileId" in $$source)) {
             this["backupProfileId"] = 0;

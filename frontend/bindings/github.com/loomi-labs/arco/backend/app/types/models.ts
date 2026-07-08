@@ -5,10 +5,6 @@
 // @ts-ignore: Unused imports
 import { Create as $Create } from "@wailsio/runtime";
 
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-ignore: Unused imports
-import * as time$0 from "../../../../../../time/models.js";
-
 export class BackupId {
     "backupProfileId": number;
     "repositoryId": number;
@@ -112,7 +108,7 @@ export class FrontendError {
  */
 export class LastAttempt {
     "status": BackupStatus;
-    "timestamp"?: time$0.Time | null;
+    "timestamp"?: string | null;
     "message"?: string;
 
     /** Creates a new LastAttempt instance. */
@@ -137,7 +133,7 @@ export class LastAttempt {
  * LastBackup contains info about the last successful backup
  */
 export class LastBackup {
-    "timestamp"?: time$0.Time | null;
+    "timestamp"?: string | null;
     "warningMessage"?: string;
 
     /** Creates a new LastBackup instance. */

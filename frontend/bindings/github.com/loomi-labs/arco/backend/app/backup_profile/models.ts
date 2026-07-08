@@ -14,17 +14,14 @@ import * as backupprofile$0 from "../../ent/backupprofile/models.js";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
 import * as backupschedule$0 from "../../ent/backupschedule/models.js";
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-ignore: Unused imports
-import * as time$0 from "../../../../../../time/models.js";
 
 /**
  * BackupProfile is a flattened view of ent.BackupProfile with edges as direct properties.
  */
 export class BackupProfile {
     "id": number;
-    "createdAt": time$0.Time;
-    "updatedAt": time$0.Time;
+    "createdAt": string;
+    "updatedAt": string;
     "name": string;
     "prefix": string;
     "backupPaths": string[];
@@ -57,10 +54,10 @@ export class BackupProfile {
             this["id"] = 0;
         }
         if (!("createdAt" in $$source)) {
-            this["createdAt"] = null;
+            this["createdAt"] = "0001-01-01T00:00:00.000Z";
         }
         if (!("updatedAt" in $$source)) {
-            this["updatedAt"] = null;
+            this["updatedAt"] = "0001-01-01T00:00:00.000Z";
         }
         if (!("name" in $$source)) {
             this["name"] = "";
@@ -183,17 +180,17 @@ export class BackupProfileFilter {
  */
 export class BackupSchedule {
     "id": number;
-    "createdAt": time$0.Time;
-    "updatedAt": time$0.Time;
+    "createdAt": string;
+    "updatedAt": string;
     "mode": backupschedule$0.Mode;
     "intervalMinutes": number;
-    "dailyAt": time$0.Time;
+    "dailyAt": string;
     "weekday": backupschedule$0.Weekday;
-    "weeklyAt": time$0.Time;
+    "weeklyAt": string;
     "monthday": number;
-    "monthlyAt": time$0.Time;
-    "nextRun": time$0.Time;
-    "lastRun": time$0.Time | null;
+    "monthlyAt": string;
+    "nextRun": string;
+    "lastRun": string | null;
     "lastRunStatus": string | null;
 
     /** Creates a new BackupSchedule instance. */
@@ -202,10 +199,10 @@ export class BackupSchedule {
             this["id"] = 0;
         }
         if (!("createdAt" in $$source)) {
-            this["createdAt"] = null;
+            this["createdAt"] = "0001-01-01T00:00:00.000Z";
         }
         if (!("updatedAt" in $$source)) {
-            this["updatedAt"] = null;
+            this["updatedAt"] = "0001-01-01T00:00:00.000Z";
         }
         if (!("mode" in $$source)) {
             this["mode"] = backupschedule$0.Mode.$zero;
@@ -214,22 +211,22 @@ export class BackupSchedule {
             this["intervalMinutes"] = 0;
         }
         if (!("dailyAt" in $$source)) {
-            this["dailyAt"] = null;
+            this["dailyAt"] = "0001-01-01T00:00:00.000Z";
         }
         if (!("weekday" in $$source)) {
             this["weekday"] = backupschedule$0.Weekday.$zero;
         }
         if (!("weeklyAt" in $$source)) {
-            this["weeklyAt"] = null;
+            this["weeklyAt"] = "0001-01-01T00:00:00.000Z";
         }
         if (!("monthday" in $$source)) {
             this["monthday"] = 0;
         }
         if (!("monthlyAt" in $$source)) {
-            this["monthlyAt"] = null;
+            this["monthlyAt"] = "0001-01-01T00:00:00.000Z";
         }
         if (!("nextRun" in $$source)) {
-            this["nextRun"] = null;
+            this["nextRun"] = "0001-01-01T00:00:00.000Z";
         }
         if (!("lastRun" in $$source)) {
             this["lastRun"] = null;
@@ -333,8 +330,8 @@ export enum PruningOptionName {
  */
 export class PruningRule {
     "id": number;
-    "createdAt": time$0.Time;
-    "updatedAt": time$0.Time;
+    "createdAt": string;
+    "updatedAt": string;
     "isEnabled": boolean;
     "keepHourly": number;
     "keepDaily": number;
@@ -342,8 +339,8 @@ export class PruningRule {
     "keepMonthly": number;
     "keepYearly": number;
     "keepWithinDays": number;
-    "nextRun": time$0.Time;
-    "lastRun": time$0.Time | null;
+    "nextRun": string;
+    "lastRun": string | null;
     "lastRunStatus": string | null;
 
     /** Creates a new PruningRule instance. */
@@ -352,10 +349,10 @@ export class PruningRule {
             this["id"] = 0;
         }
         if (!("createdAt" in $$source)) {
-            this["createdAt"] = null;
+            this["createdAt"] = "0001-01-01T00:00:00.000Z";
         }
         if (!("updatedAt" in $$source)) {
-            this["updatedAt"] = null;
+            this["updatedAt"] = "0001-01-01T00:00:00.000Z";
         }
         if (!("isEnabled" in $$source)) {
             this["isEnabled"] = false;
@@ -379,7 +376,7 @@ export class PruningRule {
             this["keepWithinDays"] = 0;
         }
         if (!("nextRun" in $$source)) {
-            this["nextRun"] = null;
+            this["nextRun"] = "0001-01-01T00:00:00.000Z";
         }
         if (!("lastRun" in $$source)) {
             this["lastRun"] = null;

@@ -283,6 +283,7 @@ func startApp(log *zap.SugaredLogger, config *types.Config, assets fs.FS, startH
 	}
 
 	systray := wailsApp.SystemTray.New()
+	systray.SetLabel("Arco")
 	trayMenu := wailsApp.NewMenu()
 	trayMenu.Add("Open").OnClick(func(_ *application.Context) {
 		arco.ShowOrCreateMainWindow()

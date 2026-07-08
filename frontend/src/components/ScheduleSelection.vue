@@ -2,7 +2,7 @@
 import { computed, ref, toRaw, watch } from "vue";
 import { isEqual } from "@formkit/tempo";
 import { InformationCircleIcon } from "@heroicons/vue/24/outline";
-import { getTime, setTime } from "../common/time";
+import { getTime, isUnsetTime, setTime } from "../common/time";
 import type { BackupSchedule } from "../../bindings/github.com/loomi-labs/arco/backend/app/backup_profile";
 import * as backupschedule from "../../bindings/github.com/loomi-labs/arco/backend/ent/backupschedule";
 
@@ -70,9 +70,9 @@ const selectedTime = computed({
     return "09:00";
   },
   set: (val: string) => {
-    if (isDaily.value) setTime((d) => schedule.value.dailyAt = d, val);
-    else if (isWeekly.value) setTime((d) => schedule.value.weeklyAt = d, val);
-    else if (isMonthly.value) setTime((d) => schedule.value.monthlyAt = d, val);
+    if (isDaily.value) setTime((d) => schedule.value.dailyAt = d.toISOString(), val);
+    else if (isWeekly.value) setTime((d) => schedule.value.weeklyAt = d.toISOString(), val);
+    else if (isMonthly.value) setTime((d) => schedule.value.monthlyAt = d.toISOString(), val);
   }
 });
 
@@ -111,20 +111,20 @@ function setMode(mode: backupschedule.Mode) {
   if (mode === backupschedule.Mode.ModeMinuteInterval && !schedule.value.intervalMinutes) {
     schedule.value.intervalMinutes = 60;
   }
-  if (mode === backupschedule.Mode.ModeDaily && !schedule.value.dailyAt) {
-    setTime((d) => schedule.value.dailyAt = d, "09:00");
+  if (mode === backupschedule.Mode.ModeDaily && isUnsetTime(schedule.value.dailyAt)) {
+    setTime((d) => schedule.value.dailyAt = d.toISOString(), "09:00");
   }
   if (mode === backupschedule.Mode.ModeWeekly && !schedule.value.weekday) {
     schedule.value.weekday = backupschedule.Weekday.WeekdayMonday;
   }
-  if (mode === backupschedule.Mode.ModeWeekly && !schedule.value.weeklyAt) {
-    setTime((d) => schedule.value.weeklyAt = d, "09:00");
+  if (mode === backupschedule.Mode.ModeWeekly && isUnsetTime(schedule.value.weeklyAt)) {
+    setTime((d) => schedule.value.weeklyAt = d.toISOString(), "09:00");
   }
   if (mode === backupschedule.Mode.ModeMonthly && !schedule.value.monthday) {
     schedule.value.monthday = 1;
   }
-  if (mode === backupschedule.Mode.ModeMonthly && !schedule.value.monthlyAt) {
-    setTime((d) => schedule.value.monthlyAt = d, "09:00");
+  if (mode === backupschedule.Mode.ModeMonthly && isUnsetTime(schedule.value.monthlyAt)) {
+    setTime((d) => schedule.value.monthlyAt = d.toISOString(), "09:00");
   }
 }
 

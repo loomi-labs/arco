@@ -7,7 +7,7 @@ import { LocationType } from "../../bindings/github.com/loomi-labs/arco/backend/
  * Uses theme-aware colors that change between light/dark mode via CSS custom properties.
  * @param date The date to compare with the current date.
  */
-export function toCreationTimeBadge(date: Date | undefined): string {
+export function toCreationTimeBadge(date: Date | string | undefined): string {
   if (!date) {
     return "";
   }
@@ -44,7 +44,7 @@ export function toCreationTimeBadge(date: Date | undefined): string {
  * Uses the same color scheme as toCreationTimeBadge.
  * @param date The date to compare with the current date.
  */
-export function toCreationTimeTooltip(date: Date | undefined): string {
+export function toCreationTimeTooltip(date: Date | string | undefined): string {
   if (!date) {
     return "tooltip";
   }
@@ -81,7 +81,7 @@ export function toCreationTimeTooltip(date: Date | undefined): string {
  * Uses the same color scheme as toCreationTimeBadge.
  * @param date The date to compare with the current date.
  */
-export function toCreationTimeIconColor(date: Date | undefined): string {
+export function toCreationTimeIconColor(date: Date | string | undefined): string {
   if (!date) {
     return "";
   }

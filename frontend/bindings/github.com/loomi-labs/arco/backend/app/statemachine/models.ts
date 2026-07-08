@@ -14,9 +14,6 @@ import * as types$1 from "../../borg/types/models.js";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
 import * as ent$0 from "../../ent/models.js";
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-ignore: Unused imports
-import * as time$0 from "../../../../../../time/models.js";
 
 export class ArchiveComment {
     "archiveId": number;
@@ -195,12 +192,12 @@ export class Check {
 }
 
 export class Checking {
-    "startedAt": time$0.Time;
+    "startedAt": string;
 
     /** Creates a new Checking instance. */
     constructor($$source: Partial<Checking> = {}) {
         if (!("startedAt" in $$source)) {
-            this["startedAt"] = null;
+            this["startedAt"] = "0001-01-01T00:00:00.000Z";
         }
 
         Object.assign(this, $$source);
@@ -238,7 +235,7 @@ export class Delete {
 
 export class Deleting {
     "archiveId": number;
-    "startedAt": time$0.Time;
+    "startedAt": string;
 
     /** Creates a new Deleting instance. */
     constructor($$source: Partial<Deleting> = {}) {
@@ -246,7 +243,7 @@ export class Deleting {
             this["archiveId"] = 0;
         }
         if (!("startedAt" in $$source)) {
-            this["startedAt"] = null;
+            this["startedAt"] = "0001-01-01T00:00:00.000Z";
         }
 
         Object.assign(this, $$source);
@@ -265,7 +262,7 @@ export class Error {
     "errorType": ErrorType;
     "message": string;
     "action": ErrorAction;
-    "occurredAt": time$0.Time;
+    "occurredAt": string;
 
     /** Creates a new Error instance. */
     constructor($$source: Partial<Error> = {}) {
@@ -279,7 +276,7 @@ export class Error {
             this["action"] = ErrorAction.$zero;
         }
         if (!("occurredAt" in $$source)) {
-            this["occurredAt"] = null;
+            this["occurredAt"] = "0001-01-01T00:00:00.000Z";
         }
 
         Object.assign(this, $$source);
@@ -720,12 +717,12 @@ export class Queued {
 }
 
 export class Refreshing {
-    "startedAt": time$0.Time;
+    "startedAt": string;
 
     /** Creates a new Refreshing instance. */
     constructor($$source: Partial<Refreshing> = {}) {
         if (!("startedAt" in $$source)) {
-            this["startedAt"] = null;
+            this["startedAt"] = "0001-01-01T00:00:00.000Z";
         }
 
         Object.assign(this, $$source);

@@ -94,15 +94,32 @@ export function setTime(setValFn: (date: Date) => void, value: string): string {
  * isInPast checks if a Date object is in the past.
  * @param date The date to check
  */
-export function isInPast(date: Date): boolean {
+export function isInPast(date: Date | string): boolean {
   return isBefore(date, new Date());
+}
+
+/**
+ * isUnsetTime reports whether a timestamp is missing or the zero-time sentinel.
+ * Non-nullable time fields serialize their Go zero value as "0001-01-01T00:00:00Z",
+ * and the generated bindings initialize absent fields to "0001-01-01T00:00:00.000Z",
+ * so a plain truthiness check would treat those as set.
+ * @param value The timestamp to check
+ */
+export function isUnsetTime(value: Date | string | undefined | null): boolean {
+  if (!value) {
+    return true;
+  }
+  if (typeof value === "string") {
+    return value.startsWith("0001-01-01");
+  }
+  return value.getUTCFullYear() <= 1;
 }
 
 /**
  * toRelativeTimeString converts a Date object to a human-readable string that is relative to the current time.
  * @param date The date to convert
  */
-export function toRelativeTimeString(date: Date): string {
+export function toRelativeTimeString(date: Date | string): string {
   const now = new Date();
 
   if (isBefore(date, now)) {
@@ -116,7 +133,7 @@ export function toRelativeTimeString(date: Date): string {
  * @param date The date to convert (must be in the future)
  * @param now The current date
  */
-function toFutureString(date: Date, now: Date): string {
+function toFutureString(date: Date | string, now: Date): string {
   const dSeconds = diffSeconds(date, now, "ceil");
   if (dSeconds < 60) {
     return `in less than a minute`;
@@ -160,7 +177,7 @@ function toFutureString(date: Date, now: Date): string {
  * @param date The date to convert (must be in the past)
  * @param now The current date
  */
-function toPastString(date: Date, now: Date): string {
+function toPastString(date: Date | string, now: Date): string {
   const dSeconds = diffSeconds(now, date, "floor");
   if (dSeconds < 60) {
     return `less than a minute ago`;
@@ -203,7 +220,7 @@ function toPastString(date: Date, now: Date): string {
  * toLongDateString converts a Date object to a human-readable string with a long date format.
  * @param date The date to convert
  */
-export function toLongDateString(date: Date): string {
+export function toLongDateString(date: Date | string): string {
   return format(date, { date: "long", time: "short" });
 }
 

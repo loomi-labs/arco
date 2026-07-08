@@ -14,9 +14,6 @@ import * as types$0 from "../types/models.js";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
 import * as ent$0 from "../../ent/models.js";
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-ignore: Unused imports
-import * as time$0 from "../../../../../../time/models.js";
 
 /**
  * ArchiveDeleteStateType is the discriminator enum for ArchiveDeleteState
@@ -150,12 +147,12 @@ export class ArchiveWithPendingChanges {
     /**
      * CreatedAt holds the value of the "created_at" field.
      */
-    "createdAt": time$0.Time;
+    "createdAt": string;
 
     /**
      * UpdatedAt holds the value of the "updated_at" field.
      */
-    "updatedAt": time$0.Time;
+    "updatedAt": string;
 
     /**
      * Name holds the value of the "name" field.
@@ -209,10 +206,10 @@ export class ArchiveWithPendingChanges {
             this["id"] = 0;
         }
         if (!("createdAt" in $$source)) {
-            this["createdAt"] = null;
+            this["createdAt"] = "0001-01-01T00:00:00.000Z";
         }
         if (!("updatedAt" in $$source)) {
-            this["updatedAt"] = null;
+            this["updatedAt"] = "0001-01-01T00:00:00.000Z";
         }
         if (!("name" in $$source)) {
             this["name"] = "";
@@ -357,12 +354,12 @@ export class ChangePassphraseResult {
 }
 
 export class Completed {
-    "completedAt": time$0.Time;
+    "completedAt": string;
 
     /** Creates a new Completed instance. */
     constructor($$source: Partial<Completed> = {}) {
         if (!("completedAt" in $$source)) {
-            this["completedAt"] = null;
+            this["completedAt"] = "0001-01-01T00:00:00.000Z";
         }
 
         Object.assign(this, $$source);
@@ -541,12 +538,12 @@ export class ExaminePruningResult {
 }
 
 export class Expired {
-    "expiredAt": time$0.Time;
+    "expiredAt": string;
 
     /** Creates a new Expired instance. */
     constructor($$source: Partial<Expired> = {}) {
         if (!("expiredAt" in $$source)) {
-            this["expiredAt"] = null;
+            this["expiredAt"] = "0001-01-01T00:00:00.000Z";
         }
 
         Object.assign(this, $$source);
@@ -563,7 +560,7 @@ export class Expired {
 
 export class Failed {
     "error": string;
-    "failedAt": time$0.Time;
+    "failedAt": string;
 
     /** Creates a new Failed instance. */
     constructor($$source: Partial<Failed> = {}) {
@@ -571,7 +568,7 @@ export class Failed {
             this["error"] = "";
         }
         if (!("failedAt" in $$source)) {
-            this["failedAt"] = null;
+            this["failedAt"] = "0001-01-01T00:00:00.000Z";
         }
 
         Object.assign(this, $$source);
@@ -807,8 +804,8 @@ export class PaginatedArchivesRequest {
      */
     "backupProfileFilter"?: BackupProfileFilter | null;
     "search"?: string;
-    "startDate"?: time$0.Time;
-    "endDate"?: time$0.Time;
+    "startDate"?: string;
+    "endDate"?: string;
 
     /** Creates a new PaginatedArchivesRequest instance. */
     constructor($$source: Partial<PaginatedArchivesRequest> = {}) {
@@ -904,7 +901,7 @@ export class Progress {
  */
 export class PruningDate {
     "archiveId": number;
-    "date": time$0.Time;
+    "date": string;
 
     /** Creates a new PruningDate instance. */
     constructor($$source: Partial<PruningDate> = {}) {
@@ -912,7 +909,7 @@ export class PruningDate {
             this["archiveId"] = 0;
         }
         if (!("date" in $$source)) {
-            this["date"] = null;
+            this["date"] = "0001-01-01T00:00:00.000Z";
         }
 
         Object.assign(this, $$source);
@@ -1027,9 +1024,9 @@ export class Repository {
     /**
      * Check tracking
      */
-    "lastQuickCheckAt"?: time$0.Time | null;
+    "lastQuickCheckAt"?: string | null;
     "quickCheckError"?: string[];
-    "lastFullCheckAt"?: time$0.Time | null;
+    "lastFullCheckAt"?: string | null;
     "fullCheckError"?: string[];
 
     /**
@@ -1046,7 +1043,7 @@ export class Repository {
     /**
      * Timestamp of the oldest archive
      */
-    "oldestBackup"?: time$0.Time | null;
+    "oldestBackup"?: string | null;
 
     /**
      * Security
@@ -1151,9 +1148,9 @@ export class RepositoryWithQueue {
     /**
      * Check tracking
      */
-    "lastQuickCheckAt"?: time$0.Time | null;
+    "lastQuickCheckAt"?: string | null;
     "quickCheckError"?: string[];
-    "lastFullCheckAt"?: time$0.Time | null;
+    "lastFullCheckAt"?: string | null;
     "fullCheckError"?: string[];
 
     /**
@@ -1170,7 +1167,7 @@ export class RepositoryWithQueue {
     /**
      * Timestamp of the oldest archive
      */
-    "oldestBackup"?: time$0.Time | null;
+    "oldestBackup"?: string | null;
 
     /**
      * Security
@@ -1259,12 +1256,12 @@ export class RepositoryWithQueue {
 
 export class Running {
     "progress"?: Progress | null;
-    "startedAt": time$0.Time;
+    "startedAt": string;
 
     /** Creates a new Running instance. */
     constructor($$source: Partial<Running> = {}) {
         if (!("startedAt" in $$source)) {
-            this["startedAt"] = null;
+            this["startedAt"] = "0001-01-01T00:00:00.000Z";
         }
 
         Object.assign(this, $$source);
@@ -1303,12 +1300,12 @@ export class SerializableQueuedOperation {
      * Serializable status with progress, error
      */
     "statusUnion": OperationStatusUnion;
-    "createdAt": time$0.Time;
+    "createdAt": string;
 
     /**
      * Auto-expire if not started
      */
-    "validUntil": time$0.Time | null;
+    "validUntil": string | null;
 
     /**
      * Must start immediately or fail
@@ -1333,7 +1330,7 @@ export class SerializableQueuedOperation {
             this["statusUnion"] = (new OperationStatusUnion());
         }
         if (!("createdAt" in $$source)) {
-            this["createdAt"] = null;
+            this["createdAt"] = "0001-01-01T00:00:00.000Z";
         }
         if (!("validUntil" in $$source)) {
             this["validUntil"] = null;

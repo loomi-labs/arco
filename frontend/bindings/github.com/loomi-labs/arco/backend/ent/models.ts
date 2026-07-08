@@ -26,9 +26,6 @@ import * as notification$0 from "./notification/models.js";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
 import * as settings$0 from "./settings/models.js";
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-ignore: Unused imports
-import * as time$0 from "../../../../../time/models.js";
 
 /**
  * AnalyticsEventClient is a client for the AnalyticsEvent schema.
@@ -62,12 +59,12 @@ export class Archive {
     /**
      * CreatedAt holds the value of the "created_at" field.
      */
-    "createdAt": time$0.Time;
+    "createdAt": string;
 
     /**
      * UpdatedAt holds the value of the "updated_at" field.
      */
-    "updatedAt": time$0.Time;
+    "updatedAt": string;
 
     /**
      * Name holds the value of the "name" field.
@@ -111,10 +108,10 @@ export class Archive {
             this["id"] = 0;
         }
         if (!("createdAt" in $$source)) {
-            this["createdAt"] = null;
+            this["createdAt"] = "0001-01-01T00:00:00.000Z";
         }
         if (!("updatedAt" in $$source)) {
-            this["updatedAt"] = null;
+            this["updatedAt"] = "0001-01-01T00:00:00.000Z";
         }
         if (!("name" in $$source)) {
             this["name"] = "";
@@ -240,12 +237,12 @@ export class BackupProfile {
     /**
      * CreatedAt holds the value of the "created_at" field.
      */
-    "createdAt": time$0.Time;
+    "createdAt": string;
 
     /**
      * UpdatedAt holds the value of the "updated_at" field.
      */
-    "updatedAt": time$0.Time;
+    "updatedAt": string;
 
     /**
      * Name holds the value of the "name" field.
@@ -314,10 +311,10 @@ export class BackupProfile {
             this["id"] = 0;
         }
         if (!("createdAt" in $$source)) {
-            this["createdAt"] = null;
+            this["createdAt"] = "0001-01-01T00:00:00.000Z";
         }
         if (!("updatedAt" in $$source)) {
-            this["updatedAt"] = null;
+            this["updatedAt"] = "0001-01-01T00:00:00.000Z";
         }
         if (!("name" in $$source)) {
             this["name"] = "";
@@ -476,12 +473,12 @@ export class BackupSchedule {
     /**
      * CreatedAt holds the value of the "created_at" field.
      */
-    "createdAt": time$0.Time;
+    "createdAt": string;
 
     /**
      * UpdatedAt holds the value of the "updated_at" field.
      */
-    "updatedAt": time$0.Time;
+    "updatedAt": string;
 
     /**
      * Mode holds the value of the "mode" field.
@@ -496,7 +493,7 @@ export class BackupSchedule {
     /**
      * DailyAt holds the value of the "daily_at" field.
      */
-    "dailyAt": time$0.Time;
+    "dailyAt": string;
 
     /**
      * Weekday holds the value of the "weekday" field.
@@ -506,7 +503,7 @@ export class BackupSchedule {
     /**
      * WeeklyAt holds the value of the "weekly_at" field.
      */
-    "weeklyAt": time$0.Time;
+    "weeklyAt": string;
 
     /**
      * Monthday holds the value of the "monthday" field.
@@ -516,17 +513,17 @@ export class BackupSchedule {
     /**
      * MonthlyAt holds the value of the "monthly_at" field.
      */
-    "monthlyAt": time$0.Time;
+    "monthlyAt": string;
 
     /**
      * NextRun holds the value of the "next_run" field.
      */
-    "nextRun": time$0.Time;
+    "nextRun": string;
 
     /**
      * LastRun holds the value of the "last_run" field.
      */
-    "lastRun": time$0.Time | null;
+    "lastRun": string | null;
 
     /**
      * LastRunStatus holds the value of the "last_run_status" field.
@@ -545,10 +542,10 @@ export class BackupSchedule {
             this["id"] = 0;
         }
         if (!("createdAt" in $$source)) {
-            this["createdAt"] = null;
+            this["createdAt"] = "0001-01-01T00:00:00.000Z";
         }
         if (!("updatedAt" in $$source)) {
-            this["updatedAt"] = null;
+            this["updatedAt"] = "0001-01-01T00:00:00.000Z";
         }
         if (!("mode" in $$source)) {
             this["mode"] = backupschedule$0.Mode.$zero;
@@ -557,22 +554,22 @@ export class BackupSchedule {
             this["intervalMinutes"] = 0;
         }
         if (!("dailyAt" in $$source)) {
-            this["dailyAt"] = null;
+            this["dailyAt"] = "0001-01-01T00:00:00.000Z";
         }
         if (!("weekday" in $$source)) {
             this["weekday"] = backupschedule$0.Weekday.$zero;
         }
         if (!("weeklyAt" in $$source)) {
-            this["weeklyAt"] = null;
+            this["weeklyAt"] = "0001-01-01T00:00:00.000Z";
         }
         if (!("monthday" in $$source)) {
             this["monthday"] = 0;
         }
         if (!("monthlyAt" in $$source)) {
-            this["monthlyAt"] = null;
+            this["monthlyAt"] = "0001-01-01T00:00:00.000Z";
         }
         if (!("nextRun" in $$source)) {
-            this["nextRun"] = null;
+            this["nextRun"] = "0001-01-01T00:00:00.000Z";
         }
         if (!("lastRun" in $$source)) {
             this["lastRun"] = null;
@@ -823,12 +820,12 @@ export class CloudRepository {
     /**
      * CreatedAt holds the value of the "created_at" field.
      */
-    "createdAt": time$0.Time;
+    "createdAt": string;
 
     /**
      * UpdatedAt holds the value of the "updated_at" field.
      */
-    "updatedAt": time$0.Time;
+    "updatedAt": string;
 
     /**
      * CloudID holds the value of the "cloud_id" field.
@@ -857,10 +854,10 @@ export class CloudRepository {
             this["id"] = 0;
         }
         if (!("createdAt" in $$source)) {
-            this["createdAt"] = null;
+            this["createdAt"] = "0001-01-01T00:00:00.000Z";
         }
         if (!("updatedAt" in $$source)) {
-            this["updatedAt"] = null;
+            this["updatedAt"] = "0001-01-01T00:00:00.000Z";
         }
         if (!("cloudId" in $$source)) {
             this["cloudId"] = "";
@@ -954,12 +951,12 @@ export class Notification {
     /**
      * CreatedAt holds the value of the "created_at" field.
      */
-    "createdAt": time$0.Time;
+    "createdAt": string;
 
     /**
      * UpdatedAt holds the value of the "updated_at" field.
      */
-    "updatedAt": time$0.Time;
+    "updatedAt": string;
 
     /**
      * Message holds the value of the "message" field.
@@ -993,10 +990,10 @@ export class Notification {
             this["id"] = 0;
         }
         if (!("createdAt" in $$source)) {
-            this["createdAt"] = null;
+            this["createdAt"] = "0001-01-01T00:00:00.000Z";
         }
         if (!("updatedAt" in $$source)) {
-            this["updatedAt"] = null;
+            this["updatedAt"] = "0001-01-01T00:00:00.000Z";
         }
         if (!("message" in $$source)) {
             this["message"] = "";
@@ -1099,12 +1096,12 @@ export class PruningRule {
     /**
      * CreatedAt holds the value of the "created_at" field.
      */
-    "createdAt": time$0.Time;
+    "createdAt": string;
 
     /**
      * UpdatedAt holds the value of the "updated_at" field.
      */
-    "updatedAt": time$0.Time;
+    "updatedAt": string;
 
     /**
      * IsEnabled holds the value of the "is_enabled" field.
@@ -1144,12 +1141,12 @@ export class PruningRule {
     /**
      * NextRun holds the value of the "next_run" field.
      */
-    "nextRun": time$0.Time;
+    "nextRun": string;
 
     /**
      * LastRun holds the value of the "last_run" field.
      */
-    "lastRun": time$0.Time | null;
+    "lastRun": string | null;
 
     /**
      * LastRunStatus holds the value of the "last_run_status" field.
@@ -1168,10 +1165,10 @@ export class PruningRule {
             this["id"] = 0;
         }
         if (!("createdAt" in $$source)) {
-            this["createdAt"] = null;
+            this["createdAt"] = "0001-01-01T00:00:00.000Z";
         }
         if (!("updatedAt" in $$source)) {
-            this["updatedAt"] = null;
+            this["updatedAt"] = "0001-01-01T00:00:00.000Z";
         }
         if (!("isEnabled" in $$source)) {
             this["isEnabled"] = false;
@@ -1195,7 +1192,7 @@ export class PruningRule {
             this["keepWithinDays"] = 0;
         }
         if (!("nextRun" in $$source)) {
-            this["nextRun"] = null;
+            this["nextRun"] = "0001-01-01T00:00:00.000Z";
         }
         if (!("lastRun" in $$source)) {
             this["lastRun"] = null;
@@ -1283,12 +1280,12 @@ export class Repository {
     /**
      * CreatedAt holds the value of the "created_at" field.
      */
-    "createdAt": time$0.Time;
+    "createdAt": string;
 
     /**
      * UpdatedAt holds the value of the "updated_at" field.
      */
-    "updatedAt": time$0.Time;
+    "updatedAt": string;
 
     /**
      * Name holds the value of the "name" field.
@@ -1308,7 +1305,7 @@ export class Repository {
     /**
      * Timestamp of last quick check (--repository-only)
      */
-    "lastQuickCheckAt": time$0.Time | null;
+    "lastQuickCheckAt": string | null;
 
     /**
      * Error messages from last quick check, empty array if successful
@@ -1318,7 +1315,7 @@ export class Repository {
     /**
      * Timestamp of last full check (--verify-data)
      */
-    "lastFullCheckAt": time$0.Time | null;
+    "lastFullCheckAt": string | null;
 
     /**
      * Error messages from last full check, empty array if successful
@@ -1367,10 +1364,10 @@ export class Repository {
             this["id"] = 0;
         }
         if (!("createdAt" in $$source)) {
-            this["createdAt"] = null;
+            this["createdAt"] = "0001-01-01T00:00:00.000Z";
         }
         if (!("updatedAt" in $$source)) {
-            this["updatedAt"] = null;
+            this["updatedAt"] = "0001-01-01T00:00:00.000Z";
         }
         if (!("name" in $$source)) {
             this["name"] = "";
@@ -1526,12 +1523,12 @@ export class Settings {
     /**
      * CreatedAt holds the value of the "created_at" field.
      */
-    "createdAt": time$0.Time;
+    "createdAt": string;
 
     /**
      * UpdatedAt holds the value of the "updated_at" field.
      */
-    "updatedAt": time$0.Time;
+    "updatedAt": string;
 
     /**
      * ExpertMode holds the value of the "expert_mode" field.
@@ -1566,7 +1563,7 @@ export class Settings {
     /**
      * FeedbackLastPromptedAt holds the value of the "feedback_last_prompted_at" field.
      */
-    "feedbackLastPromptedAt": time$0.Time | null;
+    "feedbackLastPromptedAt": string | null;
 
     /**
      * UsageLoggingEnabled holds the value of the "usage_logging_enabled" field.
@@ -1581,10 +1578,10 @@ export class Settings {
     /** Creates a new Settings instance. */
     constructor($$source: Partial<Settings> = {}) {
         if (!("createdAt" in $$source)) {
-            this["createdAt"] = null;
+            this["createdAt"] = "0001-01-01T00:00:00.000Z";
         }
         if (!("updatedAt" in $$source)) {
-            this["updatedAt"] = null;
+            this["updatedAt"] = "0001-01-01T00:00:00.000Z";
         }
         if (!("expertMode" in $$source)) {
             this["expertMode"] = false;
