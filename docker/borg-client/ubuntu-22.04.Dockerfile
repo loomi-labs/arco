@@ -36,7 +36,9 @@ ARG CLIENT_BORG_VERSION=1.4.4
 ARG SERVER_BORG_VERSION=1.4.4
 
 # Install required packages including Docker client and FUSE for mount operations
-# Ubuntu 22.04 uses libfuse2
+# Ship both FUSE generations: FUSE 2 (fusermount + libfuse.so.2) for llfuse-based
+# Borg builds and FUSE 3 (fusermount3 + libfuse.so.3) for the pyfuse3-based builds
+# used since Borg 1.4.3.
 RUN apt-get update && apt-get install -y \
     curl \
     ca-certificates \
@@ -45,8 +47,9 @@ RUN apt-get update && apt-get install -y \
     netcat-openbsd \
     dnsutils \
     iputils-ping \
-    fuse \
+    fuse3 \
     libfuse2 \
+    libfuse3-3 \
     jq \
     && rm -rf /var/lib/apt/lists/*
 
