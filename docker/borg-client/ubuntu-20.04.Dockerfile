@@ -1,6 +1,8 @@
 # Borg Client Container for Integration Tests - Ubuntu 20.04
 
-# Import from main Dockerfile's builder stage
+# Must stay on bullseye (glibc 2.31) so the CGO integration-test binary runs on
+# the ubuntu:20.04 runtime below. No golang:1.26-bullseye image exists, so we keep
+# GOTOOLCHAIN=auto to fetch the go.mod-required toolchain on top of the bullseye base.
 FROM docker.io/library/golang:1.24-bullseye AS builder
 
 # Install build dependencies
@@ -16,13 +18,13 @@ WORKDIR /app
 # Copy Go module files
 COPY go.mod go.sum ./
 
-# Download dependencies (allow toolchain auto-download for go 1.25)
+# Download dependencies (auto-download the go.mod-required toolchain on bullseye)
 RUN GOTOOLCHAIN=auto go mod download
 
 # Copy source code (only backend needed for integration tests)
 COPY backend/ ./backend/
 
-# Build integration test binary (using auto toolchain for go 1.25)
+# Build integration test binary (auto toolchain on bullseye for glibc 2.31 compat)
 RUN GOTOOLCHAIN=auto CGO_ENABLED=1 GOOS=linux go test -tags=integration -c -o /integration-tests ./backend/borg/integration
 
 # Build minimal arco binary for borg-url detection (no CGO needed)
