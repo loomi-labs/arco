@@ -43,8 +43,8 @@ type Service struct {
 // ServiceInternal provides backend-only methods that should not be exposed to frontend
 type ServiceInternal struct {
 	*Service
-	flushMu  sync.Mutex
-	flushWg  sync.WaitGroup
+	flushMu   sync.Mutex
+	flushWg   sync.WaitGroup
 	stopFlush chan struct{}
 }
 

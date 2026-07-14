@@ -36,8 +36,8 @@ ENV DEBIAN_FRONTEND=noninteractive
 ENV TZ=UTC
 
 # Re-declare build arguments
-ARG CLIENT_BORG_VERSION=1.4.3
-ARG SERVER_BORG_VERSION=1.4.3
+ARG CLIENT_BORG_VERSION=1.4.4
+ARG SERVER_BORG_VERSION=1.4.4
 
 # Install required packages - Ubuntu 20.04 uses libfuse2
 RUN apt-get update && apt-get install -y \

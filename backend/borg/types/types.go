@@ -73,7 +73,7 @@ type ArchiveProgress struct {
 	DeduplicatedSize int64    `json:"deduplicated_size,omitempty"`
 	NFiles           int      `json:"nfiles,omitempty"`
 	Path             string   `json:"path,omitempty"`
-	Time             UnixTime `json:"time,omitempty"`
+	Time             UnixTime `json:"time"`
 	Finished         bool     `json:"finished,omitempty"`
 }
 
@@ -87,7 +87,7 @@ type ProgressMessage struct {
 	MsgID     string   `json:"msgid,omitempty"`
 	Finished  bool     `json:"finished"`
 	Message   string   `json:"message,omitempty"`
-	Time      UnixTime `json:"time,omitempty"`
+	Time      UnixTime `json:"time"`
 }
 
 func (pm ProgressMessage) String() string {
@@ -103,7 +103,7 @@ type ProgressPercent struct {
 	Current   int      `json:"current,omitempty"`
 	Info      []string `json:"info,omitempty"`
 	Total     int      `json:"total,omitempty"`
-	Time      UnixTime `json:"time,omitempty"`
+	Time      UnixTime `json:"time"`
 }
 
 func (pp ProgressPercent) String() string {
@@ -133,7 +133,7 @@ func (lm LogMessage) String() string {
 		lm.Time, lm.LevelName, lm.Name, lm.Message, lm.MsgID)
 }
 
-func decodeStreamedJSON(scanner *bufio.Scanner, ch chan<- interface{}) {
+func decodeStreamedJSON(scanner *bufio.Scanner, ch chan<- any) {
 	for scanner.Scan() {
 		data := scanner.Text()
 
@@ -213,18 +213,18 @@ type ArchiveStats struct {
 }
 
 type ArchiveInfo struct {
-	ChunkerParams []interface{} `json:"chunker_params"`
-	CommandLine   []string      `json:"command_line"`
-	Comment       string        `json:"comment"`
-	Duration      UnixTime      `json:"duration"`
-	End           StringTime    `json:"end"`
-	Hostname      string        `json:"hostname"`
-	ID            string        `json:"id"`
-	Limits        Limits        `json:"limits"`
-	Name          string        `json:"name"`
-	Start         StringTime    `json:"start"`
-	Stats         ArchiveStats  `json:"stats"`
-	Username      string        `json:"username"`
+	ChunkerParams []any        `json:"chunker_params"`
+	CommandLine   []string     `json:"command_line"`
+	Comment       string       `json:"comment"`
+	Duration      UnixTime     `json:"duration"`
+	End           StringTime   `json:"end"`
+	Hostname      string       `json:"hostname"`
+	ID            string       `json:"id"`
+	Limits        Limits       `json:"limits"`
+	Name          string       `json:"name"`
+	Start         StringTime   `json:"start"`
+	Stats         ArchiveStats `json:"stats"`
+	Username      string       `json:"username"`
 }
 
 type Encryption struct {

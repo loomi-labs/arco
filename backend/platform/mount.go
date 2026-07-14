@@ -54,8 +54,8 @@ func getDarwinMountStates(paths map[int]string) (map[int]*MountState, error) {
 	}
 
 	states := make(map[int]*MountState)
-	lines := strings.Split(string(output), "\n")
-	for _, line := range lines {
+	lines := strings.SplitSeq(string(output), "\n")
+	for line := range lines {
 		for id, path := range paths {
 			parts := strings.Fields(line)
 			if len(parts) > 2 && parts[2] == path {
@@ -121,8 +121,8 @@ func getDarwinArcoMounts() (repos map[int]*MountState, archives map[int]*MountSt
 	archives = make(map[int]*MountState)
 
 	// Parse mount output
-	lines := strings.Split(string(output), "\n")
-	for _, line := range lines {
+	lines := strings.SplitSeq(string(output), "\n")
+	for line := range lines {
 		parts := strings.Fields(line)
 		if len(parts) <= 2 {
 			continue
