@@ -1,7 +1,7 @@
 # Borg Client Container for Integration Tests - Ubuntu 24.04
 
 # Import from main Dockerfile's builder stage
-FROM docker.io/library/golang:1.25-bookworm AS builder
+FROM docker.io/library/golang:1.26-bookworm AS builder
 
 # Install build dependencies
 RUN apt-get update && apt-get install -y \
@@ -32,11 +32,13 @@ RUN CGO_ENABLED=0 GOOS=linux go build -tags integration -o /arco-cli ./backend/c
 FROM ubuntu:24.04
 
 # Global build arguments
-ARG CLIENT_BORG_VERSION=1.4.3
-ARG SERVER_BORG_VERSION=1.4.3
+ARG CLIENT_BORG_VERSION=1.4.4
+ARG SERVER_BORG_VERSION=1.4.4
 
 # Install required packages including Docker client and FUSE for mount operations
-# Ubuntu 24.04 uses libfuse3-3
+# Ship both FUSE generations: FUSE 2 (fusermount + libfuse.so.2) for llfuse-based
+# Borg builds and FUSE 3 (fusermount3 + libfuse.so.3) for the pyfuse3-based builds
+# used since Borg 1.4.3. On 24.04 the FUSE 2 library package is libfuse2t64.
 RUN apt-get update && apt-get install -y \
     curl \
     ca-certificates \
@@ -45,7 +47,8 @@ RUN apt-get update && apt-get install -y \
     netcat-openbsd \
     dnsutils \
     iputils-ping \
-    fuse \
+    fuse3 \
+    libfuse2t64 \
     libfuse3-3 \
     jq \
     && rm -rf /var/lib/apt/lists/*

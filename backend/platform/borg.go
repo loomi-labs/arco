@@ -12,6 +12,55 @@ import (
 
 // Binaries contains all available Borg binary variants
 var Binaries = []BorgBinary{
+	// Borg 1.4.4 - Linux x86_64 variants
+	{
+		Name:          "borg_1.4.4",
+		Version:       version.Must(version.NewVersion("1.4.4")),
+		Os:            Linux,
+		GlibcVersion:  version.Must(version.NewVersion("2.31")),
+		Arch:          "amd64",
+		Url:           "https://github.com/borgbackup/borg/releases/download/1.4.4/borg-linux-glibc231-x86_64",
+		SupportsMount: true,
+	},
+	{
+		Name:          "borg_1.4.4",
+		Version:       version.Must(version.NewVersion("1.4.4")),
+		Os:            Linux,
+		GlibcVersion:  version.Must(version.NewVersion("2.35")),
+		Arch:          "amd64",
+		Url:           "https://github.com/borgbackup/borg/releases/download/1.4.4/borg-linux-glibc235-x86_64-gh",
+		SupportsMount: true,
+	},
+	// Borg 1.4.4 - Linux ARM64
+	{
+		Name:          "borg_1.4.4",
+		Version:       version.Must(version.NewVersion("1.4.4")),
+		Os:            Linux,
+		GlibcVersion:  version.Must(version.NewVersion("2.35")),
+		Arch:          "arm64",
+		Url:           "https://github.com/borgbackup/borg/releases/download/1.4.4/borg-linux-glibc235-arm64-gh",
+		SupportsMount: true,
+	},
+	// Borg 1.4.4 - macOS Intel (directory distribution for faster startup, no FUSE support)
+	{
+		Name:          "borg_1.4.4",
+		Version:       version.Must(version.NewVersion("1.4.4")),
+		Os:            Darwin,
+		Arch:          "amd64",
+		Url:           "https://github.com/borgbackup/borg/releases/download/1.4.4/borg-macos-15-x86_64-gh.tgz",
+		IsDirectory:   true,
+		SupportsMount: false, // -gh builds don't include llfuse
+	},
+	// Borg 1.4.4 - macOS Apple Silicon (directory distribution for faster startup, no FUSE support)
+	{
+		Name:          "borg_1.4.4",
+		Version:       version.Must(version.NewVersion("1.4.4")),
+		Os:            Darwin,
+		Arch:          "arm64",
+		Url:           "https://github.com/borgbackup/borg/releases/download/1.4.4/borg-macos-15-arm64-gh.tgz",
+		IsDirectory:   true,
+		SupportsMount: false, // -gh builds don't include llfuse
+	},
 	// Borg 1.4.3 - Linux x86_64 variants
 	{
 		Name:          "borg_1.4.3",

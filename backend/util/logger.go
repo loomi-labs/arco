@@ -48,10 +48,10 @@ func NewGooseLogger(log *zap.SugaredLogger) *GooseLogger {
 	return &GooseLogger{log: log}
 }
 
-func (g *GooseLogger) Fatalf(format string, v ...interface{}) {
+func (g *GooseLogger) Fatalf(format string, v ...any) {
 	g.log.Fatalf(format, v...)
 }
 
-func (g *GooseLogger) Printf(format string, v ...interface{}) {
+func (g *GooseLogger) Printf(format string, v ...any) {
 	g.log.Infof(format, v...)
 }

@@ -40,9 +40,9 @@ type Repository struct {
 	FullCheckError   []string   `json:"fullCheckError,omitempty"`
 
 	// Storage Statistics
-	SizeOnDisk       int64      `json:"sizeOnDisk"`                 // Actual storage used (compressed + deduplicated)
-	CompressionRatio float64    `json:"compressionRatio"`           // How much compression saved (uniqueSize / uniqueCsize)
-	OldestBackup     *time.Time `json:"oldestBackup,omitempty"`     // Timestamp of the oldest archive
+	SizeOnDisk       int64      `json:"sizeOnDisk"`             // Actual storage used (compressed + deduplicated)
+	CompressionRatio float64    `json:"compressionRatio"`       // How much compression saved (uniqueSize / uniqueCsize)
+	OldestBackup     *time.Time `json:"oldestBackup,omitempty"` // Timestamp of the oldest archive
 
 	// Security
 	HasPassword bool `json:"hasPassword"` // Whether repository has encryption passphrase
