@@ -32,8 +32,8 @@ RUN CGO_ENABLED=0 GOOS=linux go build -tags integration -o /arco-cli ./backend/c
 FROM ubuntu:22.04
 
 # Global build arguments
-ARG CLIENT_BORG_VERSION=1.4.4
-ARG SERVER_BORG_VERSION=1.4.4
+ARG CLIENT_BORG_VERSION=1.4.5
+ARG SERVER_BORG_VERSION=1.4.5
 
 # Install required packages including Docker client and FUSE for mount operations
 # Ship both FUSE generations: FUSE 2 (fusermount + libfuse.so.2) for llfuse-based

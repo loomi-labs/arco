@@ -12,6 +12,46 @@ import (
 
 // Binaries contains all available Borg binary variants
 var Binaries = []BorgBinary{
+	// Borg 1.4.5 - Linux x86_64 (glibc231 build was dropped upstream in 1.4.5; min glibc is now 2.35)
+	{
+		Name:          "borg_1.4.5",
+		Version:       version.Must(version.NewVersion("1.4.5")),
+		Os:            Linux,
+		GlibcVersion:  version.Must(version.NewVersion("2.35")),
+		Arch:          "amd64",
+		Url:           "https://github.com/borgbackup/borg/releases/download/1.4.5/borg-linux-glibc235-x86_64-gh",
+		SupportsMount: true,
+	},
+	// Borg 1.4.5 - Linux ARM64
+	{
+		Name:          "borg_1.4.5",
+		Version:       version.Must(version.NewVersion("1.4.5")),
+		Os:            Linux,
+		GlibcVersion:  version.Must(version.NewVersion("2.35")),
+		Arch:          "arm64",
+		Url:           "https://github.com/borgbackup/borg/releases/download/1.4.5/borg-linux-glibc235-arm64-gh",
+		SupportsMount: true,
+	},
+	// Borg 1.4.5 - macOS Intel (directory distribution for faster startup, no FUSE support)
+	{
+		Name:          "borg_1.4.5",
+		Version:       version.Must(version.NewVersion("1.4.5")),
+		Os:            Darwin,
+		Arch:          "amd64",
+		Url:           "https://github.com/borgbackup/borg/releases/download/1.4.5/borg-macos-15-x86_64-gh.tgz",
+		IsDirectory:   true,
+		SupportsMount: false, // -gh builds don't include llfuse
+	},
+	// Borg 1.4.5 - macOS Apple Silicon (directory distribution for faster startup, no FUSE support)
+	{
+		Name:          "borg_1.4.5",
+		Version:       version.Must(version.NewVersion("1.4.5")),
+		Os:            Darwin,
+		Arch:          "arm64",
+		Url:           "https://github.com/borgbackup/borg/releases/download/1.4.5/borg-macos-15-arm64-gh.tgz",
+		IsDirectory:   true,
+		SupportsMount: false, // -gh builds don't include llfuse
+	},
 	// Borg 1.4.4 - Linux x86_64 variants
 	{
 		Name:          "borg_1.4.4",
@@ -116,6 +156,7 @@ var Binaries = []BorgBinary{
 		Version:       version.Must(version.NewVersion("1.4.1")),
 		Os:            Linux,
 		GlibcVersion:  version.Must(version.NewVersion("2.28")),
+		Arch:          "amd64", // upstream 1.4.1 fat binaries are x86_64-only (no official arm64 build)
 		Url:           "https://github.com/borgbackup/borg/releases/download/1.4.1/borg-linux-glibc228",
 		SupportsMount: true,
 	},
@@ -124,6 +165,7 @@ var Binaries = []BorgBinary{
 		Version:       version.Must(version.NewVersion("1.4.1")),
 		Os:            Linux,
 		GlibcVersion:  version.Must(version.NewVersion("2.31")),
+		Arch:          "amd64", // upstream 1.4.1 fat binaries are x86_64-only (no official arm64 build)
 		Url:           "https://github.com/borgbackup/borg/releases/download/1.4.1/borg-linux-glibc231",
 		SupportsMount: true,
 	},
@@ -132,6 +174,7 @@ var Binaries = []BorgBinary{
 		Version:       version.Must(version.NewVersion("1.4.1")),
 		Os:            Linux,
 		GlibcVersion:  version.Must(version.NewVersion("2.36")),
+		Arch:          "amd64", // upstream 1.4.1 fat binaries are x86_64-only (no official arm64 build)
 		Url:           "https://github.com/borgbackup/borg/releases/download/1.4.1/borg-linux-glibc236",
 		SupportsMount: true,
 	},
@@ -150,6 +193,7 @@ var Binaries = []BorgBinary{
 		Version:       version.Must(version.NewVersion("1.4.0")),
 		Os:            Linux,
 		GlibcVersion:  version.Must(version.NewVersion("2.28")),
+		Arch:          "amd64", // upstream 1.4.0 fat binaries are x86_64-only (no official arm64 build)
 		Url:           "https://github.com/borgbackup/borg/releases/download/1.4.0/borg-linux-glibc228",
 		SupportsMount: true,
 	},
@@ -158,6 +202,7 @@ var Binaries = []BorgBinary{
 		Version:       version.Must(version.NewVersion("1.4.0")),
 		Os:            Linux,
 		GlibcVersion:  version.Must(version.NewVersion("2.31")),
+		Arch:          "amd64", // upstream 1.4.0 fat binaries are x86_64-only (no official arm64 build)
 		Url:           "https://github.com/borgbackup/borg/releases/download/1.4.0/borg-linux-glibc231",
 		SupportsMount: true,
 	},
@@ -166,6 +211,7 @@ var Binaries = []BorgBinary{
 		Version:       version.Must(version.NewVersion("1.4.0")),
 		Os:            Linux,
 		GlibcVersion:  version.Must(version.NewVersion("2.36")),
+		Arch:          "amd64", // upstream 1.4.0 fat binaries are x86_64-only (no official arm64 build)
 		Url:           "https://github.com/borgbackup/borg/releases/download/1.4.0/borg-linux-glibc236",
 		SupportsMount: true,
 	},
@@ -227,35 +273,12 @@ func GetLatestBorgBinary(binaries []BorgBinary) (BorgBinary, error) {
 		return selectLowestGlibcBinary(binaries, currentArch), nil
 	}
 
-	// 5. Compare GLIBC versions -> select highest version that is <= system GLIBC version
-	var bestBinary BorgBinary
-	var bestGlibcVersion *version.Version
-
-	for _, binary := range binaries {
-		// Only consider binaries for current OS, architecture, and latest Borg version
-		if binary.Os != currentOS || !binary.Version.Equal(latestVersion) {
-			continue
-		}
-
-		// Check architecture compatibility (empty means any)
-		if binary.Arch != "" && binary.Arch != currentArch {
-			continue
-		}
-
-		if binary.GlibcVersion != nil && binary.GlibcVersion.LessThanOrEqual(systemGlibc) {
-			if bestGlibcVersion == nil || binary.GlibcVersion.GreaterThan(bestGlibcVersion) {
-				bestBinary = binary
-				bestGlibcVersion = binary.GlibcVersion
-			}
-		}
-	}
-
-	if bestGlibcVersion == nil {
-		// No compatible GLIBC version found, return lowest available
-		return selectLowestGlibcBinary(binaries, currentArch), nil
-	}
-
-	return bestBinary, nil
+	// 5. Select the highest Borg version whose glibc requirement the system satisfies.
+	// This intentionally looks across all versions rather than only the newest one: upstream
+	// occasionally drops a glibc build for the latest version (e.g. 1.4.5 dropped glibc231),
+	// so a system on an older glibc should fall back to the newest still-compatible version
+	// (1.4.4-glibc231) instead of the globally-oldest build.
+	return selectBestGlibcBinary(binaries, currentArch, systemGlibc, false), nil
 }
 
 // getGlibcVersion detects the system's GLIBC version on Linux systems
@@ -380,35 +403,8 @@ func GetMountBorgBinary(binaries []BorgBinary) (BorgBinary, error) {
 		return selectLowestGlibcMountBinary(binaries, currentArch), nil
 	}
 
-	// Compare GLIBC versions -> select highest version that is <= system GLIBC version
-	var bestBinary BorgBinary
-	var bestGlibcVersion *version.Version
-
-	for _, binary := range binaries {
-		// Only consider binaries for current OS, latest Borg version, and mount support
-		if binary.Os != currentOS || !binary.Version.Equal(latestVersion) || !binary.SupportsMount {
-			continue
-		}
-
-		// Check architecture compatibility (empty means any)
-		if binary.Arch != "" && binary.Arch != currentArch {
-			continue
-		}
-
-		if binary.GlibcVersion != nil && binary.GlibcVersion.LessThanOrEqual(systemGlibc) {
-			if bestGlibcVersion == nil || binary.GlibcVersion.GreaterThan(bestGlibcVersion) {
-				bestBinary = binary
-				bestGlibcVersion = binary.GlibcVersion
-			}
-		}
-	}
-
-	if bestGlibcVersion == nil {
-		// No compatible GLIBC version found, return lowest available with mount support
-		return selectLowestGlibcMountBinary(binaries, currentArch), nil
-	}
-
-	return bestBinary, nil
+	// Select the highest mount-capable Borg version whose glibc requirement the system satisfies.
+	return selectBestGlibcBinary(binaries, currentArch, systemGlibc, true), nil
 }
 
 // selectLowestGlibcMountBinary returns the binary with the lowest GLIBC requirement that supports mount
@@ -442,4 +438,59 @@ func selectLowestGlibcMountBinary(binaries []BorgBinary, arch string) BorgBinary
 	}
 
 	return lowest
+}
+
+// selectBestGlibcBinary picks the best Linux binary for the given architecture and system glibc
+// version. It returns the highest Borg version whose glibc requirement is satisfied by the system
+// (GlibcVersion <= systemGlibc), breaking ties toward the higher glibc build. When mountOnly is
+// set, only mount-capable binaries are considered.
+//
+// Unlike a "newest version, then filter by glibc" approach, this searches across all versions so
+// that a system on an older glibc still gets the newest compatible version even when the latest
+// release dropped a glibc build (e.g. 1.4.5 dropped the x86_64 glibc231 build). If the system
+// glibc is older than every available build, it falls back to the lowest-glibc binary.
+func selectBestGlibcBinary(binaries []BorgBinary, arch string, systemGlibc *version.Version, mountOnly bool) BorgBinary {
+	var best BorgBinary
+	found := false
+
+	for _, binary := range binaries {
+		if binary.Os != Linux {
+			continue
+		}
+
+		// Check architecture compatibility (empty means any)
+		if binary.Arch != "" && binary.Arch != arch {
+			continue
+		}
+
+		if mountOnly && !binary.SupportsMount {
+			continue
+		}
+
+		if binary.GlibcVersion == nil {
+			continue
+		}
+
+		// Skip builds that require a newer glibc than the system provides
+		if binary.GlibcVersion.GreaterThan(systemGlibc) {
+			continue
+		}
+
+		if !found ||
+			binary.Version.GreaterThan(best.Version) ||
+			(binary.Version.Equal(best.Version) && binary.GlibcVersion.GreaterThan(best.GlibcVersion)) {
+			best = binary
+			found = true
+		}
+	}
+
+	if !found {
+		// System glibc is older than every available build; return the lowest-glibc option.
+		if mountOnly {
+			return selectLowestGlibcMountBinary(binaries, arch)
+		}
+		return selectLowestGlibcBinary(binaries, arch)
+	}
+
+	return best
 }
