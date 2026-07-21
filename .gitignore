@@ -21,3 +21,6 @@ tickets*
 
 # Git worktrees
 worktrees
+
+# jj workspaces (per-developer)
+/.workspaces/

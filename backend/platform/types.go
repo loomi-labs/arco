@@ -15,12 +15,13 @@ func (o OS) String() string {
 	return string(o)
 }
 
-// BorgBinary represents a Borg backup binary for a specific OS and GLIBC version
+// BorgBinary represents a Borg backup binary for a specific OS and platform requirement (GLIBC / macOS version)
 type BorgBinary struct {
 	Name          string
 	Version       *version.Version
 	Os            OS
-	GlibcVersion  *version.Version // Only applicable for Linux, nil for non-Linux
+	GlibcVersion  *version.Version // Minimum GLIBC version required. Only applicable for Linux, nil for non-Linux
+	MacOSVersion  *version.Version // Minimum macOS version required. Only applicable for Darwin, nil means compatible with any macOS
 	Arch          string           // CPU architecture (amd64, arm64), empty means any
 	Url           string
 	IsDirectory   bool // True for .tgz directory distributions (faster on macOS)
