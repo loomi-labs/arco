@@ -34,16 +34,16 @@ jobs:
       matrix:
         include:
           # Latest borg on all Ubuntu versions
-          - borg-version: "1.4.4"
+          - borg-version: "1.4.5"
             base-image: "ubuntu-20.04"
             arch: "amd64"
-          - borg-version: "1.4.4"
+          - borg-version: "1.4.5"
             base-image: "ubuntu-22.04"
             arch: "amd64"
-          - borg-version: "1.4.4"
+          - borg-version: "1.4.5"
             base-image: "ubuntu-24.04"
             arch: "amd64"
-          - borg-version: "1.4.4"
+          - borg-version: "1.4.5"
             base-image: "ubuntu-24.04"
             arch: "arm64"
           # Older borg versions on Ubuntu 24.04 only
@@ -117,20 +117,20 @@ jobs:
         include:
           # Latest borg on all Ubuntu versions
           - os: ubuntu-latest
-            borg-version: "1.4.4"
+            borg-version: "1.4.5"
             base-image: ubuntu-20.04
             arch: amd64
           - os: ubuntu-latest
-            borg-version: "1.4.4"
+            borg-version: "1.4.5"
             base-image: ubuntu-22.04
             arch: amd64
           - os: ubuntu-24.04
-            borg-version: "1.4.4"
+            borg-version: "1.4.5"
             base-image: ubuntu-24.04
             arch: amd64
           # ARM64 tests on native runner
           - os: ubuntu-24.04-arm
-            borg-version: "1.4.4"
+            borg-version: "1.4.5"
             base-image: ubuntu-24.04
             arch: arm64
           # Older borg versions on Ubuntu 24.04 only

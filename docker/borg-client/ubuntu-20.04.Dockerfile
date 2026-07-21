@@ -38,8 +38,8 @@ ENV DEBIAN_FRONTEND=noninteractive
 ENV TZ=UTC
 
 # Re-declare build arguments
-ARG CLIENT_BORG_VERSION=1.4.4
-ARG SERVER_BORG_VERSION=1.4.4
+ARG CLIENT_BORG_VERSION=1.4.5
+ARG SERVER_BORG_VERSION=1.4.5
 
 # Install required packages. Ship both FUSE generations: FUSE 2 (fusermount +
 # libfuse.so.2) for llfuse-based Borg builds and FUSE 3 (fusermount3 +
