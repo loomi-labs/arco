@@ -335,6 +335,7 @@ onMounted(async () => {
                 </div>
                 <input
                   type='checkbox'
+                  :key='`high-contrast-${fontScale}`'
                   v-model='highContrast'
                   @change='applyHighContrast(); saveSettings()'
                   class='toggle toggle-secondary'
@@ -354,8 +355,11 @@ onMounted(async () => {
                     Remove all animations and transitions
                   </p>
                 </div>
+                <!-- Keyed on fontScale: WebKitGTK renders toggles with stale layout after
+                     a live root font-size change; re-mounting them forces a fresh layout -->
                 <input
                   type='checkbox'
+                  :key='`disable-transitions-${fontScale}`'
                   v-model='disableTransitions'
                   @change='saveSettings'
                   class='toggle toggle-secondary'
@@ -373,6 +377,7 @@ onMounted(async () => {
                 </div>
                 <input
                   type='checkbox'
+                  :key='`disable-shadows-${fontScale}`'
                   v-model='disableShadows'
                   @change='saveSettings'
                   class='toggle toggle-secondary'
@@ -402,6 +407,7 @@ onMounted(async () => {
                 </div>
                 <input
                   type='checkbox'
+                  :key='`expert-mode-${fontScale}`'
                   v-model='expertMode'
                   @change='saveSettings'
                   class='toggle toggle-secondary'
@@ -444,6 +450,7 @@ onMounted(async () => {
                 </div>
                 <input
                   type='checkbox'
+                  :key='`usage-logging-${fontScale}`'
                   v-model='usageLoggingEnabled'
                   @change='saveAnalyticsPreference'
                   class='toggle toggle-secondary'
