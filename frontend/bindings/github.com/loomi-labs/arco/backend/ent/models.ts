@@ -1575,6 +1575,16 @@ export class Settings {
      */
     "installationId": uuid$0.UUID;
 
+    /**
+     * FontScale holds the value of the "font_scale" field.
+     */
+    "fontScale": number;
+
+    /**
+     * HighContrast holds the value of the "high_contrast" field.
+     */
+    "highContrast": boolean;
+
     /** Creates a new Settings instance. */
     constructor($$source: Partial<Settings> = {}) {
         if (!("createdAt" in $$source)) {
@@ -1606,6 +1616,12 @@ export class Settings {
         }
         if (!("installationId" in $$source)) {
             this["installationId"] = "";
+        }
+        if (!("fontScale" in $$source)) {
+            this["fontScale"] = 0;
+        }
+        if (!("highContrast" in $$source)) {
+            this["highContrast"] = false;
         }
 
         Object.assign(this, $$source);

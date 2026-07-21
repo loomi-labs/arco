@@ -40,7 +40,11 @@ type Settings struct {
 	UsageLoggingEnabled *bool `json:"usageLoggingEnabled"`
 	// InstallationID holds the value of the "installation_id" field.
 	InstallationID uuid.UUID `json:"installationId"`
-	selectValues   sql.SelectValues
+	// FontScale holds the value of the "font_scale" field.
+	FontScale int `json:"fontScale"`
+	// HighContrast holds the value of the "high_contrast" field.
+	HighContrast bool `json:"highContrast"`
+	selectValues sql.SelectValues
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -48,9 +52,9 @@ func (*Settings) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case settings.FieldExpertMode, settings.FieldDisableTransitions, settings.FieldDisableShadows, settings.FieldMacfuseWarningDismissed, settings.FieldFullDiskAccessWarningDismissed, settings.FieldUsageLoggingEnabled:
+		case settings.FieldExpertMode, settings.FieldDisableTransitions, settings.FieldDisableShadows, settings.FieldMacfuseWarningDismissed, settings.FieldFullDiskAccessWarningDismissed, settings.FieldUsageLoggingEnabled, settings.FieldHighContrast:
 			values[i] = new(sql.NullBool)
-		case settings.FieldID:
+		case settings.FieldID, settings.FieldFontScale:
 			values[i] = new(sql.NullInt64)
 		case settings.FieldTheme:
 			values[i] = new(sql.NullString)
@@ -147,6 +151,18 @@ func (_m *Settings) assignValues(columns []string, values []any) error {
 			} else if value != nil {
 				_m.InstallationID = *value
 			}
+		case settings.FieldFontScale:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field font_scale", values[i])
+			} else if value.Valid {
+				_m.FontScale = int(value.Int64)
+			}
+		case settings.FieldHighContrast:
+			if value, ok := values[i].(*sql.NullBool); !ok {
+				return fmt.Errorf("unexpected type %T for field high_contrast", values[i])
+			} else if value.Valid {
+				_m.HighContrast = value.Bool
+			}
 		default:
 			_m.selectValues.Set(columns[i], values[i])
 		}
@@ -219,6 +235,12 @@ func (_m *Settings) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("installation_id=")
 	builder.WriteString(fmt.Sprintf("%v", _m.InstallationID))
+	builder.WriteString(", ")
+	builder.WriteString("font_scale=")
+	builder.WriteString(fmt.Sprintf("%v", _m.FontScale))
+	builder.WriteString(", ")
+	builder.WriteString("high_contrast=")
+	builder.WriteString(fmt.Sprintf("%v", _m.HighContrast))
 	builder.WriteByte(')')
 	return builder.String()
 }

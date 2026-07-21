@@ -271,6 +271,8 @@ var (
 		{Name: "feedback_last_prompted_at", Type: field.TypeTime, Nullable: true},
 		{Name: "usage_logging_enabled", Type: field.TypeBool, Nullable: true},
 		{Name: "installation_id", Type: field.TypeUUID},
+		{Name: "font_scale", Type: field.TypeInt, Default: 100},
+		{Name: "high_contrast", Type: field.TypeBool, Default: false},
 	}
 	// SettingsTable holds the schema information for the "settings" table.
 	SettingsTable = &schema.Table{

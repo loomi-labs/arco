@@ -15,6 +15,7 @@ import { ComputerDesktopIcon } from "@heroicons/vue/24/solid";
 import { useAuth } from "../common/auth";
 import { useTheme } from "../common/theme";
 import { logError } from "../common/logger";
+import { applyAppearance } from "../common/appearance";
 import * as userService from "../../bindings/github.com/loomi-labs/arco/backend/app/user/service";
 import * as analyticsService from "../../bindings/github.com/loomi-labs/arco/backend/app/analytics/service";
 import type * as ent from "../../bindings/github.com/loomi-labs/arco/backend/ent";
@@ -44,6 +45,8 @@ const selectedTheme = ref<Theme>(Theme.ThemeSystem);
 const expertMode = ref(false);
 const disableTransitions = ref(false);
 const disableShadows = ref(false);
+const fontScale = ref(100);
+const highContrast = ref(false);
 const usageLoggingEnabled = ref(false);
 const showCollectedData = ref(false);
 
@@ -62,6 +65,8 @@ async function loadSettings() {
       expertMode.value = result.expertMode ?? false;
       disableTransitions.value = result.disableTransitions ?? false;
       disableShadows.value = result.disableShadows ?? false;
+      fontScale.value = result.fontScale || 100;
+      highContrast.value = result.highContrast ?? false;
       usageLoggingEnabled.value = result.usageLoggingEnabled === true;
 
       // Load theme from backend and apply it
@@ -99,6 +104,8 @@ async function saveSettings() {
     settings.value.expertMode = expertMode.value;
     settings.value.disableTransitions = disableTransitions.value;
     settings.value.disableShadows = disableShadows.value;
+    settings.value.fontScale = fontScale.value;
+    settings.value.highContrast = highContrast.value;
     await userService.SaveSettings(settings.value);
   } catch (error: unknown) {
     errorMessage.value = "Failed to save settings";
@@ -108,6 +115,21 @@ async function saveSettings() {
   }
 }
 
+
+function previewFontScale() {
+  // Apply the font scale live while dragging the slider (persisted on @change)
+  applyAppearance(fontScale.value, highContrast.value);
+}
+
+async function resetFontScale() {
+  fontScale.value = 100;
+  applyAppearance(fontScale.value, highContrast.value);
+  await saveSettings();
+}
+
+function applyHighContrast() {
+  applyAppearance(fontScale.value, highContrast.value);
+}
 
 async function saveAnalyticsPreference() {
   isSaving.value = true;
@@ -270,6 +292,57 @@ onMounted(async () => {
                 </button>
               </div>
 
+              <!-- Readability Options -->
+              <div class='divider'></div>
+              <p class='text-sm text-base-content/70'>Adjust text size and contrast for better readability</p>
+
+              <!-- Font Size -->
+              <div class='py-3 px-4 bg-base-100 rounded-lg'>
+                <div class='flex items-center justify-between'>
+                  <div class='flex items-center gap-2'>
+                    <p class='font-medium'>Font Size</p>
+                    <span class='text-sm text-base-content/70'>{{ fontScale }}%</span>
+                  </div>
+                  <button
+                    v-if='fontScale !== 100'
+                    class='btn btn-xs btn-ghost'
+                    :disabled='isSaving'
+                    @click='resetFontScale'
+                  >
+                    Reset
+                  </button>
+                </div>
+                <input
+                  type='range'
+                  min='80'
+                  max='150'
+                  step='5'
+                  v-model.number='fontScale'
+                  class='range range-secondary mt-3'
+                  :disabled='isSaving'
+                  @input='previewFontScale'
+                  @change='saveSettings'
+                />
+              </div>
+
+              <!-- High Contrast Text Toggle -->
+              <div class='flex items-center justify-between py-3 px-4 bg-base-100 rounded-lg'>
+                <div class='flex-1'>
+                  <p class='font-medium'>High Contrast Text</p>
+                  <p class='text-sm text-base-content/70 mt-1'>
+                    Increase text contrast for better readability
+                  </p>
+                </div>
+                <input
+                  type='checkbox'
+                  :key='`high-contrast-${fontScale}`'
+                  v-model='highContrast'
+                  @change='applyHighContrast(); saveSettings()'
+                  class='toggle toggle-secondary'
+                  :disabled='isSaving'
+                />
+              </div>
+
               <!-- Reduced Motion Options -->
               <div class='divider'></div>
               <p class='text-sm text-base-content/70'>Reduce visual effects for better performance or accessibility</p>
@@ -282,8 +355,11 @@ onMounted(async () => {
                     Remove all animations and transitions
                   </p>
                 </div>
+                <!-- Keyed on fontScale: WebKitGTK renders toggles with stale layout after
+                     a live root font-size change; re-mounting them forces a fresh layout -->
                 <input
                   type='checkbox'
+                  :key='`disable-transitions-${fontScale}`'
                   v-model='disableTransitions'
                   @change='saveSettings'
                   class='toggle toggle-secondary'
@@ -301,6 +377,7 @@ onMounted(async () => {
                 </div>
                 <input
                   type='checkbox'
+                  :key='`disable-shadows-${fontScale}`'
                   v-model='disableShadows'
                   @change='saveSettings'
                   class='toggle toggle-secondary'
@@ -330,6 +407,7 @@ onMounted(async () => {
                 </div>
                 <input
                   type='checkbox'
+                  :key='`expert-mode-${fontScale}`'
                   v-model='expertMode'
                   @change='saveSettings'
                   class='toggle toggle-secondary'
@@ -372,6 +450,7 @@ onMounted(async () => {
                 </div>
                 <input
                   type='checkbox'
+                  :key='`usage-logging-${fontScale}`'
                   v-model='usageLoggingEnabled'
                   @change='saveAnalyticsPreference'
                   class='toggle toggle-secondary'

@@ -50,6 +50,7 @@ var migrationValidators = map[string]func(t *testing.T, ctx context.Context, db 
 	"20260202123657_gen": validateIntervalMinutes,
 	"20260327153722_gen": validateFeedbackPrompt,
 	"20260331130829_gen": validateAnalytics,
+	"20260721133129_add_font_scale_and_high_contrast": validateFontScaleAndHighContrast,
 }
 
 // TestMigrationCoverage ensures every migration file has a registered validator.
@@ -1005,6 +1006,22 @@ func validateAnalytics(t *testing.T, ctx context.Context, db *sql.DB, client *en
 	// Verify sent index exists.
 	if !indexExists(t, db, "analytics_events", "sent") {
 		t.Error("index on sent column should exist on analytics_events")
+	}
+}
+
+// validateFontScaleAndHighContrast checks that font_scale and high_contrast were added with defaults.
+func validateFontScaleAndHighContrast(t *testing.T, ctx context.Context, _ *sql.DB, client *ent.Client) {
+	t.Helper()
+
+	settings, err := client.Settings.Query().Only(ctx)
+	if err != nil {
+		t.Fatalf("failed to query settings: %v", err)
+	}
+	if settings.FontScale != 100 {
+		t.Errorf("font_scale should default to 100, got %d", settings.FontScale)
+	}
+	if settings.HighContrast != false {
+		t.Error("high_contrast should default to false")
 	}
 }
 

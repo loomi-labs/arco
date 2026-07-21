@@ -37,6 +37,10 @@ const (
 	FieldUsageLoggingEnabled = "usage_logging_enabled"
 	// FieldInstallationID holds the string denoting the installation_id field in the database.
 	FieldInstallationID = "installation_id"
+	// FieldFontScale holds the string denoting the font_scale field in the database.
+	FieldFontScale = "font_scale"
+	// FieldHighContrast holds the string denoting the high_contrast field in the database.
+	FieldHighContrast = "high_contrast"
 	// Table holds the table name of the settings in the database.
 	Table = "settings"
 )
@@ -55,6 +59,8 @@ var Columns = []string{
 	FieldFeedbackLastPromptedAt,
 	FieldUsageLoggingEnabled,
 	FieldInstallationID,
+	FieldFontScale,
+	FieldHighContrast,
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -86,6 +92,12 @@ var (
 	DefaultFullDiskAccessWarningDismissed bool
 	// DefaultInstallationID holds the default value on creation for the "installation_id" field.
 	DefaultInstallationID func() uuid.UUID
+	// DefaultFontScale holds the default value on creation for the "font_scale" field.
+	DefaultFontScale int
+	// FontScaleValidator is a validator for the "font_scale" field. It is called by the builders before save.
+	FontScaleValidator func(int) error
+	// DefaultHighContrast holds the default value on creation for the "high_contrast" field.
+	DefaultHighContrast bool
 )
 
 // Theme defines the type for the "theme" enum field.
@@ -176,4 +188,14 @@ func ByUsageLoggingEnabled(opts ...sql.OrderTermOption) OrderOption {
 // ByInstallationID orders the results by the installation_id field.
 func ByInstallationID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldInstallationID, opts...).ToFunc()
+}
+
+// ByFontScale orders the results by the font_scale field.
+func ByFontScale(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldFontScale, opts...).ToFunc()
+}
+
+// ByHighContrast orders the results by the high_contrast field.
+func ByHighContrast(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldHighContrast, opts...).ToFunc()
 }

@@ -50,6 +50,14 @@ func (Settings) Fields() []ent.Field {
 		field.UUID("installation_id", uuid.UUID{}).
 			StructTag(`json:"installationId"`).
 			Default(uuid.New),
+		field.Int("font_scale").
+			StructTag(`json:"fontScale"`).
+			Default(100).
+			Min(80).
+			Max(150),
+		field.Bool("high_contrast").
+			StructTag(`json:"highContrast"`).
+			Default(false),
 	}
 }
 

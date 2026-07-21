@@ -20,6 +20,7 @@ import { useSubscriptionNotifications } from "./common/subscription";
 import { initializeTheme } from "./common/theme";
 import { initializeExpertMode, useExpertMode } from "./common/expertMode";
 import { initializeReducedMotion, setupReducedMotionListener } from "./common/reducedMotion";
+import { initializeAppearance, setupAppearanceListener } from "./common/appearance";
 import { setupPageViewTracking } from "./common/analytics";
 import { useNavigationShortcuts } from "./common/navigationShortcuts";
 import type { WailsEvent } from "@wailsio/runtime/types/events";
@@ -147,6 +148,9 @@ cleanupFunctions.push(setupSettingsListener());
 // Setup reduced motion settings listener
 cleanupFunctions.push(setupReducedMotionListener());
 
+// Setup appearance settings listener (font scale, high contrast)
+cleanupFunctions.push(setupAppearanceListener());
+
 // Setup navigation shortcuts (keyboard and mouse)
 const { setupNavigationShortcuts } = useNavigationShortcuts();
 cleanupFunctions.push(setupNavigationShortcuts());
@@ -160,6 +164,7 @@ watch(isInitialized, async (initialized) => {
     await initializeTheme();
     await initializeExpertMode();
     await initializeReducedMotion();
+    await initializeAppearance();
 
     // Start page view tracking after settings are available
     cleanupFunctions.push(setupPageViewTracking());
