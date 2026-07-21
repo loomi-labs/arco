@@ -156,6 +156,7 @@ var Binaries = []BorgBinary{
 		Version:       version.Must(version.NewVersion("1.4.1")),
 		Os:            Linux,
 		GlibcVersion:  version.Must(version.NewVersion("2.28")),
+		Arch:          "amd64", // upstream 1.4.1 fat binaries are x86_64-only (no official arm64 build)
 		Url:           "https://github.com/borgbackup/borg/releases/download/1.4.1/borg-linux-glibc228",
 		SupportsMount: true,
 	},
@@ -164,6 +165,7 @@ var Binaries = []BorgBinary{
 		Version:       version.Must(version.NewVersion("1.4.1")),
 		Os:            Linux,
 		GlibcVersion:  version.Must(version.NewVersion("2.31")),
+		Arch:          "amd64", // upstream 1.4.1 fat binaries are x86_64-only (no official arm64 build)
 		Url:           "https://github.com/borgbackup/borg/releases/download/1.4.1/borg-linux-glibc231",
 		SupportsMount: true,
 	},
@@ -172,6 +174,7 @@ var Binaries = []BorgBinary{
 		Version:       version.Must(version.NewVersion("1.4.1")),
 		Os:            Linux,
 		GlibcVersion:  version.Must(version.NewVersion("2.36")),
+		Arch:          "amd64", // upstream 1.4.1 fat binaries are x86_64-only (no official arm64 build)
 		Url:           "https://github.com/borgbackup/borg/releases/download/1.4.1/borg-linux-glibc236",
 		SupportsMount: true,
 	},
@@ -190,6 +193,7 @@ var Binaries = []BorgBinary{
 		Version:       version.Must(version.NewVersion("1.4.0")),
 		Os:            Linux,
 		GlibcVersion:  version.Must(version.NewVersion("2.28")),
+		Arch:          "amd64", // upstream 1.4.0 fat binaries are x86_64-only (no official arm64 build)
 		Url:           "https://github.com/borgbackup/borg/releases/download/1.4.0/borg-linux-glibc228",
 		SupportsMount: true,
 	},
@@ -198,6 +202,7 @@ var Binaries = []BorgBinary{
 		Version:       version.Must(version.NewVersion("1.4.0")),
 		Os:            Linux,
 		GlibcVersion:  version.Must(version.NewVersion("2.31")),
+		Arch:          "amd64", // upstream 1.4.0 fat binaries are x86_64-only (no official arm64 build)
 		Url:           "https://github.com/borgbackup/borg/releases/download/1.4.0/borg-linux-glibc231",
 		SupportsMount: true,
 	},
@@ -206,6 +211,7 @@ var Binaries = []BorgBinary{
 		Version:       version.Must(version.NewVersion("1.4.0")),
 		Os:            Linux,
 		GlibcVersion:  version.Must(version.NewVersion("2.36")),
+		Arch:          "amd64", // upstream 1.4.0 fat binaries are x86_64-only (no official arm64 build)
 		Url:           "https://github.com/borgbackup/borg/releases/download/1.4.0/borg-linux-glibc236",
 		SupportsMount: true,
 	},

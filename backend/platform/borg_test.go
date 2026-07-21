@@ -67,13 +67,14 @@ func TestSelectBestGlibcBinary(t *testing.T) {
 			wantURL:     "https://github.com/borgbackup/borg/releases/download/1.4.5/borg-linux-glibc235-arm64-gh",
 		},
 		{
-			// arm64 has no glibc231 build; a 2.29 arm64 system falls back across versions to
-			// the newest build whose glibc fits (1.4.1-glibc228, a universal/empty-Arch build).
-			name:        "glibc 2.29 arm64 -> newest compatible universal fallback",
+			// No arm64 build exists below glibc 2.35, and the old fat binaries are x86_64-only.
+			// An arm64 host must never be handed an x86_64 binary: it falls back to the
+			// lowest-glibc arm64 build rather than a glibc228 x86_64 one.
+			name:        "glibc 2.29 arm64 -> arm64 build only, never x86_64 fallback",
 			arch:        "arm64",
 			systemGlibc: "2.29",
-			wantName:    "borg_1.4.1",
-			wantURL:     "https://github.com/borgbackup/borg/releases/download/1.4.1/borg-linux-glibc228",
+			wantName:    "borg_1.4.5",
+			wantURL:     "https://github.com/borgbackup/borg/releases/download/1.4.5/borg-linux-glibc235-arm64-gh",
 		},
 	}
 
@@ -85,6 +86,11 @@ func TestSelectBestGlibcBinary(t *testing.T) {
 			}
 			if got.Url != tt.wantURL {
 				t.Errorf("Url = %q, want %q", got.Url, tt.wantURL)
+			}
+			// A binary with an explicit Arch must never be selected for a different arch
+			// (e.g. an arm64 host must not receive an x86_64-only build).
+			if got.Arch != "" && got.Arch != tt.arch {
+				t.Errorf("selected Arch = %q for %q host", got.Arch, tt.arch)
 			}
 		})
 	}
