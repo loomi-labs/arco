@@ -103,6 +103,8 @@ func (s *Service) SaveSettings(ctx context.Context, settings *ent.Settings) erro
 		SetTheme(settings.Theme).
 		SetDisableTransitions(settings.DisableTransitions).
 		SetDisableShadows(settings.DisableShadows).
+		SetFontScale(settings.FontScale).
+		SetHighContrast(settings.HighContrast).
 		Exec(ctx)
 	if err != nil {
 		return err

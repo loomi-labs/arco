@@ -344,6 +344,30 @@ func init() {
 	settingsDescInstallationID := settingsFields[8].Descriptor()
 	// settings.DefaultInstallationID holds the default value on creation for the installation_id field.
 	settings.DefaultInstallationID = settingsDescInstallationID.Default.(func() uuid.UUID)
+	// settingsDescFontScale is the schema descriptor for font_scale field.
+	settingsDescFontScale := settingsFields[9].Descriptor()
+	// settings.DefaultFontScale holds the default value on creation for the font_scale field.
+	settings.DefaultFontScale = settingsDescFontScale.Default.(int)
+	// settings.FontScaleValidator is a validator for the "font_scale" field. It is called by the builders before save.
+	settings.FontScaleValidator = func() func(int) error {
+		validators := settingsDescFontScale.Validators
+		fns := [...]func(int) error{
+			validators[0].(func(int) error),
+			validators[1].(func(int) error),
+		}
+		return func(font_scale int) error {
+			for _, fn := range fns {
+				if err := fn(font_scale); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// settingsDescHighContrast is the schema descriptor for high_contrast field.
+	settingsDescHighContrast := settingsFields[10].Descriptor()
+	// settings.DefaultHighContrast holds the default value on creation for the high_contrast field.
+	settings.DefaultHighContrast = settingsDescHighContrast.Default.(bool)
 	userMixin := schema.User{}.Mixin()
 	userMixinFields0 := userMixin[0].Fields()
 	_ = userMixinFields0

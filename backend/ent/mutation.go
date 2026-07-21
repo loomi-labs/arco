@@ -9271,6 +9271,9 @@ type SettingsMutation struct {
 	feedback_last_prompted_at          *time.Time
 	usage_logging_enabled              *bool
 	installation_id                    *uuid.UUID
+	font_scale                         *int
+	addfont_scale                      *int
+	high_contrast                      *bool
 	clearedFields                      map[string]struct{}
 	done                               bool
 	oldValue                           func(context.Context) (*Settings, error)
@@ -9797,6 +9800,98 @@ func (m *SettingsMutation) ResetInstallationID() {
 	m.installation_id = nil
 }
 
+// SetFontScale sets the "font_scale" field.
+func (m *SettingsMutation) SetFontScale(i int) {
+	m.font_scale = &i
+	m.addfont_scale = nil
+}
+
+// FontScale returns the value of the "font_scale" field in the mutation.
+func (m *SettingsMutation) FontScale() (r int, exists bool) {
+	v := m.font_scale
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldFontScale returns the old "font_scale" field's value of the Settings entity.
+// If the Settings object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SettingsMutation) OldFontScale(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldFontScale is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldFontScale requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldFontScale: %w", err)
+	}
+	return oldValue.FontScale, nil
+}
+
+// AddFontScale adds i to the "font_scale" field.
+func (m *SettingsMutation) AddFontScale(i int) {
+	if m.addfont_scale != nil {
+		*m.addfont_scale += i
+	} else {
+		m.addfont_scale = &i
+	}
+}
+
+// AddedFontScale returns the value that was added to the "font_scale" field in this mutation.
+func (m *SettingsMutation) AddedFontScale() (r int, exists bool) {
+	v := m.addfont_scale
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetFontScale resets all changes to the "font_scale" field.
+func (m *SettingsMutation) ResetFontScale() {
+	m.font_scale = nil
+	m.addfont_scale = nil
+}
+
+// SetHighContrast sets the "high_contrast" field.
+func (m *SettingsMutation) SetHighContrast(b bool) {
+	m.high_contrast = &b
+}
+
+// HighContrast returns the value of the "high_contrast" field in the mutation.
+func (m *SettingsMutation) HighContrast() (r bool, exists bool) {
+	v := m.high_contrast
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldHighContrast returns the old "high_contrast" field's value of the Settings entity.
+// If the Settings object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SettingsMutation) OldHighContrast(ctx context.Context) (v bool, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldHighContrast is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldHighContrast requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldHighContrast: %w", err)
+	}
+	return oldValue.HighContrast, nil
+}
+
+// ResetHighContrast resets all changes to the "high_contrast" field.
+func (m *SettingsMutation) ResetHighContrast() {
+	m.high_contrast = nil
+}
+
 // Where appends a list predicates to the SettingsMutation builder.
 func (m *SettingsMutation) Where(ps ...predicate.Settings) {
 	m.predicates = append(m.predicates, ps...)
@@ -9831,7 +9926,7 @@ func (m *SettingsMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *SettingsMutation) Fields() []string {
-	fields := make([]string, 0, 11)
+	fields := make([]string, 0, 13)
 	if m.created_at != nil {
 		fields = append(fields, settings.FieldCreatedAt)
 	}
@@ -9865,6 +9960,12 @@ func (m *SettingsMutation) Fields() []string {
 	if m.installation_id != nil {
 		fields = append(fields, settings.FieldInstallationID)
 	}
+	if m.font_scale != nil {
+		fields = append(fields, settings.FieldFontScale)
+	}
+	if m.high_contrast != nil {
+		fields = append(fields, settings.FieldHighContrast)
+	}
 	return fields
 }
 
@@ -9895,6 +9996,10 @@ func (m *SettingsMutation) Field(name string) (ent.Value, bool) {
 		return m.UsageLoggingEnabled()
 	case settings.FieldInstallationID:
 		return m.InstallationID()
+	case settings.FieldFontScale:
+		return m.FontScale()
+	case settings.FieldHighContrast:
+		return m.HighContrast()
 	}
 	return nil, false
 }
@@ -9926,6 +10031,10 @@ func (m *SettingsMutation) OldField(ctx context.Context, name string) (ent.Value
 		return m.OldUsageLoggingEnabled(ctx)
 	case settings.FieldInstallationID:
 		return m.OldInstallationID(ctx)
+	case settings.FieldFontScale:
+		return m.OldFontScale(ctx)
+	case settings.FieldHighContrast:
+		return m.OldHighContrast(ctx)
 	}
 	return nil, fmt.Errorf("unknown Settings field %s", name)
 }
@@ -10012,6 +10121,20 @@ func (m *SettingsMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetInstallationID(v)
 		return nil
+	case settings.FieldFontScale:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetFontScale(v)
+		return nil
+	case settings.FieldHighContrast:
+		v, ok := value.(bool)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetHighContrast(v)
+		return nil
 	}
 	return fmt.Errorf("unknown Settings field %s", name)
 }
@@ -10019,13 +10142,21 @@ func (m *SettingsMutation) SetField(name string, value ent.Value) error {
 // AddedFields returns all numeric fields that were incremented/decremented during
 // this mutation.
 func (m *SettingsMutation) AddedFields() []string {
-	return nil
+	var fields []string
+	if m.addfont_scale != nil {
+		fields = append(fields, settings.FieldFontScale)
+	}
+	return fields
 }
 
 // AddedField returns the numeric value that was incremented/decremented on a field
 // with the given name. The second boolean return value indicates that this field
 // was not set, or was not defined in the schema.
 func (m *SettingsMutation) AddedField(name string) (ent.Value, bool) {
+	switch name {
+	case settings.FieldFontScale:
+		return m.AddedFontScale()
+	}
 	return nil, false
 }
 
@@ -10034,6 +10165,13 @@ func (m *SettingsMutation) AddedField(name string) (ent.Value, bool) {
 // type.
 func (m *SettingsMutation) AddField(name string, value ent.Value) error {
 	switch name {
+	case settings.FieldFontScale:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddFontScale(v)
+		return nil
 	}
 	return fmt.Errorf("unknown Settings numeric field %s", name)
 }
@@ -10108,6 +10246,12 @@ func (m *SettingsMutation) ResetField(name string) error {
 		return nil
 	case settings.FieldInstallationID:
 		m.ResetInstallationID()
+		return nil
+	case settings.FieldFontScale:
+		m.ResetFontScale()
+		return nil
+	case settings.FieldHighContrast:
+		m.ResetHighContrast()
 		return nil
 	}
 	return fmt.Errorf("unknown Settings field %s", name)

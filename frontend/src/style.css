@@ -13,7 +13,7 @@
 
     /* Responsive font sizing - scales smoothly with viewport width */
     html {
-        font-size: clamp(13px, 1.1vw, 16px);
+        font-size: calc(clamp(13px, 1.1vw, 16px) * var(--font-scale, 1));
     }
 
     /* Reduced motion / accessibility utilities */
@@ -201,6 +201,15 @@
         --input-color: var(--color-primary);
         outline-color: var(--color-primary);
     }
+}
+
+/* High contrast text - overrides dimmed text opacities (see Settings > Appearance) */
+/* Kept unlayered so it beats Tailwind v4's layered utilities */
+.high-contrast :is(.text-base-content\/30, .text-base-content\/40, .text-base-content\/50, .text-base-content\/60) {
+    color: color-mix(in oklab, var(--color-base-content) 85%, transparent);
+}
+.high-contrast :is(.text-base-content\/70, .text-base-content\/80) {
+    color: var(--color-base-content);
 }
 
 /* Fix select text clipping - reduce line-height for Nunito font */

@@ -105,6 +105,16 @@ func InstallationID(v uuid.UUID) predicate.Settings {
 	return predicate.Settings(sql.FieldEQ(FieldInstallationID, v))
 }
 
+// FontScale applies equality check predicate on the "font_scale" field. It's identical to FontScaleEQ.
+func FontScale(v int) predicate.Settings {
+	return predicate.Settings(sql.FieldEQ(FieldFontScale, v))
+}
+
+// HighContrast applies equality check predicate on the "high_contrast" field. It's identical to HighContrastEQ.
+func HighContrast(v bool) predicate.Settings {
+	return predicate.Settings(sql.FieldEQ(FieldHighContrast, v))
+}
+
 // CreatedAtEQ applies the EQ predicate on the "created_at" field.
 func CreatedAtEQ(v time.Time) predicate.Settings {
 	return predicate.Settings(sql.FieldEQ(FieldCreatedAt, v))
@@ -363,6 +373,56 @@ func InstallationIDLT(v uuid.UUID) predicate.Settings {
 // InstallationIDLTE applies the LTE predicate on the "installation_id" field.
 func InstallationIDLTE(v uuid.UUID) predicate.Settings {
 	return predicate.Settings(sql.FieldLTE(FieldInstallationID, v))
+}
+
+// FontScaleEQ applies the EQ predicate on the "font_scale" field.
+func FontScaleEQ(v int) predicate.Settings {
+	return predicate.Settings(sql.FieldEQ(FieldFontScale, v))
+}
+
+// FontScaleNEQ applies the NEQ predicate on the "font_scale" field.
+func FontScaleNEQ(v int) predicate.Settings {
+	return predicate.Settings(sql.FieldNEQ(FieldFontScale, v))
+}
+
+// FontScaleIn applies the In predicate on the "font_scale" field.
+func FontScaleIn(vs ...int) predicate.Settings {
+	return predicate.Settings(sql.FieldIn(FieldFontScale, vs...))
+}
+
+// FontScaleNotIn applies the NotIn predicate on the "font_scale" field.
+func FontScaleNotIn(vs ...int) predicate.Settings {
+	return predicate.Settings(sql.FieldNotIn(FieldFontScale, vs...))
+}
+
+// FontScaleGT applies the GT predicate on the "font_scale" field.
+func FontScaleGT(v int) predicate.Settings {
+	return predicate.Settings(sql.FieldGT(FieldFontScale, v))
+}
+
+// FontScaleGTE applies the GTE predicate on the "font_scale" field.
+func FontScaleGTE(v int) predicate.Settings {
+	return predicate.Settings(sql.FieldGTE(FieldFontScale, v))
+}
+
+// FontScaleLT applies the LT predicate on the "font_scale" field.
+func FontScaleLT(v int) predicate.Settings {
+	return predicate.Settings(sql.FieldLT(FieldFontScale, v))
+}
+
+// FontScaleLTE applies the LTE predicate on the "font_scale" field.
+func FontScaleLTE(v int) predicate.Settings {
+	return predicate.Settings(sql.FieldLTE(FieldFontScale, v))
+}
+
+// HighContrastEQ applies the EQ predicate on the "high_contrast" field.
+func HighContrastEQ(v bool) predicate.Settings {
+	return predicate.Settings(sql.FieldEQ(FieldHighContrast, v))
+}
+
+// HighContrastNEQ applies the NEQ predicate on the "high_contrast" field.
+func HighContrastNEQ(v bool) predicate.Settings {
+	return predicate.Settings(sql.FieldNEQ(FieldHighContrast, v))
 }
 
 // And groups predicates with the AND operator between them.

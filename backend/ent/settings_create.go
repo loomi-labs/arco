@@ -175,6 +175,34 @@ func (_c *SettingsCreate) SetNillableInstallationID(v *uuid.UUID) *SettingsCreat
 	return _c
 }
 
+// SetFontScale sets the "font_scale" field.
+func (_c *SettingsCreate) SetFontScale(v int) *SettingsCreate {
+	_c.mutation.SetFontScale(v)
+	return _c
+}
+
+// SetNillableFontScale sets the "font_scale" field if the given value is not nil.
+func (_c *SettingsCreate) SetNillableFontScale(v *int) *SettingsCreate {
+	if v != nil {
+		_c.SetFontScale(*v)
+	}
+	return _c
+}
+
+// SetHighContrast sets the "high_contrast" field.
+func (_c *SettingsCreate) SetHighContrast(v bool) *SettingsCreate {
+	_c.mutation.SetHighContrast(v)
+	return _c
+}
+
+// SetNillableHighContrast sets the "high_contrast" field if the given value is not nil.
+func (_c *SettingsCreate) SetNillableHighContrast(v *bool) *SettingsCreate {
+	if v != nil {
+		_c.SetHighContrast(*v)
+	}
+	return _c
+}
+
 // Mutation returns the SettingsMutation object of the builder.
 func (_c *SettingsCreate) Mutation() *SettingsMutation {
 	return _c.mutation
@@ -246,6 +274,14 @@ func (_c *SettingsCreate) defaults() {
 		v := settings.DefaultInstallationID()
 		_c.mutation.SetInstallationID(v)
 	}
+	if _, ok := _c.mutation.FontScale(); !ok {
+		v := settings.DefaultFontScale
+		_c.mutation.SetFontScale(v)
+	}
+	if _, ok := _c.mutation.HighContrast(); !ok {
+		v := settings.DefaultHighContrast
+		_c.mutation.SetHighContrast(v)
+	}
 }
 
 // check runs all checks and user-defined validators on the builder.
@@ -281,6 +317,17 @@ func (_c *SettingsCreate) check() error {
 	}
 	if _, ok := _c.mutation.InstallationID(); !ok {
 		return &ValidationError{Name: "installation_id", err: errors.New(`ent: missing required field "Settings.installation_id"`)}
+	}
+	if _, ok := _c.mutation.FontScale(); !ok {
+		return &ValidationError{Name: "font_scale", err: errors.New(`ent: missing required field "Settings.font_scale"`)}
+	}
+	if v, ok := _c.mutation.FontScale(); ok {
+		if err := settings.FontScaleValidator(v); err != nil {
+			return &ValidationError{Name: "font_scale", err: fmt.Errorf(`ent: validator failed for field "Settings.font_scale": %w`, err)}
+		}
+	}
+	if _, ok := _c.mutation.HighContrast(); !ok {
+		return &ValidationError{Name: "high_contrast", err: errors.New(`ent: missing required field "Settings.high_contrast"`)}
 	}
 	return nil
 }
@@ -351,6 +398,14 @@ func (_c *SettingsCreate) createSpec() (*Settings, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.InstallationID(); ok {
 		_spec.SetField(settings.FieldInstallationID, field.TypeUUID, value)
 		_node.InstallationID = value
+	}
+	if value, ok := _c.mutation.FontScale(); ok {
+		_spec.SetField(settings.FieldFontScale, field.TypeInt, value)
+		_node.FontScale = value
+	}
+	if value, ok := _c.mutation.HighContrast(); ok {
+		_spec.SetField(settings.FieldHighContrast, field.TypeBool, value)
+		_node.HighContrast = value
 	}
 	return _node, _spec
 }

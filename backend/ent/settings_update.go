@@ -174,6 +174,41 @@ func (_u *SettingsUpdate) SetNillableInstallationID(v *uuid.UUID) *SettingsUpdat
 	return _u
 }
 
+// SetFontScale sets the "font_scale" field.
+func (_u *SettingsUpdate) SetFontScale(v int) *SettingsUpdate {
+	_u.mutation.ResetFontScale()
+	_u.mutation.SetFontScale(v)
+	return _u
+}
+
+// SetNillableFontScale sets the "font_scale" field if the given value is not nil.
+func (_u *SettingsUpdate) SetNillableFontScale(v *int) *SettingsUpdate {
+	if v != nil {
+		_u.SetFontScale(*v)
+	}
+	return _u
+}
+
+// AddFontScale adds value to the "font_scale" field.
+func (_u *SettingsUpdate) AddFontScale(v int) *SettingsUpdate {
+	_u.mutation.AddFontScale(v)
+	return _u
+}
+
+// SetHighContrast sets the "high_contrast" field.
+func (_u *SettingsUpdate) SetHighContrast(v bool) *SettingsUpdate {
+	_u.mutation.SetHighContrast(v)
+	return _u
+}
+
+// SetNillableHighContrast sets the "high_contrast" field if the given value is not nil.
+func (_u *SettingsUpdate) SetNillableHighContrast(v *bool) *SettingsUpdate {
+	if v != nil {
+		_u.SetHighContrast(*v)
+	}
+	return _u
+}
+
 // Mutation returns the SettingsMutation object of the builder.
 func (_u *SettingsUpdate) Mutation() *SettingsMutation {
 	return _u.mutation
@@ -220,6 +255,11 @@ func (_u *SettingsUpdate) check() error {
 	if v, ok := _u.mutation.Theme(); ok {
 		if err := settings.ThemeValidator(v); err != nil {
 			return &ValidationError{Name: "theme", err: fmt.Errorf(`ent: validator failed for field "Settings.theme": %w`, err)}
+		}
+	}
+	if v, ok := _u.mutation.FontScale(); ok {
+		if err := settings.FontScaleValidator(v); err != nil {
+			return &ValidationError{Name: "font_scale", err: fmt.Errorf(`ent: validator failed for field "Settings.font_scale": %w`, err)}
 		}
 	}
 	return nil
@@ -278,6 +318,15 @@ func (_u *SettingsUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if value, ok := _u.mutation.InstallationID(); ok {
 		_spec.SetField(settings.FieldInstallationID, field.TypeUUID, value)
+	}
+	if value, ok := _u.mutation.FontScale(); ok {
+		_spec.SetField(settings.FieldFontScale, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.AddedFontScale(); ok {
+		_spec.AddField(settings.FieldFontScale, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.HighContrast(); ok {
+		_spec.SetField(settings.FieldHighContrast, field.TypeBool, value)
 	}
 	_spec.AddModifiers(_u.modifiers...)
 	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
@@ -445,6 +494,41 @@ func (_u *SettingsUpdateOne) SetNillableInstallationID(v *uuid.UUID) *SettingsUp
 	return _u
 }
 
+// SetFontScale sets the "font_scale" field.
+func (_u *SettingsUpdateOne) SetFontScale(v int) *SettingsUpdateOne {
+	_u.mutation.ResetFontScale()
+	_u.mutation.SetFontScale(v)
+	return _u
+}
+
+// SetNillableFontScale sets the "font_scale" field if the given value is not nil.
+func (_u *SettingsUpdateOne) SetNillableFontScale(v *int) *SettingsUpdateOne {
+	if v != nil {
+		_u.SetFontScale(*v)
+	}
+	return _u
+}
+
+// AddFontScale adds value to the "font_scale" field.
+func (_u *SettingsUpdateOne) AddFontScale(v int) *SettingsUpdateOne {
+	_u.mutation.AddFontScale(v)
+	return _u
+}
+
+// SetHighContrast sets the "high_contrast" field.
+func (_u *SettingsUpdateOne) SetHighContrast(v bool) *SettingsUpdateOne {
+	_u.mutation.SetHighContrast(v)
+	return _u
+}
+
+// SetNillableHighContrast sets the "high_contrast" field if the given value is not nil.
+func (_u *SettingsUpdateOne) SetNillableHighContrast(v *bool) *SettingsUpdateOne {
+	if v != nil {
+		_u.SetHighContrast(*v)
+	}
+	return _u
+}
+
 // Mutation returns the SettingsMutation object of the builder.
 func (_u *SettingsUpdateOne) Mutation() *SettingsMutation {
 	return _u.mutation
@@ -504,6 +588,11 @@ func (_u *SettingsUpdateOne) check() error {
 	if v, ok := _u.mutation.Theme(); ok {
 		if err := settings.ThemeValidator(v); err != nil {
 			return &ValidationError{Name: "theme", err: fmt.Errorf(`ent: validator failed for field "Settings.theme": %w`, err)}
+		}
+	}
+	if v, ok := _u.mutation.FontScale(); ok {
+		if err := settings.FontScaleValidator(v); err != nil {
+			return &ValidationError{Name: "font_scale", err: fmt.Errorf(`ent: validator failed for field "Settings.font_scale": %w`, err)}
 		}
 	}
 	return nil
@@ -579,6 +668,15 @@ func (_u *SettingsUpdateOne) sqlSave(ctx context.Context) (_node *Settings, err 
 	}
 	if value, ok := _u.mutation.InstallationID(); ok {
 		_spec.SetField(settings.FieldInstallationID, field.TypeUUID, value)
+	}
+	if value, ok := _u.mutation.FontScale(); ok {
+		_spec.SetField(settings.FieldFontScale, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.AddedFontScale(); ok {
+		_spec.AddField(settings.FieldFontScale, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.HighContrast(); ok {
+		_spec.SetField(settings.FieldHighContrast, field.TypeBool, value)
 	}
 	_spec.AddModifiers(_u.modifiers...)
 	_node = &Settings{config: _u.config}
