@@ -7,27 +7,22 @@ import (
 	"strings"
 )
 
-// RestartSelf spawns a new instance of the current process with a restart delay
-// and then exits the current process. The delay ensures the old process has time
-// to exit and release resources (e.g., single-instance lock) before the new
-// process initializes.
-func RestartSelf() error {
-	execPath, err := os.Executable()
-	if err != nil {
-		return fmt.Errorf("cannot restart: resolve executable: %w", err)
-	}
-
-	// Build args, stripping any existing --restart-delay to prevent accumulation
-	args := make([]string, 0, len(os.Args))
+// buildRestartArgs returns the arguments for the restarted process: the given
+// args with any existing --restart-delay stripped (to prevent accumulation)
+// and a fresh --restart-delay appended. The delay ensures the old process has
+// time to exit and release resources (e.g., single-instance lock) before the
+// new process initializes.
+func buildRestartArgs(args []string) []string {
+	result := make([]string, 0, len(args)+2)
 	skipNext := false
-	for i, arg := range os.Args[1:] {
+	for i, arg := range args {
 		if skipNext {
 			skipNext = false
 			continue
 		}
 		if arg == "--restart-delay" {
 			// Skip this flag and its value
-			if i+1 < len(os.Args)-1 {
+			if i+1 < len(args) {
 				skipNext = true
 			}
 			continue
@@ -35,10 +30,14 @@ func RestartSelf() error {
 		if strings.HasPrefix(arg, "--restart-delay=") {
 			continue
 		}
-		args = append(args, arg)
+		result = append(result, arg)
 	}
-	args = append(args, "--restart-delay", "1s")
+	return append(result, "--restart-delay", "1s")
+}
 
+// spawnRestart starts a new instance of the current process and then exits the
+// current process.
+func spawnRestart(execPath string, args []string) error {
 	cmd := exec.Command(execPath, args...)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
