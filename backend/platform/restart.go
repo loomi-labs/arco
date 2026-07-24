@@ -21,8 +21,9 @@ func buildRestartArgs(args []string) []string {
 			continue
 		}
 		if arg == "--restart-delay" {
-			// Skip this flag and its value
-			if i+1 < len(args) {
+			// Skip this flag and its value, but never consume a following
+			// option as the value
+			if i+1 < len(args) && !strings.HasPrefix(args[i+1], "-") {
 				skipNext = true
 			}
 			continue

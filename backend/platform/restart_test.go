@@ -36,6 +36,11 @@ func TestBuildRestartArgs(t *testing.T) {
 			args: []string{"--hidden", "--restart-delay"},
 			want: []string{"--hidden", "--restart-delay", "1s"},
 		},
+		{
+			name: "does not consume a following option as the delay value",
+			args: []string{"--restart-delay", "--auto-update=true"},
+			want: []string{"--auto-update=true", "--restart-delay", "1s"},
+		},
 	}
 
 	for _, tt := range tests {
