@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.24.0](https://github.com/loomi-labs/arco/compare/v0.23.0...v0.24.0) (2026-07-21)
+
+
+### Features
+
+* select borg binary based on host macOS version ([#301](https://github.com/loomi-labs/arco/issues/301)) ([5e89c3e](https://github.com/loomi-labs/arco/commit/5e89c3ea8111aa8bdbd1c94dddd6c5bb2bf0af59))
+* **settings:** add font size and high contrast options ([#300](https://github.com/loomi-labs/arco/issues/300)) ([66628c6](https://github.com/loomi-labs/arco/commit/66628c64abe8f74973778957a1e729c66a9911b2))
+* upgrade borg to 1.4.4 ([#296](https://github.com/loomi-labs/arco/issues/296)) ([1322452](https://github.com/loomi-labs/arco/commit/1322452f83c687fdba359e492c656dbc90ac48cb))
+* upgrade borg to 1.4.5 ([#298](https://github.com/loomi-labs/arco/issues/298)) ([8711a73](https://github.com/loomi-labs/arco/commit/8711a73888b8fe263591afadc7a030e4c701fcec))
+
 ## [0.23.0](https://github.com/loomi-labs/arco/compare/v0.22.1...v0.23.0) (2026-04-03)
 
 
