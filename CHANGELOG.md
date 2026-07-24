@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.24.1](https://github.com/loomi-labs/arco/compare/v0.24.0...v0.24.1) (2026-07-24)
+
+
+### Bug Fixes
+
+* **restart:** use exec on Linux so self-update restart survives systemd ([#302](https://github.com/loomi-labs/arco/issues/302)) ([b144bd3](https://github.com/loomi-labs/arco/commit/b144bd3b3853dca4f6f1b381d219546d15865b53))
+
 ## [0.24.0](https://github.com/loomi-labs/arco/compare/v0.23.0...v0.24.0) (2026-07-21)
 
 
